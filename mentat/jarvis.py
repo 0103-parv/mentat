@@ -28,6 +28,7 @@ from .reasoning import DEFAULT_MODEL, _load_key
 import os
 
 MODEL = os.environ.get("MENTAT_MODEL", DEFAULT_MODEL)
+ALLOWED_MODELS = {"claude-opus-4-8", "claude-sonnet-4-6", "claude-haiku-4-5"}
 MEMORY_PATH = Path(__file__).parent / "jarvis_memory.json"
 ACTIONS_LOG = Path(__file__).parent / "jarvis_actions.log"
 REPOS = {name: Path.home() / name for name in ("swechats", "alpha-evolver", "mentat")}
@@ -260,12 +261,13 @@ class Jarvis:
         self.max_turns = max_turns
         self.history: list[dict] = []
 
-    def ask(self, text: str) -> str:
+    def ask(self, text: str, model: str | None = None) -> str:
+        use_model = model if model in ALLOWED_MODELS else self.model
         self.history.append({"role": "user", "content": text})
         final = ""
         for _ in range(self.max_turns):
             resp = self.client.messages.create(
-                model=self.model, max_tokens=1024, system=SYSTEM,
+                model=use_model, max_tokens=1024, system=SYSTEM,
                 tools=TOOLS, messages=self.history)
             self.history.append({"role": "assistant", "content": resp.content})
             text_now = "".join(b.text for b in resp.content if b.type == "text")
@@ -295,56 +297,103 @@ PAGE = """<!doctype html><html><head><meta charset="utf-8">
 <title>Jarvis</title><style>
 :root{color-scheme:dark}
 *{box-sizing:border-box}
-body{margin:0;font-family:-apple-system,system-ui,sans-serif;background:#0b0e14;color:#e6e6e6;
+body{margin:0;font-family:-apple-system,system-ui,sans-serif;background:#0a0d13;color:#e8edf4;
   display:flex;flex-direction:column;height:100vh}
-header{padding:14px 22px;font-weight:600;letter-spacing:.12em;color:#7fd1ff;border-bottom:1px solid #1b2330;display:flex;align-items:center;justify-content:space-between;gap:12px}
-select{background:#0f141d;color:#cfe3f5;border:1px solid #232c3c;border-radius:8px;padding:7px 9px;font-size:13px;max-width:55%}
-#log{flex:1;overflow:auto;padding:22px;display:flex;flex-direction:column;gap:12px}
-.msg{max-width:78%;padding:11px 15px;border-radius:14px;line-height:1.5;white-space:pre-wrap}
-.you{align-self:flex-end;background:#1d4ed8}
-.jarvis{align-self:flex-start;background:#161c28;border:1px solid #232c3c}
-#status{min-height:20px;color:#8aa0b8;font-size:13px;padding:0 22px}
-footer{display:flex;gap:10px;padding:16px 22px 24px;align-items:center}
-#mic{width:62px;height:62px;border-radius:50%;border:none;background:#1d4ed8;color:#fff;font-size:24px;cursor:pointer;flex:none}
-#mic.on{background:#dc2626;animation:p 1.1s infinite}
-@keyframes p{0%{box-shadow:0 0 0 0 rgba(220,38,38,.6)}100%{box-shadow:0 0 0 16px rgba(220,38,38,0)}}
-#text{flex:1;padding:13px 15px;border-radius:12px;border:1px solid #232c3c;background:#0f141d;color:#e6e6e6;font-size:15px}
+header{display:flex;align-items:center;justify-content:space-between;gap:14px;
+  padding:13px 22px;border-bottom:1px solid #161d29;background:#0c1018}
+.brand{font-weight:600;letter-spacing:.34em;color:#8fd6ff;font-size:15px}
+.brand small{display:block;letter-spacing:.03em;color:#5d6b7e;font-size:11px;margin-top:3px;font-weight:400}
+.sel{display:flex;gap:8px}
+select{background:#0f141d;color:#cfe3f5;border:1px solid #222c3a;border-radius:9px;padding:8px 10px;font-size:12.5px;max-width:165px}
+#log{flex:1;overflow:auto;padding:24px;display:flex;flex-direction:column;gap:13px;max-width:820px;width:100%;margin:0 auto}
+.msg{max-width:76%;padding:11px 15px;border-radius:15px;line-height:1.55;white-space:pre-wrap;font-size:15px}
+.you{align-self:flex-end;background:#1f5fff;color:#fff;border-bottom-right-radius:5px}
+.jarvis{align-self:flex-start;background:#141b27;border:1px solid #222c3a;border-bottom-left-radius:5px}
+#live{min-height:22px;text-align:center;color:#7c8aa0;font-size:13.5px;padding:2px 22px 8px}
+#live .it{color:#aebccf}
+footer{display:flex;gap:12px;padding:14px 22px 22px;align-items:center;max-width:820px;width:100%;margin:0 auto}
+#talk{display:flex;align-items:center;gap:10px;border:none;border-radius:999px;padding:13px 20px;
+  background:#1f5fff;color:#fff;font-size:14.5px;font-weight:500;cursor:pointer;white-space:nowrap}
+#talk .dot{width:11px;height:11px;border-radius:50%;background:#fff;opacity:.92}
+#talk.live{background:#dc2626}
+#talk.live .dot{animation:pulse 1.1s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,255,255,.7)}100%{box-shadow:0 0 0 11px rgba(255,255,255,0)}}
+form{flex:1;display:flex}
+#text{flex:1;padding:13px 16px;border-radius:12px;border:1px solid #222c3a;background:#0f141d;color:#e8edf4;font-size:15px}
+#text:focus{outline:none;border-color:#1f5fff}
 </style></head><body>
-<header><span>J A R V I S</span><select id="voice" title="voice"></select></header>
+<header>
+  <div class="brand">JARVIS<small id="modelLabel">...</small></div>
+  <div class="sel"><select id="voice" title="voice"></select><select id="model" title="model"></select></div>
+</header>
 <div id="log"></div>
-<div id="status">tap the mic and talk, or type below</div>
+<div id="live"></div>
 <footer>
-  <button id="mic" title="hold a conversation">🎙</button>
-  <form id="form" style="flex:1;display:flex;gap:10px"><input id="text" placeholder="type a message…" autocomplete="off"><button style="display:none"></button></form>
+  <button id="talk"><span class="dot"></span><span id="talkTxt">Start conversation</span></button>
+  <form id="form"><input id="text" placeholder="or type..." autocomplete="off"></form>
 </footer>
 <script>
-const log=document.getElementById('log'),statusEl=document.getElementById('status'),
-  mic=document.getElementById('mic'),form=document.getElementById('form'),input=document.getElementById('text');
-let st='idle',micOn=false,voices=[];
-const voiceSel=document.getElementById('voice');
+const MODEL_DEFAULT="{{MODEL}}";
+const $=id=>document.getElementById(id);
+const log=$('log'),live=$('live'),talk=$('talk'),talkTxt=$('talkTxt'),form=$('form'),input=$('text'),
+  voiceSel=$('voice'),modelSel=$('model'),modelLabel=$('modelLabel');
+let voices=[],convo=false,state='idle',pending='',timer=null;
+const SILENCE_MS=1400;
+
+const MODELS=[["claude-opus-4-8","opus 4.8 - smartest"],["claude-sonnet-4-6","sonnet 4.6 - balanced"],["claude-haiku-4-5","haiku 4.5 - fastest"]];
+MODELS.forEach(([id,lbl])=>{const o=document.createElement('option');o.value=id;o.textContent=lbl;modelSel.appendChild(o);});
+modelSel.value=localStorage.getItem('jarvisModel')||MODEL_DEFAULT||"claude-opus-4-8";
+function showModel(){modelLabel.textContent=modelSel.value.replace('claude-','');}
+showModel();modelSel.onchange=()=>{localStorage.setItem('jarvisModel',modelSel.value);showModel();};
+
+function pickDefault(list){const score=v=>{const n=v.name.toLowerCase();
+  if(n.includes('google'))return 6;
+  if(n.includes('(enhanced)')||n.includes('(premium)')||n.includes('siri'))return 5;
+  if(/samantha|ava|allison|zoe|nicky|serena/.test(n))return 4;
+  if(v.lang&&v.lang.toLowerCase()==='en-us')return 3;
+  if(v.lang&&v.lang.toLowerCase().startsWith('en'))return 2;return 1;};
+  return [...list].sort((a,b)=>score(b)-score(a))[0];}
 function loadVoices(){voices=speechSynthesis.getVoices();if(!voices.length)return;
   const en=voices.filter(v=>v.lang&&v.lang.toLowerCase().startsWith('en'));const list=en.length?en:voices;
-  voiceSel.innerHTML='';list.forEach(v=>{const o=document.createElement('option');o.value=v.name;o.textContent=v.name+' ('+v.lang+')';voiceSel.appendChild(o);});
-  const saved=localStorage.getItem('jarvisVoice');const daniel=list.find(v=>/daniel/i.test(v.name));
-  voiceSel.value=saved||(daniel?daniel.name:list[0].name);}
+  voiceSel.innerHTML='';list.forEach(v=>{const o=document.createElement('option');o.value=v.name;o.textContent=v.name.replace(/ \\(.+\\)/,'')+' - '+v.lang;voiceSel.appendChild(o);});
+  const saved=localStorage.getItem('jarvisVoice'),def=pickDefault(list);
+  voiceSel.value=(saved&&list.some(v=>v.name===saved))?saved:(def?def.name:list[0].name);}
 loadVoices();if(window.speechSynthesis)speechSynthesis.onvoiceschanged=loadVoices;
-voiceSel.onchange=()=>{localStorage.setItem('jarvisVoice',voiceSel.value);speak('This is '+voiceSel.value+'.');};
-function setStatus(s){st=s;statusEl.textContent=s}
-function add(who,t){const d=document.createElement('div');d.className='msg '+who;d.textContent=t;log.appendChild(d);log.scrollTop=log.scrollHeight}
-function speak(t){try{const u=new SpeechSynthesisUtterance(t);u.rate=1.04;const v=voices.find(x=>x.name===voiceSel.value);if(v)u.voice=v;speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){}}
-async function ask(t){add('you',t);setStatus('thinking…');
-  try{const r=await fetch('/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t})});
-    const j=await r.json();add('jarvis',j.reply);setStatus('idle');speak(j.reply);}
-  catch(e){add('jarvis','(could not reach Jarvis — is the server running?)');setStatus('idle');}}
+voiceSel.onchange=()=>{localStorage.setItem('jarvisVoice',voiceSel.value);speak("Okay, this is the new voice.");};
+
+function add(who,t){const d=document.createElement('div');d.className='msg '+who;d.textContent=t;log.appendChild(d);log.scrollTop=log.scrollHeight;}
+function setState(s){state=s;const m={thinking:'thinking...',speaking:'speaking...',idle:''};if(s!=='listening')live.textContent=m[s]||'';}
+function showLive(txt){live.textContent='';const a=document.createElement('span');a.textContent='listening... ';
+  const b=document.createElement('span');b.className='it';b.textContent=txt;live.append(a,b);}
+function speak(t){try{const u=new SpeechSynthesisUtterance(t);u.rate=1.0;u.pitch=1.0;
+  const v=voices.find(x=>x.name===voiceSel.value);if(v)u.voice=v;
+  setState('speaking');
+  u.onend=()=>{convo?listen():setState('idle');};
+  u.onerror=()=>{convo?listen():setState('idle');};
+  speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){if(convo)listen();}}
+async function ask(t){add('you',t);try{rec&&rec.stop();}catch(e){}setState('thinking');
+  try{const r=await fetch('/ask',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({text:t,model:modelSel.value})});
+    const j=await r.json();add('jarvis',j.reply);speak(j.reply);}
+  catch(e){add('jarvis','(could not reach the server)');convo?listen():setState('idle');}}
+
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;let rec=null;
-if(SR){rec=new SR();rec.lang='en-US';rec.interimResults=false;rec.maxAlternatives=1;
-  rec.onresult=e=>ask(e.results[0][0].transcript);
-  rec.onerror=e=>setStatus('mic: '+e.error);
-  rec.onend=()=>{micOn=false;mic.classList.remove('on');if(st==='listening…')setStatus('idle');};}
-mic.onclick=()=>{if(!SR){setStatus('this browser has no speech recognition — type instead');return;}
-  if(micOn){rec.stop();return;}speechSynthesis.cancel();micOn=true;mic.classList.add('on');setStatus('listening…');rec.start();};
+if(SR){rec=new SR();rec.lang='en-US';rec.continuous=true;rec.interimResults=true;
+  rec.onresult=e=>{if(state!=='listening')return;let interim='';
+    for(let i=e.resultIndex;i<e.results.length;i++){const r=e.results[i];
+      if(r.isFinal)pending+=r[0].transcript+' ';else interim+=r[0].transcript;}
+    showLive((pending+interim).trim());clearTimeout(timer);timer=setTimeout(finalize,SILENCE_MS);};
+  rec.onerror=e=>{if(e.error==='no-speech'||e.error==='aborted')return;live.textContent='mic: '+e.error;};
+  rec.onend=()=>{if(convo&&state==='listening'){try{rec.start();}catch(e){}}};}
+function finalize(){const t=pending.trim();pending='';if(!t)return;setState('thinking');try{rec.stop();}catch(e){}ask(t);}
+function listen(){if(!convo)return;setState('listening');showLive('');try{rec.start();}catch(e){}}
+function startConvo(){if(!SR){live.textContent='This browser has no speech recognition - use Chrome, or type below.';return;}
+  convo=true;talk.classList.add('live');talkTxt.textContent='Stop';speechSynthesis.cancel();listen();}
+function stopConvo(){convo=false;talk.classList.remove('live');talkTxt.textContent='Start conversation';
+  try{rec.stop();}catch(e){}speechSynthesis.cancel();clearTimeout(timer);setState('idle');}
+talk.onclick=()=>convo?stopConvo():startConvo();
 form.onsubmit=e=>{e.preventDefault();const t=input.value.trim();if(t){input.value='';ask(t);}};
-add('jarvis','Online. Ask me about your repos, the weather, the time — or tell me something to remember.');
+add('jarvis','Online. Hit Start conversation and just talk - I will keep listening, hands-free, and pauses will not cut you off. Or type below.');
 </script></body></html>"""
 
 
@@ -357,7 +406,7 @@ def serve(port: int = 8765):
             pass
 
         def do_GET(self):
-            body = PAGE.encode("utf-8")
+            body = PAGE.replace("{{MODEL}}", jarvis.model).encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Content-Length", str(len(body)))
@@ -368,7 +417,7 @@ def serve(port: int = 8765):
             length = int(self.headers.get("Content-Length", 0))
             try:
                 data = json.loads(self.rfile.read(length) or b"{}")
-                reply = jarvis.ask(str(data.get("text", "")))
+                reply = jarvis.ask(str(data.get("text", "")), model=data.get("model"))
             except Exception as e:
                 reply = f"(server error: {type(e).__name__})"
             body = json.dumps({"reply": reply}).encode("utf-8")
@@ -379,8 +428,8 @@ def serve(port: int = 8765):
             self.wfile.write(body)
 
     server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
-    print(f"Jarvis is listening at  http://localhost:{port}")
-    print("Open it in Chrome, tap the mic, and talk.  Ctrl-C to stop.")
+    print(f"Jarvis is listening at  http://localhost:{port}   (model: {jarvis.model})")
+    print("Open it in Chrome, hit 'Start conversation', and just talk.  Ctrl-C to stop.")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
