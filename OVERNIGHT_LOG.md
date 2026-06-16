@@ -13,6 +13,34 @@ Rules I'm holding myself to:
   swechats/alpha-evolver). No account creation, no money spent beyond the LLM API.
 - Quality over churn. Verify findings adversarially before acting on them.
 
+## ✅ FINAL SUMMARY — read this
+
+The autonomous session ran ~01:40–03:05 (the self-wake chain stopped after Phase 4;
+it did not run the full 8h). Everything is committed + pushed to
+github.com/0103-parv/mentat; Jarvis is live (HTTP 200). ~15 commits, 20 tests green.
+
+**What changed:**
+- **Hardened the whole codebase** — a 63-agent audit fixed 38 verified issues. The
+  catastrophic-command guard was *bypassable* (`rm -rf ~/.ssh`, `~/mentat`, `/etc`,
+  `find / -delete`) — now airtight. Real process-sandboxed execution of model code.
+  Kernel no longer crashes on a raising verifier. Robust .env/JSON/code parsing.
+- **Jarvis grounded memory** — `learn_lesson` learns durable, *grounded* rules from
+  your corrections (anti-fabrication firewall) and recalls them into every chat.
+- **The Hub** — `improve_maxcut` / `discover_sidon` dispatch real verified discovery.
+- **Verified `edit_file`** — surgical, syntax-checked, rolls back if the tests fail.
+  The "function like Claude Code" piece. (Jarvis is now 17 tools.)
+
+**ElevenLabs voice: WORKING** (fixed the afternoon of 06-16 — the key now has
+text_to_speech; voice is **George**, a free-tier British male). Hard-refresh
+localhost:8765 and talk to it. (Free plan = built-in "premade" voices only; library
+voices need a paid plan.)
+
+**Canonical context lives in `~/mentat/CLAUDE.md`** — auto-loads in any new session.
+
+Loop ended here (you're awake and steering). Remaining roadmap if you want more: a 2nd
+discovery domain (cap sets), a transfer experiment, a consolidation/sleep pass, an
+architecture doc.
+
 ## Roadmap (worked top-to-bottom, revised as I learn)
 
 1. **Harden & fix** — audit the whole codebase, fix verified bugs, add error
