@@ -185,35 +185,40 @@ def test_math_loop_keeps_valid_quarantines_broken():
 
 def test_jarvis_memory_roundtrip_survives_punctuation():
     import mentat.jarvis as J
-    with tempfile.TemporaryDirectory() as d:
-        J.MEMORY_PATH = Path(d) / "m.json"
-        assert "haven't" in J.tool_recall("answers")              # empty store
-        J.tool_remember("Prefers concise, no-fluff answers.")     # note has punctuation
-        assert "concise" in J.tool_recall("how do I like my answers?")  # recall matches
-        assert "concise" in J.tool_recall("")                     # bare recall -> recent
+    saved = J.MEMORY_PATH                                  # restore the module global after
+    try:
+        with tempfile.TemporaryDirectory() as d:
+            J.MEMORY_PATH = Path(d) / "m.json"
+            assert "haven't" in J.tool_recall("answers")              # empty store
+            J.tool_remember("Prefers concise, no-fluff answers.")     # note has punctuation
+            assert "concise" in J.tool_recall("how do I like my answers?")  # recall matches
+            assert "concise" in J.tool_recall("")                     # bare recall -> recent
+    finally:
+        J.MEMORY_PATH = saved
     assert J.tool_get_datetime()                                  # non-empty string
 
 
 def test_jarvis_shell_runs_but_guards_catastrophe():
     import mentat.jarvis as J
-    assert J._is_catastrophic("rm -rf /") is True
-    assert J._is_catastrophic("rm -rf ~") is True
-    assert J._is_catastrophic("sudo rm -rf /*") is True
-    assert J._is_catastrophic("dd if=/dev/zero of=/dev/disk0") is True
-    assert J._is_catastrophic("rm -rf /Users/me/project/build") is False   # normal cleanup ok
-    assert J._is_catastrophic("ls -la /") is False
-    assert "hi there" in J.tool_shell("echo 'hi there'")                   # real execution
+    for c in ("rm -rf /", "rm -rf ~", "sudo rm -rf /*", "dd if=/dev/zero of=/dev/disk0",
+              'rm -rf "$HOME"', "rm -rf /etc", "rm -rf /System", "rm -rf ~/Documents",
+              "rm -rf /usr/local", "find / -delete"):
+        assert J._is_catastrophic(c) is True, c       # quoted / suffixed / find forms too
+    for c in ("rm -rf /Users/me/project/build", "ls -la /", "rm -rf build/",
+              "rm -rf ~/projects/scratch", "find . -name '*.pyc' -delete",
+              "grep -r unlink /usr/include"):
+        assert J._is_catastrophic(c) is False, c      # ordinary dev commands pass
+    assert "hi there" in J.tool_shell("echo 'hi there'")          # real execution
     if J._GUARD:
-        assert "Refused" in J.tool_shell("rm -rf /")                       # floor holds
+        assert "Refused" in J.tool_shell("rm -rf /")              # floor actually blocks
 
 
 def test_jarvis_web_and_voice_helpers():
     import os
     import mentat.jarvis as J
-    # web_fetch degrades gracefully on a bad URL (no raise)
+    # web_fetch degrades gracefully on a bad host (no raise; .invalid never resolves)
     assert J.tool_web_fetch("http://nonexistent.invalid.localhost.test/").startswith("(could not fetch")
-    # web_search degrades gracefully if offline / blocked (returns a string, never raises)
-    assert isinstance(J.tool_web_search("python"), str)
+    # (web_search hits the network — covered by the live runner, not this unit test)
     # ElevenLabs is cleanly disabled without a key
     if not os.environ.get("ELEVENLABS_API_KEY"):
         assert J.elevenlabs_enabled() is False
@@ -241,9 +246,9 @@ def test_self_research_verifier_when_available():
         import numpy  # noqa: F401
         from mentat.self_research import MaxCutHeuristic
         prob = MaxCutHeuristic()
-    except Exception:
-        print("  (skipped: numpy / alpha-evolver not available on this interpreter)")
-        return
+    except (ImportError, ModuleNotFoundError):       # only skip on missing deps...
+        print("  (skipped: numpy / alpha-evolver not importable)")
+        return                                        # ...a real bug now FAILS, not "skips"
     good = prob.verify(prob.baseline)
     assert not good.suspicious and good.score > 0.5             # baseline verifies through the real eval
     bad = prob.verify({"init": ["rank", "flip_gain"], "move": "flip_gain",
