@@ -201,6 +201,9 @@ def test_jarvis_web_and_voice_helpers():
         assert J.elevenlabs_enabled() is False
         assert J.elevenlabs_tts("hello") is None
     assert "web_search" in J._DISPATCH and "web_fetch" in J._DISPATCH
+    # calendar/reminder tools are wired; empty reminder is a no-op (no OS side effect)
+    assert "add_reminder" in J._DISPATCH and "calendar_today" in J._DISPATCH
+    assert J.tool_add_reminder("") == "(nothing to remind about)"
 
 
 def _run_all():

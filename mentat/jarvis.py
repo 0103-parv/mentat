@@ -73,7 +73,8 @@ SYSTEM = (
     "guessing. Whenever the user states a preference, decision, or fact about "
     "themselves, call `remember` so you don't forget it next time. "
     "You can also CONTROL this Mac: `shell` runs any terminal command, `applescript` "
-    "automates native apps, and `read_file` / `write_file` access files. Use them to "
+    "automates native apps, `read_file` / `write_file` access files, and `add_reminder` / "
+    "`calendar_today` reach your Reminders and Calendar. Use them to "
     "actually get things done — open apps, manage files, search the machine, automate "
     "tasks — the way a power user works at the terminal. Before anything destructive or "
     "irreversible (deleting or overwriting files, changing system settings, installing or "
@@ -220,7 +221,26 @@ def _get_json(url: str):
 def tool_web_search(query: str) -> str:
     """Search via official, keyless JSON APIs (DuckDuckGo Instant Answer + Wikipedia).
     Keyless open-web scraping is blocked everywhere now; these are the reliable paths.
-    For anything specific, pair with web_fetch to read a chosen URL."""
+    For anything specific, pair with web_fetch to read a chosen URL.
+    If BRAVE_API_KEY is set, uses the Brave Search API for real-time open-web results."""
+    bk = os.environ.get("BRAVE_API_KEY")
+    if bk:
+        try:
+            req = urllib.request.Request(
+                "https://api.search.brave.com/res/v1/web/search?"
+                + urllib.parse.urlencode({"q": query, "count": 5}),
+                headers={"X-Subscription-Token": bk, "Accept": "application/json"})
+            with urllib.request.urlopen(req, timeout=12) as r:
+                j = json.loads(r.read().decode("utf-8", "replace"))
+            hits = []
+            for it in j.get("web", {}).get("results", [])[:5]:
+                desc = re.sub(r"<[^>]+>", "", it.get("description", "")).strip()
+                hits.append(f"{it.get('title', '')} — {it.get('url', '')}" + (f"\n  {desc}" if desc else ""))
+            if hits:
+                _log_action("web_search[brave]", query)
+                return "\n".join(hits)
+        except Exception:
+            pass  # fall back to the keyless path
     lines: list[str] = []
     try:  # DuckDuckGo Instant Answer (official API)
         j = _get_json("https://api.duckduckgo.com/?" + urllib.parse.urlencode(
@@ -267,6 +287,44 @@ def tool_web_fetch(url: str) -> str:
     text = re.sub(r"\s+", " ", text).strip()
     _log_action("web_fetch", url)
     return (text[:4500] + "\n…[truncated]") if len(text) > 4500 else (text or "(no readable text)")
+
+
+def _applescript_str(s: str) -> str:
+    return '"' + s.replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+
+def tool_add_reminder(text: str) -> str:
+    if not text.strip():
+        return "(nothing to remind about)"
+    script = (f'tell application "Reminders" to make new reminder '
+              f'with properties {{name:{_applescript_str(text)}}}')
+    _log_action("add_reminder", text)
+    try:
+        p = subprocess.run(["osascript", "-e", script], capture_output=True, text=True, timeout=15)
+        if p.returncode == 0:
+            return f"Reminder added: {text}"
+        return f"(couldn't add reminder — you may need to grant Reminders access: {(p.stderr or '').strip()[:100]})"
+    except Exception as e:
+        return f"(reminder error: {type(e).__name__})"
+
+
+def tool_calendar_today() -> str:
+    script = ('set out to ""\nset d to current date\nset startD to d - (time of d)\n'
+              'set endD to startD + 86400\ntell application "Calendar"\n'
+              '  repeat with c in calendars\n'
+              '    repeat with e in (every event of c whose start date >= startD and start date < endD)\n'
+              '      set out to out & summary of e & " at " & (start date of e as string) & linefeed\n'
+              '    end repeat\n  end repeat\nend tell\nreturn out')
+    _log_action("calendar_today", "")
+    try:
+        p = subprocess.run(["osascript", "-e", script], capture_output=True, text=True, timeout=25)
+        if p.returncode != 0:
+            return f"(couldn't read Calendar — you may need to grant Calendar access: {(p.stderr or '').strip()[:100]})"
+        return (p.stdout or "").strip() or "Nothing on the calendar today."
+    except subprocess.TimeoutExpired:
+        return "(Calendar query timed out — it can be slow on first run; try again.)"
+    except Exception as e:
+        return f"(calendar error: {type(e).__name__})"
 
 
 def elevenlabs_enabled() -> bool:
@@ -341,6 +399,11 @@ TOOLS = [
                                          "web_search to actually read a page.",
      "input_schema": {"type": "object", "properties": {"url": {"type": "string"}},
                       "required": ["url"]}},
+    {"name": "add_reminder", "description": "Add a reminder to the macOS Reminders app.",
+     "input_schema": {"type": "object", "properties": {"text": {"type": "string"}},
+                      "required": ["text"]}},
+    {"name": "calendar_today", "description": "List today's events from the macOS Calendar app.",
+     "input_schema": {"type": "object", "properties": {}}},
 ]
 
 _DISPATCH = {
@@ -355,6 +418,8 @@ _DISPATCH = {
     "write_file": lambda a: tool_write_file(a.get("path", ""), a.get("content", "")),
     "web_search": lambda a: tool_web_search(a.get("query", "")),
     "web_fetch": lambda a: tool_web_fetch(a.get("url", "")),
+    "add_reminder": lambda a: tool_add_reminder(a.get("text", "")),
+    "calendar_today": lambda a: tool_calendar_today(),
 }
 
 
