@@ -64,3 +64,11 @@ Rules I'm holding myself to:
   it (grounded), and it persisted. This is the brain-like correction → lesson →
   recall loop, now in the assistant itself. 18 tests green.
   Next: Phase 3 — the Hub (Jarvis dispatches to the discovery / self-research engines).
+- **03:05** — **Phase 3 done: the Hub.** Jarvis can now dispatch heavy thinking to the
+  cognitive engines (the reasoning-core → specialist-engines architecture): two new
+  tools, `improve_maxcut` (runs the self-research loop against alpha-evolver's own
+  benchmark) and `discover_sidon` (runs the math-discovery loop, proven by exhaustive
+  search). Verified live: `improve_maxcut(2)` ran the real loop end-to-end and returned
+  an honest verified result. "Jarvis, improve my heuristic" now does real discovery.
+  19 tests green; Jarvis is up to 16 tools. Restarted the live server with everything.
+  Next: Phase 4 — a second discovery domain + a review pass over tonight's new code.
