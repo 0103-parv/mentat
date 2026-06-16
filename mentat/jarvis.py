@@ -19,6 +19,7 @@ import json
 import re
 import subprocess
 import sys
+import threading
 import urllib.parse
 import urllib.request
 from datetime import datetime
@@ -39,8 +40,20 @@ REPOS = {name: Path.home() / name for name in ("swechats", "alpha-evolver", "men
 # Voice STT can garble input, so a disk-wipe / rm-of-home guard protects the user.
 # Set JARVIS_NO_GUARD=1 to remove even that.
 _GUARD = os.environ.get("JARVIS_NO_GUARD") != "1"
-_RM_RF = re.compile(r"\brm\b[^|;&\n]*-[a-z]*[rf][a-z]*\b", re.I)
-_CATA_TARGET = re.compile(r"(^|\s)(/|/\*|~|~/|~/\*|\$home|\$home/|\$home/\*)(\s|$)", re.I)
+_HOME = os.path.expanduser("~")
+# A delete verb acting as a command (not a substring inside an argument).
+_DELETE_VERB = re.compile(
+    r"(?:^|[|;&]|\bsudo\s+)\s*(?:rm|shred|unlink)\b"
+    r"|\bfind\b[^|;&\n]*?-delete\b"
+    r"|\bfind\b[^|;&\n]*?-exec\s+(?:rm|shred|unlink)\b", re.I)
+# Paths that must never be a delete target (the path itself).
+_PROT_EXACT = {"/", "/etc", "/system", "/usr", "/bin", "/sbin", "/var",
+               "/library", "/applications", "/volumes", "/private", _HOME.lower(),
+               *(f"{_HOME}/{d}".lower() for d in
+                 ("documents", "desktop", "library", "pictures", "movies", "downloads"))}
+# System roots whose CHILDREN are also protected (deep deletes there are fatal).
+_PROT_TREE = ("/etc", "/system", "/usr", "/bin", "/sbin", "/library",
+              "/applications", "/private", "/var")
 _CATASTROPHIC = [
     re.compile(r"--no-preserve-root", re.I),
     re.compile(r"\bmkfs\b|\bnewfs\b", re.I),
@@ -51,8 +64,26 @@ _CATASTROPHIC = [
 ]
 
 
+def _norm_target(tok: str) -> str:
+    t = tok.strip().strip("'\"").replace("${HOME}", _HOME).replace("$HOME", _HOME)
+    if t == "~" or t.startswith("~/"):
+        t = _HOME + t[1:]
+    return (t.rstrip("*").rstrip("/").lower()) or "/"
+
+
+def _hits_protected(cmd: str) -> bool:
+    for raw in re.split(r"\s+", cmd):
+        if not raw or raw.startswith("-"):
+            continue
+        t = _norm_target(raw)
+        if t in _PROT_EXACT or any(t == r or t.startswith(r + "/") for r in _PROT_TREE):
+            return True
+    return False
+
+
 def _is_catastrophic(cmd: str) -> bool:
-    if _RM_RF.search(cmd) and _CATA_TARGET.search(cmd):   # rm -rf of / ~ $HOME /*
+    # A deletion verb aimed at a protected path, OR an inherently destructive op.
+    if _DELETE_VERB.search(cmd) and _hits_protected(cmd):
         return True
     return any(p.search(cmd) for p in _CATASTROPHIC)
 
@@ -434,33 +465,59 @@ class Jarvis:
         self.model = model
         self.max_turns = max_turns
         self.history: list[dict] = []
+        self._lock = threading.Lock()   # serialize concurrent /ask threads
+        self.max_history = 40           # cap message dicts retained
+
+    def _trim_history(self) -> None:
+        # Drop oldest whole exchanges, always cutting at a real user turn (string
+        # content) so a tool_use/tool_result pair is never split.
+        if len(self.history) <= self.max_history:
+            return
+        starts = [i for i, m in enumerate(self.history)
+                  if m.get("role") == "user" and isinstance(m.get("content"), str)]
+        for s in starts:
+            if s > 0 and len(self.history) - s <= self.max_history:
+                del self.history[:s]
+                return
+        if starts and starts[-1] > 0:
+            del self.history[:starts[-1]]
 
     def ask(self, text: str, model: str | None = None) -> str:
         use_model = model if model in ALLOWED_MODELS else self.model
-        self.history.append({"role": "user", "content": text})
-        final = ""
-        for _ in range(self.max_turns):
-            resp = self.client.messages.create(
-                model=use_model, max_tokens=1024, system=SYSTEM,
-                tools=TOOLS, messages=self.history)
-            self.history.append({"role": "assistant", "content": resp.content})
-            text_now = "".join(b.text for b in resp.content if b.type == "text")
-            if resp.stop_reason != "tool_use":
-                final = text_now or final
-                break
-            results = []
-            for block in resp.content:
-                if block.type == "tool_use":
-                    try:
-                        out = _DISPATCH[block.name](dict(block.input or {}))
-                    except Exception as e:
-                        out = f"tool error: {type(e).__name__}: {e}"
-                    results.append({"type": "tool_result", "tool_use_id": block.id,
-                                    "content": str(out)})
-            self.history.append({"role": "user", "content": results})
-        else:
-            final = final or "Sorry, I got stuck in a loop there."
-        reply = final.strip() or "(no reply)"
+        with self._lock:                       # one turn at a time; history stays valid
+            snapshot = len(self.history)        # roll-back point if the turn fails
+            self.history.append({"role": "user", "content": text})
+            final = ""
+            try:
+                for _ in range(self.max_turns):
+                    resp = self.client.messages.create(
+                        model=use_model, max_tokens=1024, system=SYSTEM,
+                        tools=TOOLS, messages=self.history)
+                    self.history.append({"role": "assistant", "content": resp.content})
+                    text_now = "".join(b.text for b in resp.content if b.type == "text")
+                    if resp.stop_reason != "tool_use":
+                        final = text_now or final
+                        break
+                    results = []
+                    for block in resp.content:
+                        if block.type == "tool_use":
+                            try:
+                                out = _DISPATCH[block.name](dict(block.input or {}))
+                            except Exception as e:
+                                out = f"tool error: {type(e).__name__}: {e}"
+                            results.append({"type": "tool_result", "tool_use_id": block.id,
+                                            "content": str(out)})
+                    self.history.append({"role": "user", "content": results})
+                else:
+                    final = final or "Sorry, I got stuck in a loop there."
+            except Exception as e:               # discard the partial, poisoning turn
+                del self.history[snapshot:]
+                reply = f"Sorry — I hit an error ({type(e).__name__}). Try again."
+                _log_convo("user", text)
+                _log_convo("jarvis", reply)
+                return reply
+            self._trim_history()
+            reply = final.strip() or "(no reply)"
         _log_convo("user", text)
         _log_convo("jarvis", reply)
         return reply
@@ -547,9 +604,9 @@ function showLive(txt){live.textContent='';const a=document.createElement('span'
 async function speak(t){setState('speaking');
   if(TTS_MODE==='elevenlabs'){try{
     const r=await fetch('/speak',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t})});
-    if(r.ok){const url=URL.createObjectURL(await r.blob());const a=new Audio(url);
+    if(r.ok){const blob=await r.blob();if(blob.size>0){const url=URL.createObjectURL(blob);const a=new Audio(url);
       a.onended=()=>{URL.revokeObjectURL(url);convo?listen():setState('idle');};
-      a.onerror=()=>{convo?listen():setState('idle');};a.play();return;}}catch(e){}}
+      a.onerror=()=>{convo?listen():setState('idle');};a.play();return;}}}catch(e){}}
   try{const u=new SpeechSynthesisUtterance(t);u.rate=1.0;u.pitch=1.0;
     const v=voices.find(x=>x.name===voiceSel.value);if(v)u.voice=v;
     u.onend=()=>{convo?listen():setState('idle');};
@@ -586,6 +643,8 @@ def serve(port: int = 8765):
     jarvis = Jarvis()
 
     class Handler(BaseHTTPRequestHandler):
+        timeout = 30                 # bound a stalled read so a worker thread can't hang
+
         def log_message(self, *a):  # quiet
             pass
 
@@ -600,7 +659,16 @@ def serve(port: int = 8765):
             self.wfile.write(body)
 
         def do_POST(self):
-            length = int(self.headers.get("Content-Length", 0))
+            MAX_BODY = 2_000_000
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+            except (TypeError, ValueError):
+                length = -1
+            if length < 0 or length > MAX_BODY:
+                self.send_response(400)
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+                return
             raw = self.rfile.read(length) or b"{}"
             if self.path.rstrip("/") == "/speak":          # ElevenLabs audio for the browser
                 try:
