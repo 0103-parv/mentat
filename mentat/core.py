@@ -168,7 +168,17 @@ class Memory:
         )
 
     def consider_elite(self, score: float, candidate: Any) -> None:
-        """Keep a small pool of the best-verified candidates for recombination."""
+        """Keep a small pool of DISTINCT best-verified candidates for recombination.
+        Without the dedup the loop re-proposes its own best every generation and the
+        whole pool collapses to copies of one candidate, killing recombination."""
+        if not math.isfinite(score):                  # never pool a NaN/inf score
+            return
+        for i, (s, c) in enumerate(self.elites):
+            if c == candidate:                        # value equality (candidates may be unhashable)
+                if score <= s:
+                    return                            # already hold an equal-or-better copy
+                del self.elites[i]
+                break
         self.elites.append([score, candidate])
         self.elites.sort(key=lambda sc: sc[0], reverse=True)
         del self.elites[self.elite_cap:]
@@ -238,8 +248,12 @@ def solve(problem: Problem, proposer: Proposer, memory: Memory,
     # trusted blindly. This is what lets a warm start recognise it already holds
     # a solution (and what catches a remembered claim that no longer verifies).
     if best_cand is not None:
-        best_v = problem.verify(best_cand)
-        best_score = best_v.score
+        try:
+            best_v = problem.verify(best_cand)
+            best_score = best_v.score
+        except Exception as e:               # a poisoned/stale warm start must not abort
+            log(f"  warm-start verify raised, discarding remembered best: {type(e).__name__}: {e}")
+            best_cand, best_v, best_score = None, None, -math.inf
     history: list[dict] = []
 
     for gen in range(1, generations + 1):
@@ -249,7 +263,11 @@ def solve(problem: Problem, proposer: Proposer, memory: Memory,
         surprises: list[float] = []
 
         for cand in candidates:
-            v = problem.verify(cand)             # <- the gate: nothing skips it
+            try:
+                v = problem.verify(cand)         # <- the gate: nothing skips it
+            except Exception:                    # a raising verifier == junk, not fatal
+                quarantined += 1
+                continue
             if v.suspicious:
                 quarantined += 1
                 continue

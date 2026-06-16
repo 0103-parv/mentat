@@ -224,6 +224,18 @@ def test_jarvis_web_and_voice_helpers():
     assert J.tool_add_reminder("") == "(nothing to remind about)"
 
 
+def test_elite_pool_dedups_and_guards_nan():
+    from mentat.core import Memory
+    m = Memory()
+    for _ in range(20):
+        m.consider_elite(0.5, ("x",))     # same candidate re-proposed every gen
+    assert len(m.elites) == 1             # collapses to one slot, not 12 copies
+    m.consider_elite(0.9, ("y",))
+    assert len(m.elites) == 2
+    m.consider_elite(float("nan"), ("z",))
+    assert len(m.elites) == 2             # a NaN score is never pooled
+
+
 def test_self_research_verifier_when_available():
     try:
         import numpy  # noqa: F401
