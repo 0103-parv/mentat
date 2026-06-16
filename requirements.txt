@@ -1,0 +1,4 @@
+# Optional — only the real reasoning core (mentat.think) needs this.
+# The kernel, the offline demo (mentat.demo), and the tests all run with
+# zero third-party dependencies.
+anthropic>=0.107.0
