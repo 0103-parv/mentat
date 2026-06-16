@@ -8,3 +8,4 @@ venv/
 mentat/memory.json
 mentat/jarvis_memory.json
 mentat/jarvis_actions.log
+mentat/jarvis_conversation.jsonl

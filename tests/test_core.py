@@ -189,6 +189,20 @@ def test_jarvis_shell_runs_but_guards_catastrophe():
         assert "Refused" in J.tool_shell("rm -rf /")                       # floor holds
 
 
+def test_jarvis_web_and_voice_helpers():
+    import os
+    import mentat.jarvis as J
+    # web_fetch degrades gracefully on a bad URL (no raise)
+    assert J.tool_web_fetch("http://nonexistent.invalid.localhost.test/").startswith("(could not fetch")
+    # web_search degrades gracefully if offline / blocked (returns a string, never raises)
+    assert isinstance(J.tool_web_search("python"), str)
+    # ElevenLabs is cleanly disabled without a key
+    if not os.environ.get("ELEVENLABS_API_KEY"):
+        assert J.elevenlabs_enabled() is False
+        assert J.elevenlabs_tts("hello") is None
+    assert "web_search" in J._DISPATCH and "web_fetch" in J._DISPATCH
+
+
 def _run_all():
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for fn in fns:

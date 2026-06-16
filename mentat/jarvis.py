@@ -31,6 +31,8 @@ MODEL = os.environ.get("MENTAT_MODEL", DEFAULT_MODEL)
 ALLOWED_MODELS = {"claude-opus-4-8", "claude-sonnet-4-6", "claude-haiku-4-5"}
 MEMORY_PATH = Path(__file__).parent / "jarvis_memory.json"
 ACTIONS_LOG = Path(__file__).parent / "jarvis_actions.log"
+CONVO_LOG = Path(__file__).parent / "jarvis_conversation.jsonl"
+ELEVENLABS_VOICE = os.environ.get("ELEVENLABS_VOICE_ID", "21m00Tcm4TlvDq8ikWAM")  # default: Rachel
 REPOS = {name: Path.home() / name for name in ("swechats", "alpha-evolver", "mentat")}
 
 # Full machine control, with ONE floor: refuse catastrophic, irreversible commands.
@@ -77,7 +79,15 @@ SYSTEM = (
     "irreversible (deleting or overwriting files, changing system settings, installing or "
     "removing software, sending messages on the user's behalf), say what you're about to "
     "do and get a quick confirmation first. For routine, safe actions just do them and "
-    "report back briefly. If you don't know something and have no tool for it, say so."
+    "report back briefly. "
+    "You can BROWSE THE WEB: `web_search` finds pages, `web_fetch` reads a page's text. "
+    "When the user asks you to search, look up, or check something online, ACTUALLY call "
+    "web_search (then web_fetch to read a page) — do not answer from memory, and never say "
+    "search is unavailable unless web_search itself returned no results. Be honest about "
+    "hard limits: you "
+    "cannot bypass passwords or security, cannot create accounts or act as the user, and "
+    "cannot watch video — say so plainly rather than pretending. "
+    "If you don't know something and have no tool for it, say so."
 )
 
 
@@ -201,6 +211,95 @@ def tool_write_file(path: str, content: str) -> str:
         return f"(could not write {path}: {type(e).__name__}: {e})"
 
 
+def _get_json(url: str):
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Jarvis research)"})
+    with urllib.request.urlopen(req, timeout=12) as r:
+        return json.loads(r.read().decode("utf-8", "replace"))
+
+
+def tool_web_search(query: str) -> str:
+    """Search via official, keyless JSON APIs (DuckDuckGo Instant Answer + Wikipedia).
+    Keyless open-web scraping is blocked everywhere now; these are the reliable paths.
+    For anything specific, pair with web_fetch to read a chosen URL."""
+    lines: list[str] = []
+    try:  # DuckDuckGo Instant Answer (official API)
+        j = _get_json("https://api.duckduckgo.com/?" + urllib.parse.urlencode(
+            {"q": query, "format": "json", "no_redirect": "1", "no_html": "1"}))
+        if j.get("AbstractText"):
+            lines.append(j["AbstractText"] + (f" [{j['AbstractURL']}]" if j.get("AbstractURL") else ""))
+
+        def walk(topics):
+            for t in topics:
+                if "Topics" in t:
+                    walk(t["Topics"])
+                elif t.get("FirstURL") and t.get("Text"):
+                    lines.append(f"{t['Text']} — {t['FirstURL']}")
+        walk(j.get("RelatedTopics", []))
+    except Exception:
+        pass
+    if len(lines) < 3:
+        try:  # Wikipedia opensearch (titles + links)
+            arr = _get_json("https://en.wikipedia.org/w/api.php?" + urllib.parse.urlencode(
+                {"action": "opensearch", "search": query, "limit": "5", "format": "json"}))
+            for title, link in zip(arr[1], arr[3]):
+                lines.append(f"{title} — {link}")
+        except Exception:
+            pass
+    _log_action("web_search", query)
+    if not lines:
+        return ("(no results — open-web/live search needs a keyed API such as Brave Search. "
+                "I can still web_fetch a specific URL if you give me one.)")
+    return "\n".join(lines[:6])
+
+
+def tool_web_fetch(url: str) -> str:
+    if not url.startswith(("http://", "https://")):
+        url = "https://" + url
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Jarvis)"})
+        with urllib.request.urlopen(req, timeout=12) as r:
+            raw = r.read(800000).decode("utf-8", "replace")
+    except Exception as e:
+        return f"(could not fetch {url}: {type(e).__name__}: {e})"
+    raw = re.sub(r"(?is)<(script|style|noscript|head).*?</\1>", " ", raw)
+    text = re.sub(r"(?s)<[^>]+>", " ", raw)
+    text = re.sub(r"&[a-z#0-9]+;", " ", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    _log_action("web_fetch", url)
+    return (text[:4500] + "\n…[truncated]") if len(text) > 4500 else (text or "(no readable text)")
+
+
+def elevenlabs_enabled() -> bool:
+    return bool(os.environ.get("ELEVENLABS_API_KEY"))
+
+
+def elevenlabs_tts(text: str) -> bytes | None:
+    """Synthesize speech with ElevenLabs (human-sounding). None if no key / on error."""
+    key = os.environ.get("ELEVENLABS_API_KEY")
+    if not key:
+        return None
+    body = json.dumps({"text": text, "model_id": "eleven_turbo_v2_5",
+                       "voice_settings": {"stability": 0.5, "similarity_boost": 0.75}}).encode()
+    req = urllib.request.Request(
+        f"https://api.elevenlabs.io/v1/text-to-speech/{ELEVENLABS_VOICE}",
+        data=body, headers={"xi-api-key": key, "Content-Type": "application/json",
+                            "Accept": "audio/mpeg"})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return r.read()
+    except Exception:
+        return None
+
+
+def _log_convo(role: str, text: str) -> None:
+    try:
+        with open(CONVO_LOG, "a") as f:
+            f.write(json.dumps({"when": datetime.now().isoformat(timespec="seconds"),
+                                "role": role, "text": text}) + "\n")
+    except OSError:
+        pass
+
+
 TOOLS = [
     {"name": "get_datetime", "description": "Current local date and time.",
      "input_schema": {"type": "object", "properties": {}}},
@@ -234,6 +333,14 @@ TOOLS = [
      "input_schema": {"type": "object",
                       "properties": {"path": {"type": "string"}, "content": {"type": "string"}},
                       "required": ["path", "content"]}},
+    {"name": "web_search", "description": "Search the web; returns the top results (titles + URLs). "
+                                          "Use to research or check current information online.",
+     "input_schema": {"type": "object", "properties": {"query": {"type": "string"}},
+                      "required": ["query"]}},
+    {"name": "web_fetch", "description": "Fetch a web page and return its readable text. Use after "
+                                         "web_search to actually read a page.",
+     "input_schema": {"type": "object", "properties": {"url": {"type": "string"}},
+                      "required": ["url"]}},
 ]
 
 _DISPATCH = {
@@ -246,6 +353,8 @@ _DISPATCH = {
     "applescript": lambda a: tool_applescript(a.get("script", "")),
     "read_file": lambda a: tool_read_file(a.get("path", "")),
     "write_file": lambda a: tool_write_file(a.get("path", ""), a.get("content", "")),
+    "web_search": lambda a: tool_web_search(a.get("query", "")),
+    "web_fetch": lambda a: tool_web_fetch(a.get("url", "")),
 }
 
 
@@ -253,7 +362,7 @@ _DISPATCH = {
 # the agent                                                                   #
 # --------------------------------------------------------------------------- #
 class Jarvis:
-    def __init__(self, model: str = MODEL, max_turns: int = 6):
+    def __init__(self, model: str = MODEL, max_turns: int = 8):
         import anthropic
         key = _load_key()
         self.client = anthropic.Anthropic(api_key=key) if key else anthropic.Anthropic()
@@ -286,7 +395,10 @@ class Jarvis:
             self.history.append({"role": "user", "content": results})
         else:
             final = final or "Sorry, I got stuck in a loop there."
-        return final.strip() or "(no reply)"
+        reply = final.strip() or "(no reply)"
+        _log_convo("user", text)
+        _log_convo("jarvis", reply)
+        return reply
 
 
 # --------------------------------------------------------------------------- #
@@ -334,6 +446,7 @@ form{flex:1;display:flex}
 </footer>
 <script>
 const MODEL_DEFAULT="{{MODEL}}";
+const TTS_MODE="{{TTS}}";
 const $=id=>document.getElementById(id);
 const log=$('log'),live=$('live'),talk=$('talk'),talkTxt=$('talkTxt'),form=$('form'),input=$('text'),
   voiceSel=$('voice'),modelSel=$('model'),modelLabel=$('modelLabel');
@@ -353,7 +466,8 @@ function pickDefault(list){const score=v=>{const n=v.name.toLowerCase();
   if(v.lang&&v.lang.toLowerCase()==='en-us')return 3;
   if(v.lang&&v.lang.toLowerCase().startsWith('en'))return 2;return 1;};
   return [...list].sort((a,b)=>score(b)-score(a))[0];}
-function loadVoices(){voices=speechSynthesis.getVoices();if(!voices.length)return;
+function loadVoices(){if(TTS_MODE==='elevenlabs'){voiceSel.innerHTML='<option>ElevenLabs - server voice</option>';voiceSel.disabled=true;return;}
+  voices=speechSynthesis.getVoices();if(!voices.length)return;
   const en=voices.filter(v=>v.lang&&v.lang.toLowerCase().startsWith('en'));const list=en.length?en:voices;
   voiceSel.innerHTML='';list.forEach(v=>{const o=document.createElement('option');o.value=v.name;o.textContent=v.name.replace(/ \\(.+\\)/,'')+' - '+v.lang;voiceSel.appendChild(o);});
   const saved=localStorage.getItem('jarvisVoice'),def=pickDefault(list);
@@ -365,12 +479,17 @@ function add(who,t){const d=document.createElement('div');d.className='msg '+who
 function setState(s){state=s;const m={thinking:'thinking...',speaking:'speaking...',idle:''};if(s!=='listening')live.textContent=m[s]||'';}
 function showLive(txt){live.textContent='';const a=document.createElement('span');a.textContent='listening... ';
   const b=document.createElement('span');b.className='it';b.textContent=txt;live.append(a,b);}
-function speak(t){try{const u=new SpeechSynthesisUtterance(t);u.rate=1.0;u.pitch=1.0;
-  const v=voices.find(x=>x.name===voiceSel.value);if(v)u.voice=v;
-  setState('speaking');
-  u.onend=()=>{convo?listen():setState('idle');};
-  u.onerror=()=>{convo?listen():setState('idle');};
-  speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){if(convo)listen();}}
+async function speak(t){setState('speaking');
+  if(TTS_MODE==='elevenlabs'){try{
+    const r=await fetch('/speak',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t})});
+    if(r.ok){const url=URL.createObjectURL(await r.blob());const a=new Audio(url);
+      a.onended=()=>{URL.revokeObjectURL(url);convo?listen():setState('idle');};
+      a.onerror=()=>{convo?listen():setState('idle');};a.play();return;}}catch(e){}}
+  try{const u=new SpeechSynthesisUtterance(t);u.rate=1.0;u.pitch=1.0;
+    const v=voices.find(x=>x.name===voiceSel.value);if(v)u.voice=v;
+    u.onend=()=>{convo?listen():setState('idle');};
+    u.onerror=()=>{convo?listen():setState('idle');};
+    speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){if(convo)listen();}}
 async function ask(t){add('you',t);try{rec&&rec.stop();}catch(e){}setState('thinking');
   try{const r=await fetch('/ask',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({text:t,model:modelSel.value})});
@@ -406,7 +525,9 @@ def serve(port: int = 8765):
             pass
 
         def do_GET(self):
-            body = PAGE.replace("{{MODEL}}", jarvis.model).encode("utf-8")
+            body = (PAGE.replace("{{MODEL}}", jarvis.model)
+                        .replace("{{TTS}}", "elevenlabs" if elevenlabs_enabled() else "browser")
+                    ).encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Content-Length", str(len(body)))
@@ -415,8 +536,24 @@ def serve(port: int = 8765):
 
         def do_POST(self):
             length = int(self.headers.get("Content-Length", 0))
+            raw = self.rfile.read(length) or b"{}"
+            if self.path.rstrip("/") == "/speak":          # ElevenLabs audio for the browser
+                try:
+                    audio = elevenlabs_tts(str(json.loads(raw).get("text", "")))
+                except Exception:
+                    audio = None
+                if audio:
+                    self.send_response(200)
+                    self.send_header("Content-Type", "audio/mpeg")
+                    self.send_header("Content-Length", str(len(audio)))
+                    self.end_headers()
+                    self.wfile.write(audio)
+                else:
+                    self.send_response(204)
+                    self.end_headers()
+                return
             try:
-                data = json.loads(self.rfile.read(length) or b"{}")
+                data = json.loads(raw)
                 reply = jarvis.ask(str(data.get("text", "")), model=data.get("model"))
             except Exception as e:
                 reply = f"(server error: {type(e).__name__})"
@@ -429,6 +566,7 @@ def serve(port: int = 8765):
 
     server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
     print(f"Jarvis is listening at  http://localhost:{port}   (model: {jarvis.model})")
+    print(f"Voice: {'ElevenLabs' if elevenlabs_enabled() else 'browser (set ELEVENLABS_API_KEY for a human voice)'}")
     print("Open it in Chrome, hit 'Start conversation', and just talk.  Ctrl-C to stop.")
     try:
         server.serve_forever()
@@ -443,8 +581,16 @@ def main(argv: list[str] | None = None):
         reply = Jarvis().ask(text)
         print(reply)
         if "--say" in argv:
+            audio = elevenlabs_tts(reply)
             try:
-                subprocess.run(["say", reply], timeout=30)
+                if audio:
+                    import tempfile
+                    tmp = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
+                    tmp.write(audio)
+                    tmp.close()
+                    subprocess.run(["afplay", tmp.name], timeout=60)
+                else:
+                    subprocess.run(["say", reply], timeout=30)
             except Exception:
                 pass
         return
