@@ -200,7 +200,8 @@ def test_jarvis_memory_roundtrip_survives_punctuation():
 
 def test_jarvis_shell_runs_but_guards_catastrophe():
     import mentat.jarvis as J
-    for c in ("rm -rf /", "rm -rf ~", "sudo rm -rf /*", "dd if=/dev/zero of=/dev/disk0",
+    for c in ("rm -rf /", 'rm -rf "/"', "rm -rf '/'",   # quoted targets must not bypass the guard
+              "rm -rf ~", "sudo rm -rf /*", "dd if=/dev/zero of=/dev/disk0",
               'rm -rf "$HOME"', "rm -rf /etc", "rm -rf /System", "rm -rf ~/Documents",
               "rm -rf /usr/local", "find / -delete",
               "rm -rf ~/.ssh", "rm -rf ~/mentat", "rm -rf ~/.zshrc", "shred -u ~/.ssh/id_rsa"):
