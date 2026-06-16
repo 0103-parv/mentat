@@ -33,5 +33,34 @@ Rules I'm holding myself to:
 ## Log
 
 - **01:38** — Session start. Restarted Jarvis (hardened audio fallback live).
-  Wrote this log + roadmap. Kicking off Phase 1: a multi-agent audit of the whole
+  Wrote this log + roadmap. Kicked off Phase 1: a multi-agent audit of the whole
   codebase (find real bugs + high-value improvements, adversarially verified).
+- **02:15** — **Phase 1 done.** The audit (63 agents, ~30 min) returned 38 verified
+  findings; I fixed all high/medium-severity ones + the high-value lows across 6
+  reviewable commits, each with the test suite green (17 tests). Highlights:
+  - **jarvis security**: the catastrophic-command guard was *bypassable* —
+    `rm -rf "$HOME"`, `rm -rf /etc`, `/System`, `~/Documents`, `find / -delete` all
+    slipped through. Rewrote it (now 17/17 blocked, 0 false positives). Also fixed a
+    cross-request history data race (added a lock + history cap), made `ask()`
+    turn-atomic (a failed turn no longer poisons later requests), and hardened the
+    HTTP handler (Content-Length parse + read timeout).
+  - **math sandbox**: SIGALRM couldn't stop a C-level memory/CPU bomb; now candidate
+    code runs in a spawned, resource-capped, hard-killable child process. Also
+    rejects float/dup-returning constructions (were silently truncated).
+  - **kernel**: elite pool was collapsing to 12 copies of one candidate (killing
+    recombination) — added dedup + NaN guard; wrapped `verify()` so a raising
+    verifier quarantines instead of crashing the run.
+  - **parsing**: robust .env key parsing, balanced-array JSON extraction, salvaging
+    truncated code fences; self-research no longer fabricates a "winning" lesson from
+    a sub-baseline candidate; memory now persists across `improve`/`think` runs.
+  Remaining audit items are cosmetic lows (log wording, a non-true median, etc.) —
+  deferred in favour of building. Next: Phase 2/3 — supreme grounded memory for Jarvis.
+- **02:35** — **Phase 2 done: supreme grounded memory.** Wired the kernel's grounded
+  decision-card memory into Jarvis. A new `learn_lesson(when, do, avoid, evidence)`
+  tool stores a durable behavioural rule — but only if it's *grounded* (the claim
+  must share real vocabulary with the user's actual words), so Jarvis can't fabricate
+  rules. Learned lessons are injected at the top of every future conversation.
+  Verified live: told Jarvis a rule, it called `learn_lesson`, the firewall accepted
+  it (grounded), and it persisted. This is the brain-like correction → lesson →
+  recall loop, now in the assistant itself. 18 tests green.
+  Next: Phase 3 — the Hub (Jarvis dispatches to the discovery / self-research engines).
