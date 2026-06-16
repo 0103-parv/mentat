@@ -206,6 +206,21 @@ def test_jarvis_web_and_voice_helpers():
     assert J.tool_add_reminder("") == "(nothing to remind about)"
 
 
+def test_self_research_verifier_when_available():
+    try:
+        import numpy  # noqa: F401
+        from mentat.self_research import MaxCutHeuristic
+        prob = MaxCutHeuristic()
+    except Exception:
+        print("  (skipped: numpy / alpha-evolver not available on this interpreter)")
+        return
+    good = prob.verify(prob.baseline)
+    assert not good.suspicious and good.score > 0.5             # baseline verifies through the real eval
+    bad = prob.verify({"init": ["rank", "flip_gain"], "move": "flip_gain",
+                       "steps_per_node": 4, "restarts": 2, "tabu_window": 1})
+    assert bad.suspicious                                       # init can't use a dynamic field -> rejected
+
+
 def _run_all():
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for fn in fns:

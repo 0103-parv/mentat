@@ -105,16 +105,26 @@ python3 -m mentat.jarvis                       # serve the voice UI -> open in C
 python3 -m mentat.jarvis --text "how's mentat going?" --say   # one-shot, spoken
 ```
 
+### Improve your own work: self-research
+
+`mentat/improve.py` turns the loop on the user's *own* project: the core proposes a
+Max Cut heuristic in alpha-evolver's DSL, and the verifier is alpha-evolver's own
+offline benchmark (`maxcut_lab.evaluate_program`). It beat the baseline —
+`move = add(flip_gain, zscore(flip_gain))`, fitness **0.7800 vs 0.7788** — keeping
+`steps_per_node` low because it inferred the cost structure, and only claimed the
+win after the real eval confirmed it. The discovery engine improving your research,
+scored by your research.
+
 ## Roadmap
 
 1. ~~Real proposer — an LLM reasoning core driving the loop.~~ ✓
 2. Real verifiers — three flagships:
    - ~~**Math / algorithms** — propose constructions as code, verify by execution +
      exhaustive counterexample search (`mentat.discover`).~~ ✓
-   - ~~**Personal-ops Jarvis** — tools + durable memory + browser voice (`mentat.jarvis`).~~ ✓
-   - **Self-research** — point the loop at the swechats / alpha-evolver evals. *(next)*
+   - ~~**Personal-ops Jarvis** — tools + machine control + durable memory + voice (`mentat.jarvis`).~~ ✓
+   - ~~**Self-research** — beat alpha-evolver's own Max Cut benchmark (`mentat.improve`).~~ ✓
 3. **Transfer** — lessons learned on one problem accelerate a *different* one
-   (swechats already has the counterfactual harness to measure it).
+   (swechats already has the counterfactual harness to measure it). *(next)*
 4. **The hub** — agents, tools, and channels around the spine.
 
 ## Run it
