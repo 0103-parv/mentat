@@ -149,6 +149,24 @@ def test_math_counterexample_search_and_sandbox():
     assert run_construction("def build(n):\n    return list(range(1, 4))", 10) == [1, 2, 3]
 
 
+def test_math_sandbox_is_process_bounded():
+    import time
+    from mentat.math_lab import run_construction
+    t = time.time()
+    try:                                   # a CPU bomb must be killed, not hang
+        run_construction("def build(n):\n    x = 0\n    while True:\n        x += 1", 30, time_limit=2.0)
+        assert False, "resource bomb was not stopped"
+    except (TimeoutError, ValueError):
+        pass
+    assert time.time() - t < 8, "sandbox did not bound runtime"
+    try:                                   # floats rejected, not silently truncated
+        run_construction("def build(n):\n    return [1, 2.5, 4]", 30)
+        assert False, "float construction was not rejected"
+    except ValueError:
+        pass
+    assert run_construction("def build(n):\n    return [1, 2, 5, 11]", 30) == [1, 2, 5, 11]
+
+
 def test_math_loop_keeps_valid_quarantines_broken():
     from mentat.core import solve
     from mentat.math_lab import CodeProposer, GREEDY, SidonSet

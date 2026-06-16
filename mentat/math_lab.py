@@ -18,7 +18,7 @@ Run:  python3 -m mentat.discover     (needs a reasoning core; see mentat.reasoni
 from __future__ import annotations
 
 import builtins
-import signal
+import multiprocessing as mp
 from dataclasses import dataclass, field
 
 from .core import Lesson, Memory, Mind, Problem, Verdict
@@ -37,34 +37,77 @@ _FORBIDDEN = ("import", "__", "exec(", "eval(", "compile(", "globals(", "locals(
               "socket", "lambda")  # lambda banned only to keep the static scan simple
 
 
-def run_construction(code: str, n: int, time_limit: float = 2.0) -> list[int]:
-    """Execute a candidate `def build(n): ...` under tight restrictions and return
-    the integer list it produces. Raises on anything unsafe, malformed, or slow."""
-    for tok in _FORBIDDEN:
-        if tok in code:
-            raise ValueError(f"forbidden construct: {tok!r}")
-    compiled = compile(code, "<candidate>", "exec")
-    ns: dict = {"__builtins__": _SAFE_BUILTINS}
-
-    def _timeout(signum, frame):
-        raise TimeoutError("construction exceeded the time limit")
-
-    prev = signal.signal(signal.SIGALRM, _timeout)
-    signal.setitimer(signal.ITIMER_REAL, time_limit)
+def _construction_child(code: str, n: int, q) -> None:
+    """Runs in a spawned child process: apply OS resource caps, then build + validate.
+    A child process is the real boundary — SIGALRM in-thread cannot interrupt a single
+    C-level allocation (`[0]*n*n`) or huge-integer op (`9**9**9`)."""
     try:
-        exec(compiled, ns)
+        import resource
+        try:
+            resource.setrlimit(resource.RLIMIT_CPU, (3, 3))            # CPU seconds
+        except (ValueError, OSError):
+            pass
+        try:
+            soft = 1024 * 1024 * 1024                                  # 1 GB address space
+            resource.setrlimit(resource.RLIMIT_AS, (soft, soft))      # Linux/CI; no-op on macOS
+        except (ValueError, OSError):
+            pass
+    except Exception:
+        pass
+    try:
+        for tok in _FORBIDDEN:
+            if tok in code:
+                raise ValueError(f"forbidden construct: {tok!r}")
+        ns = {"__builtins__": _SAFE_BUILTINS}
+        exec(compile(code, "<candidate>", "exec"), ns)
         build = ns.get("build")
         if not callable(build):
             raise ValueError("no build(n) defined")
         raw = build(n)
-        result = [int(x) for x in raw]
-    finally:
-        signal.setitimer(signal.ITIMER_REAL, 0)
-        signal.signal(signal.SIGALRM, prev)
+        if not isinstance(raw, (list, tuple)):
+            raise ValueError("build(n) must return a list/tuple of ints")
+        if not all(type(x) is int for x in raw):              # reject floats AND bools
+            raise ValueError("build(n) must return plain ints")
+        result = list(raw)
+        if len(result) > 10 * n + 100:
+            raise ValueError("build(n) returned an implausibly large set")
+        if any(x < 1 or x > n for x in result):
+            raise ValueError("an element fell outside [1, n]")
+        if len(set(result)) != len(result):
+            raise ValueError("build(n) returned duplicate elements")
+        q.put(("ok", sorted(result)))
+    except Exception as e:
+        q.put(("err", f"{type(e).__name__}: {e}"))
 
-    if any(x < 1 or x > n for x in result):
-        raise ValueError("an element fell outside [1, n]")
-    return sorted(set(result))
+
+_MP = mp.get_context("spawn")
+
+
+def run_construction(code: str, n: int, time_limit: float = 2.0) -> list[int]:
+    """Execute a candidate `def build(n): ...` in a resource-limited child process and
+    return the integer list it produced. Raises on anything unsafe, malformed, slow,
+    or resource-abusive. The subprocess (CPU/memory caps + hard kill) is the real
+    boundary; the static `_FORBIDDEN` scan is only a cheap first pass."""
+    for tok in _FORBIDDEN:                       # cheap reject before paying to spawn
+        if tok in code:
+            raise ValueError(f"forbidden construct: {tok!r}")
+    q = _MP.Queue()
+    p = _MP.Process(target=_construction_child, args=(code, n, q))
+    p.start()
+    p.join(time_limit)
+    if p.is_alive():
+        p.terminate()
+        p.join(1)
+        if p.is_alive():
+            p.kill()
+        raise TimeoutError("construction exceeded the time limit")
+    try:
+        status, payload = q.get_nowait()
+    except Exception:
+        raise ValueError("construction produced no result (it crashed or was killed)")
+    if status == "ok":
+        return payload
+    raise ValueError(payload)
 
 
 def counterexample_sidon(s: list[int]):
@@ -92,6 +135,8 @@ class SidonSet(Problem):
         # Validity is checked at a SECOND size too, so a construction hardcoded for
         # n can't fake it — a real algorithm generalises; a memorised table doesn't.
         self.check_ns = check_ns or [n, n // 2 + 11]
+        if n not in self.check_ns:               # self.n must be scored, or primary stays None
+            self.check_ns = [n] + self.check_ns
         self.statement = f"find the largest Sidon set in [1, {n}]"
 
     def brief(self) -> str:
@@ -115,6 +160,8 @@ class SidonSet(Problem):
                 if n == self.n:
                     primary = s
             size = len(primary)
+            if size == 0:                        # an empty construction is not a real attempt
+                return Verdict(False, -1e9, "construction produced an empty set", suspicious=True)
             shown = primary[:12]
             tail = "..." if size > 12 else ""
             return Verdict(size >= self.target, float(size),
