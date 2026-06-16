@@ -50,6 +50,36 @@ def _normalize(p: dict) -> dict:
     }
 
 
+def _extract_programs(text: str) -> list:
+    """First balanced top-level JSON array holding object(s); tolerant of ```json
+    fences and stray brackets (a greedy [.*] match discards the whole reply)."""
+    stripped = re.sub(r"```(?:json)?", "", text).strip().strip("`").strip()
+    for cand in (stripped, text):
+        try:
+            v = json.loads(cand)
+            if isinstance(v, list) and any(isinstance(x, dict) for x in v):
+                return v
+        except Exception:
+            pass
+    depth, start = 0, None
+    for i, ch in enumerate(text):
+        if ch == "[":
+            if depth == 0:
+                start = i
+            depth += 1
+        elif ch == "]" and depth > 0:
+            depth -= 1
+            if depth == 0 and start is not None:
+                try:
+                    v = json.loads(text[start:i + 1])
+                    if isinstance(v, list) and any(isinstance(x, dict) for x in v):
+                        return v
+                except Exception:
+                    pass
+                start = None
+    return []
+
+
 # A few valid hand-written programs — offline fallback + something to evolve from.
 BASELINE_VARIANTS = [
     {"init": ["rank", "degree"], "move": "flip_gain",
@@ -119,6 +149,8 @@ class MaxCutHeuristic(Problem):
     def distill(self, best_candidate, best_verdict) -> list[Lesson]:
         if best_candidate is None or best_verdict is None or not best_verdict.detail:
             return []
+        if not best_verdict.passed:          # only learn from an ACTUAL win over the baseline
+            return []
         return [Lesson(
             when="designing a max cut move heuristic to beat the baseline fitness",
             do="reuse the verified move heuristic reaching this fitness",
@@ -158,8 +190,7 @@ class HeuristicProposer:
         out, self.last, self.note = [], [], ""
         try:
             text = self.core.complete_text(self._SYSTEM, user, max_tokens=3000)
-            m = re.search(r"\[.*\]", text, re.S)
-            arr = json.loads(m.group(0)) if m else []
+            arr = _extract_programs(text)
             for p in arr:
                 if isinstance(p, dict):
                     prog = _normalize(p)

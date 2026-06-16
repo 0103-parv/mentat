@@ -38,11 +38,21 @@ def _load_key() -> str | None:
             if p.is_file():
                 for line in p.read_text().splitlines():
                     line = line.strip()
-                    if line.startswith("ANTHROPIC_API_KEY"):
-                        _, _, val = line.partition("=")
-                        val = val.strip().strip('"').strip("'")
-                        if val:
-                            return val
+                    if not line or line.startswith("#"):
+                        continue
+                    key, sep, val = line.partition("=")
+                    if not sep:
+                        continue
+                    if key.strip().removeprefix("export ").strip() != "ANTHROPIC_API_KEY":
+                        continue                  # exact key only (not ..._BACKUP etc.)
+                    val = val.strip()
+                    if val[:1] in ("'", '"'):     # quoted: take exactly what's inside
+                        end = val.find(val[0], 1)
+                        val = val[1:end] if end != -1 else val[1:]
+                    else:                         # unquoted: drop a trailing inline comment
+                        val = val.split(" #", 1)[0].strip()
+                    if val:
+                        return val
         except OSError:
             pass
     return None
@@ -61,18 +71,19 @@ def extract_json_list(text: str) -> list[str]:
 
     Prefers a JSON array; falls back to one-candidate-per-line so a stray
     sentence of preamble never breaks the loop."""
-    m = re.search(r"\[.*\]", text, re.S)
-    if m:
+    for m in re.findall(r"\[[^\[\]]*\]", text, re.S):   # each balanced flat array, not greedy
         try:
-            arr = json.loads(m.group(0))
+            arr = json.loads(m)
             if isinstance(arr, list):
-                return [str(x).strip() for x in arr if str(x).strip()]
+                vals = [str(x).strip() for x in arr if str(x).strip()]
+                if vals:
+                    return vals
         except (json.JSONDecodeError, ValueError):
             pass
-    out = []
+    out, expr = [], re.compile(r"^[\sxX0-9.+\-*/()eE]+$")   # expression-shaped lines only
     for line in text.splitlines():
         line = line.strip().lstrip("-*0123456789.) ").strip().strip("`").strip()
-        if line and any(c in line for c in "x0123456789"):
+        if line and expr.match(line) and any(c in line for c in "xX"):
             out.append(line)
     return out
 
@@ -85,7 +96,20 @@ def extract_code_blocks(text: str) -> list[str]:
     blocks = [b for b in blocks if "def build" in b]
     if blocks:
         return blocks
-    return [text.strip()] if "def build" in text else []
+    if "def build" not in text:
+        return []
+    # Salvage a truncated/unterminated fence: drop the opening fence + any prose
+    # before `def build`, and any stray trailing fence — never return prose+backticks.
+    salvaged = text
+    m = re.search(r"```(?:python)?\s*\n", salvaged)
+    if m:
+        salvaged = salvaged[m.end():]
+    salvaged = salvaged.split("```", 1)[0]
+    idx = salvaged.find("def build")
+    if idx > 0:
+        salvaged = salvaged[salvaged.rfind("\n", 0, idx) + 1:]
+    salvaged = salvaged.strip()
+    return [salvaged] if salvaged else []
 
 
 @dataclass
