@@ -25,6 +25,7 @@ import urllib.request
 from datetime import datetime
 from pathlib import Path
 
+from .core import Lesson as _Lesson, Memory as _Memory
 from .reasoning import DEFAULT_MODEL, _load_key
 import os
 
@@ -33,6 +34,7 @@ ALLOWED_MODELS = {"claude-opus-4-8", "claude-sonnet-4-6", "claude-haiku-4-5"}
 MEMORY_PATH = Path(__file__).parent / "jarvis_memory.json"
 ACTIONS_LOG = Path(__file__).parent / "jarvis_actions.log"
 CONVO_LOG = Path(__file__).parent / "jarvis_conversation.jsonl"
+LESSONS_PATH = Path(__file__).parent / "jarvis_lessons.json"   # grounded decision-cards
 ELEVENLABS_VOICE = os.environ.get("ELEVENLABS_VOICE_ID", "21m00Tcm4TlvDq8ikWAM")  # default: Rachel
 REPOS = {name: Path.home() / name for name in ("swechats", "alpha-evolver", "mentat")}
 
@@ -102,7 +104,10 @@ SYSTEM = (
     "sentences, plain conversational English, NO markdown, NO bullet lists, no emoji. "
     "Be warm, direct, and proactive. Use your tools when they'd help rather than "
     "guessing. Whenever the user states a preference, decision, or fact about "
-    "themselves, call `remember` so you don't forget it next time. "
+    "themselves, call `remember` so you don't forget it next time. When the user CORRECTS "
+    "you or states a rule to follow in future ('always...', 'never...', 'next time do X'), "
+    "call `learn_lesson` with their actual words as `evidence` — you will see your learned "
+    "lessons at the top of future chats and must follow them. "
     "You can also CONTROL this Mac: `shell` runs any terminal command, `applescript` "
     "automates native apps, `read_file` / `write_file` access files, and `add_reminder` / "
     "`calendar_today` reach your Reminders and Calendar. Use them to "
@@ -193,6 +198,32 @@ def tool_recall(query: str = "") -> str:
             return " | ".join(hits[-5:])
         # No keyword hit — return recent notes rather than wrongly claiming nothing.
     return " | ".join(m["note"] for m in mem[-5:])
+
+
+def jarvis_lessons_context(k: int = 6) -> str:
+    """Top grounded decision-cards Jarvis has learned, for injection into the prompt."""
+    try:
+        return _Memory.load(LESSONS_PATH).context(k=k)
+    except Exception:
+        return ""
+
+
+def tool_learn_lesson(when: str, do: str, avoid: str = "", evidence: str = "") -> str:
+    """Learn a durable, GROUNDED behavioral rule (a decision-card). The kernel's
+    firewall rejects it unless the claim shares real vocabulary with the evidence,
+    so Jarvis can't fabricate rules — they must be grounded in what the user said."""
+    when, do, avoid, evidence = when.strip(), do.strip(), avoid.strip(), evidence.strip()
+    if not when or not do:
+        return "(a lesson needs at least `when` and `do`)"
+    mem = _Memory.load(LESSONS_PATH)
+    lesson = _Lesson(when=when, do=do, avoid=avoid, evidence=evidence)
+    if not lesson.grounded():
+        return ("(not learned — the rule isn't grounded in the evidence; set `evidence` to the "
+                "user's actual words so the claim shares real vocabulary with them.)")
+    learned = mem.learn(lesson)
+    mem.save(LESSONS_PATH)
+    _log_action("learn_lesson", f"when {when} -> {do}")
+    return f"Learned: when {when}, {do}." if learned else "(already knew that — reinforced it.)"
 
 
 def tool_shell(command: str, timeout: int = 60) -> str:
@@ -404,6 +435,15 @@ TOOLS = [
                       "required": ["note"]}},
     {"name": "recall", "description": "Recall what the user has asked you to remember. Optional query.",
      "input_schema": {"type": "object", "properties": {"query": {"type": "string"}}}},
+    {"name": "learn_lesson",
+     "description": "Learn a DURABLE behavioral rule when the user corrects you or states a "
+                    "preference/rule to follow in future. `when` = the recurring situation, "
+                    "`do` = what to do, `avoid` = the anti-pattern, `evidence` = the user's "
+                    "actual words (required — the rule must be grounded in them).",
+     "input_schema": {"type": "object",
+                      "properties": {"when": {"type": "string"}, "do": {"type": "string"},
+                                     "avoid": {"type": "string"}, "evidence": {"type": "string"}},
+                      "required": ["when", "do", "evidence"]}},
     {"name": "shell",
      "description": "Run any shell command on the user's Mac and return its output. Full "
                     "terminal access. Use for files, apps, searches, status, automation.",
@@ -443,6 +483,8 @@ _DISPATCH = {
     "research_status": lambda a: tool_research_status(a.get("repo", "")),
     "remember": lambda a: tool_remember(a.get("note", "")),
     "recall": lambda a: tool_recall(a.get("query", "")),
+    "learn_lesson": lambda a: tool_learn_lesson(a.get("when", ""), a.get("do", ""),
+                                                a.get("avoid", ""), a.get("evidence", "")),
     "shell": lambda a: tool_shell(a.get("command", ""), int(a.get("timeout", 60) or 60)),
     "applescript": lambda a: tool_applescript(a.get("script", "")),
     "read_file": lambda a: tool_read_file(a.get("path", "")),
@@ -487,11 +529,14 @@ class Jarvis:
         with self._lock:                       # one turn at a time; history stays valid
             snapshot = len(self.history)        # roll-back point if the turn fails
             self.history.append({"role": "user", "content": text})
+            lessons = jarvis_lessons_context()  # grounded rules learned from past corrections
+            sys_prompt = SYSTEM + (f"\n\nWhat you have LEARNED (follow these):\n{lessons}"
+                                   if lessons else "")
             final = ""
             try:
                 for _ in range(self.max_turns):
                     resp = self.client.messages.create(
-                        model=use_model, max_tokens=1024, system=SYSTEM,
+                        model=use_model, max_tokens=1024, system=sys_prompt,
                         tools=TOOLS, messages=self.history)
                     self.history.append({"role": "assistant", "content": resp.content})
                     text_now = "".join(b.text for b in resp.content if b.type == "text")

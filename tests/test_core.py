@@ -229,6 +229,27 @@ def test_jarvis_web_and_voice_helpers():
     assert J.tool_add_reminder("") == "(nothing to remind about)"
 
 
+def test_jarvis_learn_lesson_is_grounded():
+    import mentat.jarvis as J
+    saved = J.LESSONS_PATH
+    try:
+        with tempfile.TemporaryDirectory() as d:
+            J.LESSONS_PATH = Path(d) / "lessons.json"
+            # an ungrounded rule (claim shares no vocabulary with the evidence) is REFUSED
+            r = J.tool_learn_lesson(when="deploying code", do="run the tests first",
+                                    evidence="the weather is nice today")
+            assert "not learned" in r
+            assert J.jarvis_lessons_context() == ""
+            # a grounded rule (evidence shares real vocabulary) is learned + recalled
+            r = J.tool_learn_lesson(when="deploying the app", do="run the tests before deploying",
+                                    evidence="always run the tests before you deploy the app")
+            assert "Learned" in r
+            ctx = J.jarvis_lessons_context().lower()
+            assert "tests" in ctx and "deploy" in ctx
+    finally:
+        J.LESSONS_PATH = saved
+
+
 def test_elite_pool_dedups_and_guards_nan():
     from mentat.core import Memory
     m = Memory()
