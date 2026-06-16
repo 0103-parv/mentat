@@ -124,6 +124,10 @@ SYSTEM = (
     "hard limits: you "
     "cannot bypass passwords or security, cannot create accounts or act as the user, and "
     "cannot watch video — say so plainly rather than pretending. "
+    "You can dispatch HEAVY THINKING to specialist engines: `improve_maxcut` improves the "
+    "user's own alpha-evolver heuristic and `discover_sidon` discovers a verified large Sidon "
+    "set. They take a minute or two and make real, verified progress — run them only when the "
+    "user asks you to do research or solve something hard. "
     "If you don't know something and have no tool for it, say so."
 )
 
@@ -224,6 +228,59 @@ def tool_learn_lesson(when: str, do: str, avoid: str = "", evidence: str = "") -
     mem.save(LESSONS_PATH)
     _log_action("learn_lesson", f"when {when} -> {do}")
     return f"Learned: when {when}, {do}." if learned else "(already knew that — reinforced it.)"
+
+
+def tool_improve_maxcut(generations: int = 4) -> str:
+    """Dispatch to the self-research engine: propose a Max Cut heuristic and verify it
+    against alpha-evolver's OWN offline benchmark. Returns best verified fitness vs baseline."""
+    try:
+        from .core import Memory, solve
+        from .reasoning import AnthropicCore, core_available
+        from .self_research import HeuristicProposer, MaxCutHeuristic, _normalize
+    except Exception as e:
+        return f"(self-research engine unavailable: {type(e).__name__})"
+    if not core_available():
+        return "(no reasoning core available to drive the engine)"
+    try:
+        problem = MaxCutHeuristic()
+    except Exception as e:
+        return f"(the Max Cut verifier needs alpha-evolver + numpy: {type(e).__name__})"
+    gens = max(1, min(int(generations or 4), 8))
+    _log_action("engine", f"improve_maxcut gens={gens}")
+    res = solve(problem, HeuristicProposer(core=AnthropicCore()), Memory(),
+                generations=gens, k=5, log=lambda *_: None)
+    delta = res.best_score - problem.baseline_fitness
+    try:
+        move = problem.lab.expr_to_str(_normalize(res.best_candidate)["move"])
+    except Exception:
+        move = "(unavailable)"
+    verdict = "beat the baseline" if res.solved else ("edged it" if delta > 0 else "did not beat it")
+    return (f"Ran the self-research engine {gens} generations on your alpha-evolver Max Cut "
+            f"benchmark: best verified fitness {res.best_score:.4f} vs baseline "
+            f"{problem.baseline_fitness:.4f} ({delta:+.4f}) — {verdict}. Best move: {move}")
+
+
+def tool_discover_sidon(n: int = 100, target: int = 10, generations: int = 4) -> str:
+    """Dispatch to the math-discovery engine: find a large Sidon set in [1, n] (all
+    pairwise sums distinct), proven by exhaustive counterexample search."""
+    try:
+        from .core import Memory, solve
+        from .math_lab import CodeProposer, SidonSet
+        from .reasoning import AnthropicCore, core_available
+    except Exception as e:
+        return f"(discovery engine unavailable: {type(e).__name__})"
+    if not core_available():
+        return "(no reasoning core available to drive the engine)"
+    n = max(20, min(int(n or 100), 500))
+    target = max(2, int(target or 10))
+    gens = max(1, min(int(generations or 4), 8))
+    _log_action("engine", f"discover_sidon n={n} target={target} gens={gens}")
+    problem = SidonSet(n=n, target=target)
+    res = solve(problem, CodeProposer(core=AnthropicCore()), Memory(),
+                generations=gens, k=4, log=lambda *_: None)
+    size = int(res.best_score) if res.best_score > 0 else 0
+    return (f"Ran the discovery engine {gens} generations: best VERIFIED Sidon set in "
+            f"[1,{n}] has size {size} (target {target}). {res.verdict.detail[:140]}")
 
 
 def tool_shell(command: str, timeout: int = 60) -> str:
@@ -444,6 +501,17 @@ TOOLS = [
                       "properties": {"when": {"type": "string"}, "do": {"type": "string"},
                                      "avoid": {"type": "string"}, "evidence": {"type": "string"}},
                       "required": ["when", "do", "evidence"]}},
+    {"name": "improve_maxcut",
+     "description": "Dispatch to the self-research engine to try to beat the user's own "
+                    "alpha-evolver Max Cut heuristic, scored by alpha-evolver's real benchmark. "
+                    "Heavy (~1-2 min); only run when the user asks for real research/discovery.",
+     "input_schema": {"type": "object", "properties": {"generations": {"type": "integer"}}}},
+    {"name": "discover_sidon",
+     "description": "Dispatch to the math-discovery engine to find a large Sidon set in [1,n] "
+                    "(all pairwise sums distinct), proven by exhaustive search. Heavy (~1-2 min).",
+     "input_schema": {"type": "object", "properties": {
+         "n": {"type": "integer"}, "target": {"type": "integer"},
+         "generations": {"type": "integer"}}}},
     {"name": "shell",
      "description": "Run any shell command on the user's Mac and return its output. Full "
                     "terminal access. Use for files, apps, searches, status, automation.",
@@ -485,6 +553,9 @@ _DISPATCH = {
     "recall": lambda a: tool_recall(a.get("query", "")),
     "learn_lesson": lambda a: tool_learn_lesson(a.get("when", ""), a.get("do", ""),
                                                 a.get("avoid", ""), a.get("evidence", "")),
+    "improve_maxcut": lambda a: tool_improve_maxcut(a.get("generations", 4)),
+    "discover_sidon": lambda a: tool_discover_sidon(a.get("n", 100), a.get("target", 10),
+                                                    a.get("generations", 4)),
     "shell": lambda a: tool_shell(a.get("command", ""), int(a.get("timeout", 60) or 60)),
     "applescript": lambda a: tool_applescript(a.get("script", "")),
     "read_file": lambda a: tool_read_file(a.get("path", "")),

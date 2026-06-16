@@ -229,6 +229,14 @@ def test_jarvis_web_and_voice_helpers():
     assert J.tool_add_reminder("") == "(nothing to remind about)"
 
 
+def test_jarvis_engine_tools_wired():
+    import mentat.jarvis as J
+    assert "improve_maxcut" in J._DISPATCH and "discover_sidon" in J._DISPATCH
+    # with no reasoning core / no numpy these degrade to a graceful string, never raise
+    assert isinstance(J.tool_improve_maxcut(1), str)
+    assert isinstance(J.tool_discover_sidon(50, 8, 1), str)
+
+
 def test_jarvis_learn_lesson_is_grounded():
     import mentat.jarvis as J
     saved = J.LESSONS_PATH
