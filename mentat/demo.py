@@ -247,11 +247,13 @@ class LLMProposer:
         try:
             text = self.core.complete_text(self._SYSTEM, user)
             for s in extract_json_list(text)[:k]:
+                if len(s) > 2000:                # reject runaway strings before parsing
+                    continue
                 try:
                     out.append(parse_infix(s))
                     self.last.append(s)
-                except (ValueError, SyntaxError):
-                    pass
+                except (ValueError, SyntaxError, RecursionError):
+                    pass                         # one bad expr skips itself, not the batch
         except Exception as e:  # network/SDK/auth — degrade, don't crash
             self.note = f"core error ({type(e).__name__}); using offline proposer"
         if len(out) < k:                       # top up / explore with mutation
@@ -300,7 +302,13 @@ def main():
         if r.solved:
             break
     mem.save(mem_path)
-    print(f"      -> memory now holds the verified law: {to_str(mem.best_candidate)}")
+    if mem.best_candidate is not None and problem.solved(problem.verify(mem.best_candidate)):
+        print(f"      -> memory now holds the verified law: {to_str(mem.best_candidate)}")
+    elif mem.best_candidate is not None:
+        print(f"      -> LEARN did not verify the law in budget (best RMSE={-mem.best_score:.4f}); "
+              f"WARM starts from partial memory")
+    else:
+        print("      -> LEARN verified no candidate in budget; WARM starts from empty memory")
 
     # [2]/[3] COLD vs WARM across the same 5 seeds. The ONLY difference is whether
     #         the learned memory is loaded first. (This is swechats' counterfactual.)

@@ -12,6 +12,8 @@ Falls back with a clear message if no reasoning core is available.
 from __future__ import annotations
 
 import random
+import sys
+from pathlib import Path
 
 from .core import Memory, solve
 from .demo import LLMProposer, RandomProposer, SymbolicRegression, to_str
@@ -47,7 +49,10 @@ def main():
     print(f"GATE             a candidate is believed only if RMSE < {problem.tol}")
     print("                 (the core sees the data, never the hidden law)\n")
 
-    result = solve(problem, proposer, Memory(), generations=6, k=6, log=_logger(proposer))
+    mem_path = Path(__file__).parent / "think_memory.json"   # warm-start across runs
+    memory = Memory() if "--fresh" in sys.argv else Memory.load(mem_path)
+    result = solve(problem, proposer, memory, generations=6, k=6, log=_logger(proposer))
+    memory.save(mem_path)
 
     print()
     if result.solved:

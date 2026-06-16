@@ -5,6 +5,9 @@ Run:  python3 -m mentat.improve
 """
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
 from .core import Memory, solve
 from .reasoning import AnthropicCore, core_available
 from .self_research import HeuristicProposer, MaxCutHeuristic, _normalize
@@ -25,8 +28,15 @@ def _logger(proposer, problem):
     return log
 
 
-def main():
-    problem = MaxCutHeuristic()
+def main() -> int:
+    try:
+        problem = MaxCutHeuristic()
+    except Exception as e:
+        print(f"Cannot load the alpha-evolver Max Cut verifier: {type(e).__name__}: {e}\n"
+              "This needs alpha-evolver + numpy, which live in alpha-evolver's venv. Run e.g.:\n"
+              "  ~/alpha-evolver/.venv/bin/python -m mentat.improve\n"
+              "  (or source ~/swechats/.env and use ~/swechats/.venv/bin/python, which has numpy)")
+        return 1
     core = AnthropicCore() if core_available() else None
     proposer = HeuristicProposer(core=core or _Broken())
 
@@ -36,23 +46,30 @@ def main():
     print(f"REASONING CORE   {core.model if core else 'offline baseline variants only'}")
     print("GOAL             propose a heuristic that beats the baseline\n")
 
-    memory = Memory()
+    mem_path = Path(__file__).parent / "maxcut_memory.json"   # warm-start across runs
+    memory = Memory() if "--fresh" in sys.argv else Memory.load(mem_path)
     result = solve(problem, proposer, memory, generations=10, k=6, log=_logger(proposer, problem))
+    memory.save(mem_path)
 
     best = result.best_score
     delta = best - problem.baseline_fitness
     print()
-    print(f"BEST verified fitness: {best:.4f}   (baseline {problem.baseline_fitness:.4f}, "
-          f"{'+' if delta >= 0 else ''}{delta:.4f})")
+    print(f"BEST verified fitness: {best:.4f}   (baseline {problem.baseline_fitness:.4f}, {delta:+.4f})")
     if result.solved:
         print("=> Beat the baseline. The discovery loop improved your own project's heuristic.")
+    elif delta > 0:
+        print("=> Edged the baseline but under the margin to count as solved (honest).")
     else:
         print("=> Did not beat the baseline in budget — reported only what verified (honest).")
     if memory.best_candidate:
-        prog = _normalize(memory.best_candidate)
-        print(f"best move: {problem.lab.expr_to_str(prog['move'])}")
-        print(f"program:   {prog}")
+        try:
+            prog = _normalize(memory.best_candidate)
+            print(f"best move: {problem.lab.expr_to_str(prog['move'])}")
+            print(f"program:   {prog}")
+        except Exception:
+            print(f"best program: {memory.best_candidate}")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
