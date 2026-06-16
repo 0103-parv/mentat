@@ -116,8 +116,10 @@ SYSTEM = (
     "call `learn_lesson` with their actual words as `evidence` — you will see your learned "
     "lessons at the top of future chats and must follow them. "
     "You can also CONTROL this Mac: `shell` runs any terminal command, `applescript` "
-    "automates native apps, `read_file` / `write_file` access files, and `add_reminder` / "
-    "`calendar_today` reach your Reminders and Calendar. Use them to "
+    "automates native apps, `read_file` / `write_file` access files, `edit_file` makes "
+    "surgical VERIFIED code edits (prefer it for changing existing files — pass `verify_cmd` "
+    "like the tests to gate the change), and `add_reminder` / `calendar_today` reach your "
+    "Reminders and Calendar. Use them to "
     "actually get things done — open apps, manage files, search the machine, automate "
     "tasks — the way a power user works at the terminal. Before anything destructive or "
     "irreversible (deleting or overwriting files, changing system settings, installing or "
@@ -338,6 +340,54 @@ def tool_write_file(path: str, content: str) -> str:
         return f"(could not write {path}: {type(e).__name__}: {e})"
 
 
+def tool_edit_file(path: str, old: str, new: str, verify_cmd: str = "") -> str:
+    """Surgical, VERIFIED edit (Claude-Code style): replace `old` (which must occur
+    exactly once) with `new`, syntax-check Python before writing, optionally run a
+    `verify_cmd` (e.g. the tests) after, and ROLL BACK on any failure. Same
+    'verification is the gate' principle the kernel uses, applied to code edits."""
+    p = Path(path).expanduser()
+    if _GUARD:
+        t = _norm_target(str(p))
+        creds = (f"{_HOME.lower()}/.ssh", f"{_HOME.lower()}/.aws", f"{_HOME.lower()}/.gnupg")
+        if any(t == c or t.startswith(c + "/") for c in creds):
+            return "(refused: won't edit credential files)"
+    try:
+        original = p.read_text()
+    except Exception as e:
+        return f"(could not read {path}: {type(e).__name__}: {e})"
+    n = original.count(old)
+    if n == 0:
+        return "(edit not applied: `old` text not found — copy it exactly from the file)"
+    if n > 1:
+        return f"(edit not applied: `old` occurs {n} times — add surrounding context to make it unique)"
+    updated = original.replace(old, new, 1)
+    if updated == original:
+        return "(edit not applied: that produces no change)"
+    if p.suffix == ".py":                         # syntax gate before writing
+        try:
+            compile(updated, str(p), "exec")
+        except SyntaxError as e:
+            return f"(edit REJECTED: it would break Python syntax — {e.msg} at line {e.lineno})"
+    p.write_text(updated)
+    _log_action("edit_file", f"{p} (-{len(old)}/+{len(new)} chars)")
+    if verify_cmd:
+        if _GUARD and _is_catastrophic(verify_cmd):
+            p.write_text(original)
+            return "(edit rolled back: the verify command looked catastrophic and was refused)"
+        try:
+            r = subprocess.run(["bash", "-lc", verify_cmd], capture_output=True, text=True,
+                               timeout=180, cwd=str(p.parent))
+        except Exception as e:
+            p.write_text(original)
+            return f"(edit ROLLED BACK: verify command errored: {type(e).__name__})"
+        if r.returncode != 0:
+            p.write_text(original)
+            tail = (r.stdout + r.stderr).strip()[-400:]
+            return f"(edit ROLLED BACK: `{verify_cmd}` failed)\n{tail}"
+        return f"Edited {p.name} and `{verify_cmd}` passed."
+    return f"Edited {p.name} (Python syntax OK)." if p.suffix == ".py" else f"Edited {p.name}."
+
+
 def _get_json(url: str):
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Jarvis research)"})
     with urllib.request.urlopen(req, timeout=12) as r:
@@ -533,10 +583,20 @@ TOOLS = [
     {"name": "read_file", "description": "Read a file from disk.",
      "input_schema": {"type": "object", "properties": {"path": {"type": "string"}},
                       "required": ["path"]}},
-    {"name": "write_file", "description": "Write (or overwrite) a file on disk.",
+    {"name": "write_file", "description": "Write (or overwrite) a file on disk. For changing an "
+                                          "EXISTING file, prefer edit_file (surgical + verified).",
      "input_schema": {"type": "object",
                       "properties": {"path": {"type": "string"}, "content": {"type": "string"}},
                       "required": ["path", "content"]}},
+    {"name": "edit_file",
+     "description": "Make a surgical, VERIFIED edit to a file: replace `old` (must occur exactly "
+                    "once) with `new`. Python is syntax-checked before writing; pass `verify_cmd` "
+                    "(e.g. 'python3 -m tests.test_core') to run after the edit and ROLL BACK on "
+                    "failure. Prefer this over write_file for editing code.",
+     "input_schema": {"type": "object",
+                      "properties": {"path": {"type": "string"}, "old": {"type": "string"},
+                                     "new": {"type": "string"}, "verify_cmd": {"type": "string"}},
+                      "required": ["path", "old", "new"]}},
     {"name": "web_search", "description": "Search the web; returns the top results (titles + URLs). "
                                           "Use to research or check current information online.",
      "input_schema": {"type": "object", "properties": {"query": {"type": "string"}},
@@ -567,6 +627,8 @@ _DISPATCH = {
     "applescript": lambda a: tool_applescript(a.get("script", "")),
     "read_file": lambda a: tool_read_file(a.get("path", "")),
     "write_file": lambda a: tool_write_file(a.get("path", ""), a.get("content", "")),
+    "edit_file": lambda a: tool_edit_file(a.get("path", ""), a.get("old", ""), a.get("new", ""),
+                                          a.get("verify_cmd", "")),
     "web_search": lambda a: tool_web_search(a.get("query", "")),
     "web_fetch": lambda a: tool_web_fetch(a.get("url", "")),
     "add_reminder": lambda a: tool_add_reminder(a.get("text", "")),

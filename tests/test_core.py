@@ -230,6 +230,21 @@ def test_jarvis_web_and_voice_helpers():
     assert J.tool_add_reminder("") == "(nothing to remind about)"
 
 
+def test_jarvis_edit_file_is_verified():
+    import mentat.jarvis as J
+    with tempfile.TemporaryDirectory() as d:
+        f = Path(d) / "m.py"
+        f.write_text("x = 1\ny = 2\n")
+        assert "not found" in J.tool_edit_file(str(f), "zzz", "q")             # missing snippet
+        bad = J.tool_edit_file(str(f), "x = 1", "x = (1")                      # would break syntax
+        assert "REJECTED" in bad and f.read_text() == "x = 1\ny = 2\n"         # unchanged, not written
+        ok = J.tool_edit_file(str(f), "y = 2", "y = 3")                        # valid surgical edit
+        assert "Edited" in ok and "y = 3" in f.read_text()
+        before = f.read_text()
+        rb = J.tool_edit_file(str(f), "x = 1", "x = 11", verify_cmd="exit 1")  # verify fails -> rollback
+        assert "ROLLED BACK" in rb and f.read_text() == before
+
+
 def test_jarvis_engine_tools_wired():
     import mentat.jarvis as J
     assert "improve_maxcut" in J._DISPATCH and "discover_sidon" in J._DISPATCH
