@@ -72,3 +72,15 @@ Rules I'm holding myself to:
   an honest verified result. "Jarvis, improve my heuristic" now does real discovery.
   19 tests green; Jarvis is up to 16 tools. Restarted the live server with everything.
   Next: Phase 4 — a second discovery domain + a review pass over tonight's new code.
+- **03:05** — **Review pass + Phase 4 (verified `edit_file`).** A 16-agent adversarial
+  review of tonight's new code caught a real **high-severity hole in my own guard fix**:
+  it still let `rm -rf ~/.ssh`, `rm -rf ~/mentat`/`~/swechats` (your research repos!),
+  and `shred ~/.ssh/id_rsa` through. Fixed: any direct child of $HOME + the credential
+  subtrees are now protected (15/15 block, 0 false positives), while deeper dev deletes
+  stay allowed. Also bounded the request lock (a heavy engine turn returns "busy" fast
+  instead of stalling other requests). Then built the review's top recommendation — the
+  **"function like Claude Code" piece**: `edit_file`, a surgical, syntax-checked edit
+  with an optional verify command and **rollback on failure** (verification-is-the-gate,
+  applied to Jarvis's own code edits). 20 tests; Jarvis up to 17 tools, restarted live.
+  Next: Phase 5 — deepen "think like a brain" (a 2nd discovery domain / transfer) and
+  polish (architecture doc + a final wake-up report).
