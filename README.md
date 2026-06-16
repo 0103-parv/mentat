@@ -91,14 +91,28 @@ gen 7 focus   best=15   (core wrote multi-start greedy — a better algorithm)
 -> best VERIFIED size 15 in [1,200]; it never claims a size it couldn't prove.
 ```
 
+### Talk to it: Jarvis
+
+`mentat/jarvis.py` is the personal-ops ring of the hub — the reasoning core with
+real tools (time, weather, your research repos, and a remember/recall memory of
+your decisions) and a **browser voice UI**: tap the mic, speak, and it speaks back
+(Web Speech for speech-to-text in, speech synthesis out). Durable memory survives
+restarts — tell it a preference once and it recalls it in a fresh process. Tools
+are a registry; Gmail / analytics / calendar slot in the same way.
+
+```bash
+python3 -m mentat.jarvis                       # serve the voice UI -> open in Chrome
+python3 -m mentat.jarvis --text "how's mentat going?" --say   # one-shot, spoken
+```
+
 ## Roadmap
 
 1. ~~Real proposer — an LLM reasoning core driving the loop.~~ ✓
-2. Real verifiers — three flagships, **all planned**:
+2. Real verifiers — three flagships:
    - ~~**Math / algorithms** — propose constructions as code, verify by execution +
-     exhaustive counterexample search (`mentat.discover`).~~ ✓ first one built.
-   - **Self-research** — point the loop at the swechats / alpha-evolver evals.
-   - **Personal-ops Jarvis** — channels (iMessage/Slack) + tools, memory of decisions.
+     exhaustive counterexample search (`mentat.discover`).~~ ✓
+   - ~~**Personal-ops Jarvis** — tools + durable memory + browser voice (`mentat.jarvis`).~~ ✓
+   - **Self-research** — point the loop at the swechats / alpha-evolver evals. *(next)*
 3. **Transfer** — lessons learned on one problem accelerate a *different* one
    (swechats already has the counterfactual harness to measure it).
 4. **The hub** — agents, tools, and channels around the spine.
@@ -107,7 +121,7 @@ gen 7 focus   best=15   (core wrote multi-start greedy — a better algorithm)
 
 ```bash
 python3 -m mentat.demo      # offline proposer — no dependencies, ~seconds
-python3 -m tests.test_core  # 11 tests, no network
+python3 -m tests.test_core  # 12 tests, no network
 
 # the real reasoning core (needs `pip install anthropic` + an API key):
 ANTHROPIC_API_KEY=sk-... python3 -m mentat.think      # rediscover a hidden law
