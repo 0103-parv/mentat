@@ -202,12 +202,13 @@ def test_jarvis_shell_runs_but_guards_catastrophe():
     import mentat.jarvis as J
     for c in ("rm -rf /", "rm -rf ~", "sudo rm -rf /*", "dd if=/dev/zero of=/dev/disk0",
               'rm -rf "$HOME"', "rm -rf /etc", "rm -rf /System", "rm -rf ~/Documents",
-              "rm -rf /usr/local", "find / -delete"):
-        assert J._is_catastrophic(c) is True, c       # quoted / suffixed / find forms too
+              "rm -rf /usr/local", "find / -delete",
+              "rm -rf ~/.ssh", "rm -rf ~/mentat", "rm -rf ~/.zshrc", "shred -u ~/.ssh/id_rsa"):
+        assert J._is_catastrophic(c) is True, c       # incl. direct $HOME children + key subtrees
     for c in ("rm -rf /Users/me/project/build", "ls -la /", "rm -rf build/",
-              "rm -rf ~/projects/scratch", "find . -name '*.pyc' -delete",
-              "grep -r unlink /usr/include"):
-        assert J._is_catastrophic(c) is False, c      # ordinary dev commands pass
+              "rm -rf ~/projects/scratch", "rm -rf ~/.cache/pip", "rm -rf ~/code/myrepo/build",
+              "find . -name '*.pyc' -delete", "grep -r unlink /usr/include"):
+        assert J._is_catastrophic(c) is False, c      # deeper dev deletes still allowed
     assert "hi there" in J.tool_shell("echo 'hi there'")          # real execution
     if J._GUARD:
         assert "Refused" in J.tool_shell("rm -rf /")              # floor actually blocks

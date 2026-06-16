@@ -55,7 +55,9 @@ _PROT_EXACT = {"/", "/etc", "/system", "/usr", "/bin", "/sbin", "/var",
                  ("documents", "desktop", "library", "pictures", "movies", "downloads"))}
 # System roots whose CHILDREN are also protected (deep deletes there are fatal).
 _PROT_TREE = ("/etc", "/system", "/usr", "/bin", "/sbin", "/library",
-              "/applications", "/private", "/var")
+              "/applications", "/private", "/var",
+              f"{_HOME.lower()}/.ssh", f"{_HOME.lower()}/.aws", f"{_HOME.lower()}/.gnupg",
+              f"{_HOME.lower()}/library/keychains")   # credentials: protect the whole subtree
 _CATASTROPHIC = [
     re.compile(r"--no-preserve-root", re.I),
     re.compile(r"\bmkfs\b|\bnewfs\b", re.I),
@@ -74,12 +76,17 @@ def _norm_target(tok: str) -> str:
 
 
 def _hits_protected(cmd: str) -> bool:
+    home = _HOME.lower()
     for raw in re.split(r"\s+", cmd):
         if not raw or raw.startswith("-"):
             continue
         t = _norm_target(raw)
         if t in _PROT_EXACT or any(t == r or t.startswith(r + "/") for r in _PROT_TREE):
             return True
+        if t.startswith(home + "/"):
+            rest = t[len(home) + 1:]
+            if rest and "/" not in rest:   # a DIRECT child of $HOME (repo, dotfile, config, keys)
+                return True                # — high-value; deeper paths (e.g. ~/projects/x) are allowed
     return False
 
 
@@ -597,7 +604,9 @@ class Jarvis:
 
     def ask(self, text: str, model: str | None = None) -> str:
         use_model = model if model in ALLOWED_MODELS else self.model
-        with self._lock:                       # one turn at a time; history stays valid
+        if not self._lock.acquire(timeout=1.0):   # don't stall a worker thread for minutes
+            return "I'm still finishing the previous request — give me a moment, then ask again."
+        try:                                       # one turn at a time; history stays valid
             snapshot = len(self.history)        # roll-back point if the turn fails
             self.history.append({"role": "user", "content": text})
             lessons = jarvis_lessons_context()  # grounded rules learned from past corrections
@@ -634,6 +643,8 @@ class Jarvis:
                 return reply
             self._trim_history()
             reply = final.strip() or "(no reply)"
+        finally:
+            self._lock.release()
         _log_convo("user", text)
         _log_convo("jarvis", reply)
         return reply
