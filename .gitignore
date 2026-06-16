@@ -7,3 +7,4 @@ venv/
 # runtime memory + artifacts (not source)
 mentat/memory.json
 mentat/jarvis_memory.json
+mentat/jarvis_actions.log

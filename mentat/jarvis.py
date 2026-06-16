@@ -29,7 +29,37 @@ import os
 
 MODEL = os.environ.get("MENTAT_MODEL", DEFAULT_MODEL)
 MEMORY_PATH = Path(__file__).parent / "jarvis_memory.json"
+ACTIONS_LOG = Path(__file__).parent / "jarvis_actions.log"
 REPOS = {name: Path.home() / name for name in ("swechats", "alpha-evolver", "mentat")}
+
+# Full machine control, with ONE floor: refuse catastrophic, irreversible commands.
+# Voice STT can garble input, so a disk-wipe / rm-of-home guard protects the user.
+# Set JARVIS_NO_GUARD=1 to remove even that.
+_GUARD = os.environ.get("JARVIS_NO_GUARD") != "1"
+_RM_RF = re.compile(r"\brm\b[^|;&\n]*-[a-z]*[rf][a-z]*\b", re.I)
+_CATA_TARGET = re.compile(r"(^|\s)(/|/\*|~|~/|~/\*|\$home|\$home/|\$home/\*)(\s|$)", re.I)
+_CATASTROPHIC = [
+    re.compile(r"--no-preserve-root", re.I),
+    re.compile(r"\bmkfs\b|\bnewfs\b", re.I),
+    re.compile(r"\bdiskutil\b[^\n]*\b(erase|reformat|partitiondisk)\b", re.I),
+    re.compile(r"\bdd\b[^\n]*\bof=/dev/", re.I),
+    re.compile(r">\s*/dev/(disk|rdisk|sd[a-z])", re.I),
+    re.compile(r":\(\)\s*\{[^}]*:\s*\|\s*:[^}]*&[^}]*\}\s*;", re.I),  # fork bomb
+]
+
+
+def _is_catastrophic(cmd: str) -> bool:
+    if _RM_RF.search(cmd) and _CATA_TARGET.search(cmd):   # rm -rf of / ~ $HOME /*
+        return True
+    return any(p.search(cmd) for p in _CATASTROPHIC)
+
+
+def _log_action(kind: str, detail: str) -> None:
+    try:
+        with open(ACTIONS_LOG, "a") as f:
+            f.write(f"{datetime.now().isoformat(timespec='seconds')}\t{kind}\t{detail}\n")
+    except OSError:
+        pass
 
 SYSTEM = (
     "You are Jarvis, a personal operations assistant for a high-school researcher who "
@@ -38,8 +68,15 @@ SYSTEM = (
     "sentences, plain conversational English, NO markdown, NO bullet lists, no emoji. "
     "Be warm, direct, and proactive. Use your tools when they'd help rather than "
     "guessing. Whenever the user states a preference, decision, or fact about "
-    "themselves, call `remember` so you don't forget it next time. If you don't know "
-    "something and have no tool for it, say so briefly."
+    "themselves, call `remember` so you don't forget it next time. "
+    "You can also CONTROL this Mac: `shell` runs any terminal command, `applescript` "
+    "automates native apps, and `read_file` / `write_file` access files. Use them to "
+    "actually get things done — open apps, manage files, search the machine, automate "
+    "tasks — the way a power user works at the terminal. Before anything destructive or "
+    "irreversible (deleting or overwriting files, changing system settings, installing or "
+    "removing software, sending messages on the user's behalf), say what you're about to "
+    "do and get a quick confirmation first. For routine, safe actions just do them and "
+    "report back briefly. If you don't know something and have no tool for it, say so."
 )
 
 
@@ -115,6 +152,54 @@ def tool_recall(query: str = "") -> str:
     return " | ".join(m["note"] for m in mem[-5:])
 
 
+def tool_shell(command: str, timeout: int = 60) -> str:
+    if _GUARD and _is_catastrophic(command):
+        _log_action("shell-BLOCKED", command)
+        return ("Refused: that command looks catastrophic and irreversible (a disk wipe or "
+                "rm of / or your home). I won't run it. If you truly mean it, run it yourself "
+                "or restart me with JARVIS_NO_GUARD=1.")
+    _log_action("shell", command)
+    try:
+        p = subprocess.run(["bash", "-lc", command], capture_output=True, text=True, timeout=timeout)
+        out = (p.stdout or "")
+        if p.stderr.strip():
+            out += ("\n[stderr] " + p.stderr)
+        out = out.strip() or f"(no output; exit code {p.returncode})"
+        return out[:4000] + ("\n…[truncated]" if len(out) > 4000 else "")
+    except subprocess.TimeoutExpired:
+        return f"(timed out after {timeout}s)"
+    except Exception as e:
+        return f"(error: {type(e).__name__}: {e})"
+
+
+def tool_applescript(script: str) -> str:
+    _log_action("applescript", " ".join(script.split())[:200])
+    try:
+        p = subprocess.run(["osascript", "-e", script], capture_output=True, text=True, timeout=30)
+        return (p.stdout or p.stderr or "").strip()[:2000] or f"(done; exit {p.returncode})"
+    except Exception as e:
+        return f"(error: {type(e).__name__}: {e})"
+
+
+def tool_read_file(path: str) -> str:
+    try:
+        text = Path(path).expanduser().read_text(errors="replace")
+        return text[:6000] + ("\n…[truncated]" if len(text) > 6000 else "")
+    except Exception as e:
+        return f"(could not read {path}: {type(e).__name__}: {e})"
+
+
+def tool_write_file(path: str, content: str) -> str:
+    try:
+        p = Path(path).expanduser()
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(content)
+        _log_action("write_file", str(p))
+        return f"wrote {len(content)} characters to {p}"
+    except Exception as e:
+        return f"(could not write {path}: {type(e).__name__}: {e})"
+
+
 TOOLS = [
     {"name": "get_datetime", "description": "Current local date and time.",
      "input_schema": {"type": "object", "properties": {}}},
@@ -130,6 +215,24 @@ TOOLS = [
                       "required": ["note"]}},
     {"name": "recall", "description": "Recall what the user has asked you to remember. Optional query.",
      "input_schema": {"type": "object", "properties": {"query": {"type": "string"}}}},
+    {"name": "shell",
+     "description": "Run any shell command on the user's Mac and return its output. Full "
+                    "terminal access. Use for files, apps, searches, status, automation.",
+     "input_schema": {"type": "object",
+                      "properties": {"command": {"type": "string"},
+                                     "timeout": {"type": "integer"}},
+                      "required": ["command"]}},
+    {"name": "applescript", "description": "Run an AppleScript to automate native macOS apps "
+                                           "(Music, Notes, Messages, System Events, etc.).",
+     "input_schema": {"type": "object", "properties": {"script": {"type": "string"}},
+                      "required": ["script"]}},
+    {"name": "read_file", "description": "Read a file from disk.",
+     "input_schema": {"type": "object", "properties": {"path": {"type": "string"}},
+                      "required": ["path"]}},
+    {"name": "write_file", "description": "Write (or overwrite) a file on disk.",
+     "input_schema": {"type": "object",
+                      "properties": {"path": {"type": "string"}, "content": {"type": "string"}},
+                      "required": ["path", "content"]}},
 ]
 
 _DISPATCH = {
@@ -138,6 +241,10 @@ _DISPATCH = {
     "research_status": lambda a: tool_research_status(a.get("repo", "")),
     "remember": lambda a: tool_remember(a.get("note", "")),
     "recall": lambda a: tool_recall(a.get("query", "")),
+    "shell": lambda a: tool_shell(a.get("command", ""), int(a.get("timeout", 60) or 60)),
+    "applescript": lambda a: tool_applescript(a.get("script", "")),
+    "read_file": lambda a: tool_read_file(a.get("path", "")),
+    "write_file": lambda a: tool_write_file(a.get("path", ""), a.get("content", "")),
 }
 
 
@@ -190,7 +297,8 @@ PAGE = """<!doctype html><html><head><meta charset="utf-8">
 *{box-sizing:border-box}
 body{margin:0;font-family:-apple-system,system-ui,sans-serif;background:#0b0e14;color:#e6e6e6;
   display:flex;flex-direction:column;height:100vh}
-header{padding:18px 22px;font-weight:600;letter-spacing:.12em;color:#7fd1ff;border-bottom:1px solid #1b2330}
+header{padding:14px 22px;font-weight:600;letter-spacing:.12em;color:#7fd1ff;border-bottom:1px solid #1b2330;display:flex;align-items:center;justify-content:space-between;gap:12px}
+select{background:#0f141d;color:#cfe3f5;border:1px solid #232c3c;border-radius:8px;padding:7px 9px;font-size:13px;max-width:55%}
 #log{flex:1;overflow:auto;padding:22px;display:flex;flex-direction:column;gap:12px}
 .msg{max-width:78%;padding:11px 15px;border-radius:14px;line-height:1.5;white-space:pre-wrap}
 .you{align-self:flex-end;background:#1d4ed8}
@@ -202,7 +310,7 @@ footer{display:flex;gap:10px;padding:16px 22px 24px;align-items:center}
 @keyframes p{0%{box-shadow:0 0 0 0 rgba(220,38,38,.6)}100%{box-shadow:0 0 0 16px rgba(220,38,38,0)}}
 #text{flex:1;padding:13px 15px;border-radius:12px;border:1px solid #232c3c;background:#0f141d;color:#e6e6e6;font-size:15px}
 </style></head><body>
-<header>J A R V I S</header>
+<header><span>J A R V I S</span><select id="voice" title="voice"></select></header>
 <div id="log"></div>
 <div id="status">tap the mic and talk, or type below</div>
 <footer>
@@ -212,10 +320,18 @@ footer{display:flex;gap:10px;padding:16px 22px 24px;align-items:center}
 <script>
 const log=document.getElementById('log'),statusEl=document.getElementById('status'),
   mic=document.getElementById('mic'),form=document.getElementById('form'),input=document.getElementById('text');
-let st='idle',micOn=false;
+let st='idle',micOn=false,voices=[];
+const voiceSel=document.getElementById('voice');
+function loadVoices(){voices=speechSynthesis.getVoices();if(!voices.length)return;
+  const en=voices.filter(v=>v.lang&&v.lang.toLowerCase().startsWith('en'));const list=en.length?en:voices;
+  voiceSel.innerHTML='';list.forEach(v=>{const o=document.createElement('option');o.value=v.name;o.textContent=v.name+' ('+v.lang+')';voiceSel.appendChild(o);});
+  const saved=localStorage.getItem('jarvisVoice');const daniel=list.find(v=>/daniel/i.test(v.name));
+  voiceSel.value=saved||(daniel?daniel.name:list[0].name);}
+loadVoices();if(window.speechSynthesis)speechSynthesis.onvoiceschanged=loadVoices;
+voiceSel.onchange=()=>{localStorage.setItem('jarvisVoice',voiceSel.value);speak('This is '+voiceSel.value+'.');};
 function setStatus(s){st=s;statusEl.textContent=s}
 function add(who,t){const d=document.createElement('div');d.className='msg '+who;d.textContent=t;log.appendChild(d);log.scrollTop=log.scrollHeight}
-function speak(t){try{const u=new SpeechSynthesisUtterance(t);u.rate=1.05;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
+function speak(t){try{const u=new SpeechSynthesisUtterance(t);u.rate=1.04;const v=voices.find(x=>x.name===voiceSel.value);if(v)u.voice=v;speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){}}
 async function ask(t){add('you',t);setStatus('thinking…');
   try{const r=await fetch('/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t})});
     const j=await r.json();add('jarvis',j.reply);setStatus('idle');speak(j.reply);}

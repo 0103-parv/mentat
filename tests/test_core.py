@@ -176,6 +176,19 @@ def test_jarvis_memory_roundtrip_survives_punctuation():
     assert J.tool_get_datetime()                                  # non-empty string
 
 
+def test_jarvis_shell_runs_but_guards_catastrophe():
+    import mentat.jarvis as J
+    assert J._is_catastrophic("rm -rf /") is True
+    assert J._is_catastrophic("rm -rf ~") is True
+    assert J._is_catastrophic("sudo rm -rf /*") is True
+    assert J._is_catastrophic("dd if=/dev/zero of=/dev/disk0") is True
+    assert J._is_catastrophic("rm -rf /Users/me/project/build") is False   # normal cleanup ok
+    assert J._is_catastrophic("ls -la /") is False
+    assert "hi there" in J.tool_shell("echo 'hi there'")                   # real execution
+    if J._GUARD:
+        assert "Refused" in J.tool_shell("rm -rf /")                       # floor holds
+
+
 def _run_all():
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for fn in fns:
