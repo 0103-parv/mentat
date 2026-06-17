@@ -14,6 +14,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from mentat.core import Lesson, Memory, Mind, Verdict, productive_surprise, solve
 from mentat.demo import LLMProposer, RandomProposer, SymbolicRegression, ev, parse_infix, to_str
 from mentat.reasoning import ScriptedCore, extract_json_list
+from mentat.trade_lab import (
+    BASELINE_ALPHAS, AlphaProblem, AlphaProposer, compute_features, eval_alpha,
+    expected_max_sharpe_under_null, segment_metrics, synthetic_universe,
+    valid_alpha, walk_forward_backtest,
+)
 
 
 def test_grounding_firewall_rejects_fabrication():
@@ -300,6 +305,119 @@ def test_self_research_verifier_when_available():
     bad = prob.verify({"init": ["rank", "flip_gain"], "move": "flip_gain",
                        "steps_per_node": 4, "restarts": 2, "tabu_window": 1})
     assert bad.suspicious                                       # init can't use a dynamic field -> rejected
+
+
+# --------------------------------------------------------------------------- #
+# trade_lab — the anti-overfit alpha-discovery flagship                       #
+# --------------------------------------------------------------------------- #
+def test_alpha_grammar_validates_and_rejects():
+    assert valid_alpha("ret1")
+    assert valid_alpha(["neg", ["zscore", "ret1"]])
+    assert valid_alpha(["add", "mom5", ["mul", "c_05", "vol20"]])
+    assert not valid_alpha("not_a_feature")                  # unknown leaf
+    assert not valid_alpha(["frobnicate", "ret1"])           # unknown op
+    assert not valid_alpha(["neg", "ret1", "mom5"])          # unary with 2 args
+    deep = "ret1"
+    for _ in range(6):
+        deep = ["neg", deep]                                 # depth 6 > max 5
+    assert not valid_alpha(deep)
+
+
+def test_eval_alpha_is_causal_no_lookahead():
+    """A position that 'cheats' by matching the SAME bar's sign earns the next
+    bar's return through a 1-bar lag, so on an alternating series it must LOSE —
+    proof the backtest never uses contemporaneous information."""
+    ret = [0.0, 0.01, -0.01, 0.01, -0.01, 0.01, -0.01]
+    positions = [(r > 0) - (r < 0) for r in ret]             # sign of the SAME bar
+    m = segment_metrics(positions, ret, 0, len(ret), cost=0.0)
+    assert m["mean"] < 0                                      # lag makes the cheat lose
+
+
+def test_segment_metrics_costs_and_turnover():
+    ret = [0.0, 0.0, 0.01, 0.02, 0.01, 0.02]
+    flat = segment_metrics([1.0] * 6, ret, 0, 6, cost=0.0)
+    assert flat["turnover"] == 0.0 and flat["sharpe"] > 0     # steady long, no churn
+    flip = [1.0, -1.0, 1.0, -1.0, 1.0, -1.0]
+    free = segment_metrics(flip, ret, 0, 6, cost=0.0)["mean"]
+    charged = segment_metrics(flip, ret, 0, 6, cost=0.02)["mean"]
+    assert charged < free                                    # churn pays transaction cost
+
+
+def test_deflation_grows_with_trials():
+    a = expected_max_sharpe_under_null(2, 500, 0.05)
+    b = expected_max_sharpe_under_null(20, 500, 0.05)
+    c = expected_max_sharpe_under_null(500, 500, 0.05)
+    assert a < b < c                                          # more searches -> higher bar
+
+
+def test_worst_regime_is_the_minimum_regime():
+    """Always-long wins the trending regimes but loses the bear regime; the gate
+    scores it by its WORST regime, so a one-regime-good alpha cannot hide."""
+    bars = synthetic_universe()
+    feats = compute_features(bars)
+    pos = [max(-1.0, min(1.0, s)) for s in eval_alpha("c_1", feats)]
+    per = {lab: segment_metrics(pos, bars.ret, s, e, 0.001)["sharpe"]
+           for lab, s, e in bars.regimes if not lab.startswith("is")}
+    m = walk_forward_backtest("c_1", bars, n_trials=72)
+    assert m["worst_oos_sharpe"] == min(per.values()) * (252 ** 0.5)
+    assert max(per.values()) > 0 > min(per.values())         # good somewhere, bad somewhere
+
+
+def test_robust_alpha_passes_overfits_fail():
+    prob = AlphaProblem()
+    rev = prob.verify(["neg", ["zscore", "ret1"]])           # the real, regime-consistent edge
+    assert rev.passed and rev.score > prob.target and not rev.suspicious
+    for overfit in ("mom20", "volume_z", ["sign", "price_ma_gap"]):
+        v = prob.verify(overfit)
+        assert not v.passed and v.score < rev.score          # killed by OOS/cost/deflation
+
+
+def test_verify_quarantines_degenerate_and_off_grammar():
+    prob = AlphaProblem()
+    assert prob.verify("c_1").suspicious                     # never trades -> degenerate
+    assert prob.verify(["frobnicate", "ret1"]).suspicious    # off-grammar
+    assert prob.verify(["neg", "ret1"]).suspicious is False   # a real (small) alpha is not flagged
+
+
+def test_higher_cost_lowers_the_score():
+    bars = synthetic_universe()
+    alpha = ["neg", ["zscore", "ret1"]]
+    cheap = walk_forward_backtest(alpha, bars, cost=0.0, n_trials=72)["deflated_oos"]
+    dear = walk_forward_backtest(alpha, bars, cost=0.02, n_trials=72)["deflated_oos"]
+    assert dear < cheap                                      # costs erode a churny edge
+
+
+def test_distill_only_learns_from_a_passing_alpha():
+    prob = AlphaProblem()
+    win = prob.verify(["neg", ["zscore", "ret1"]])
+    lose = prob.verify("mom20")
+    assert prob.distill(["neg", ["zscore", "ret1"]], win)    # a real winner yields a lesson
+    assert prob.distill("mom20", lose) == []                 # a failure teaches nothing
+    lesson = prob.distill(["neg", ["zscore", "ret1"]], win)[0]
+    assert lesson.grounded()                                 # the lesson passes the firewall
+
+
+def test_offline_proposer_yields_valid_alphas():
+    class _Broken:
+        def complete_text(self, *a, **k):
+            raise RuntimeError("no core")
+    prop = AlphaProposer(core=_Broken())
+    out = prop.propose(AlphaProblem(), Memory(), Mind(), k=6)
+    assert len(out) == 6 and all(valid_alpha(a) for a in out)
+    assert prop.note                                         # records the degraded path
+
+
+def test_trade_loop_discovers_a_robust_alpha_offline():
+    """End-to-end: the kernel, with only the offline baseline alphas, finds an alpha
+    that clears the anti-overfit gate on the synthetic universe."""
+    class _Broken:
+        def complete_text(self, *a, **k):
+            raise RuntimeError("no core")
+    prob = AlphaProblem(n_trials=36)
+    result = solve(prob, AlphaProposer(core=_Broken()), Memory(),
+                   generations=4, k=6, log=lambda *_: None)
+    assert result.solved and result.best_score > prob.target
+    assert result.best_candidate in BASELINE_ALPHAS          # the verified winner is grounded
 
 
 def _run_all():
