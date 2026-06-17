@@ -12,4 +12,5 @@ mentat/jarvis_actions.log
 mentat/jarvis_conversation.jsonl
 mentat/maxcut_memory.json
 mentat/think_memory.json
-mentat/trade_memory.json
+mentat/trade_memory*.json
+data/

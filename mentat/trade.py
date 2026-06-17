@@ -19,12 +19,36 @@ from pathlib import Path
 
 from .core import Memory, solve
 from .reasoning import AnthropicCore, core_available
-from .trade_lab import AlphaProblem, AlphaProposer, expr_to_str
+from .trade_lab import AlphaProblem, AlphaProposer, expr_to_str, load_price_csv, synthetic_universe
 
 
 class _Broken:
     def complete_text(self, *a, **k):
         raise RuntimeError("no core")
+
+
+def _data_args() -> list[str]:
+    paths = []
+    for i, a in enumerate(sys.argv):
+        if a == "--data" and i + 1 < len(sys.argv):
+            paths.append(sys.argv[i + 1])
+        elif a.startswith("--data="):
+            paths.append(a.split("=", 1)[1])
+    return paths
+
+
+def _load_bars():
+    """(label, bars) pairs to run. Real CSVs via --data, else the synthetic testbed."""
+    paths = _data_args()
+    if not paths:
+        return [("synthetic", synthetic_universe())]
+    out = []
+    for p in paths:
+        try:
+            out.append((Path(p).stem, load_price_csv(p)))
+        except Exception as e:
+            print(f"  ! skipping {p}: {type(e).__name__}: {e}")
+    return out or [("synthetic", synthetic_universe())]
 
 
 def _logger(proposer):
@@ -39,41 +63,46 @@ def _logger(proposer):
 
 def main() -> int:
     generations, k = 12, 6
-    # Fixed multiple-testing N = the alphas this study will try. The deflation uses
-    # it so the bar to clear reflects the full search, not a single lucky draw.
-    problem = AlphaProblem(n_trials=generations * k)
     core = AnthropicCore() if core_available() else None
-    proposer = AlphaProposer(core=core or _Broken())
+    series = _load_bars()
 
     print("PROJECT          anti-overfit alpha discovery (VISION.md flagship)")
     print("VERIFIER         walk-forward OOS across regimes, after costs, deflated Sharpe")
-    print(f"DATA             synthetic multi-regime universe "
-          f"({len(problem.bars.close)} bars, {len(problem.bars.regimes)} regimes)")
-    print(f"BAR/COST         cost={problem.cost:.4f} per unit turnover; "
-          f"multiple-testing N={problem.n_trials}")
     print(f"REASONING CORE   {core.model if core else 'offline baseline alphas only'}")
-    print(f"GOAL             deflated worst-regime OOS Sharpe >= {problem.target:.2f}\n")
+    print(f"SERIES           {', '.join(label for label, _ in series)}\n")
 
-    mem_path = Path(__file__).parent / "trade_memory.json"   # warm-start across runs
-    memory = Memory() if "--fresh" in sys.argv else Memory.load(mem_path)
-    result = solve(problem, proposer, memory, generations=generations, k=k,
-                   log=_logger(proposer))
-    memory.save(mem_path)
+    fresh = "--fresh" in sys.argv
+    solved_any = False
+    for label, bars in series:
+        # Fixed multiple-testing N = the alphas this study will try. The deflation
+        # uses it so the bar reflects the full search, not a single lucky draw.
+        problem = AlphaProblem(bars=bars, n_trials=generations * k)
+        proposer = AlphaProposer(core=core or _Broken())
+        print(f"--- {label}: {len(bars.close)} bars, {len(bars.regimes)} regimes "
+              f"(cost={problem.cost:.4f}, N={problem.n_trials}, "
+              f"bar>={problem.target:.2f}) ---")
+        # One memory file per series so warm-starts don't mix alphas across markets.
+        mem_path = Path(__file__).parent / f"trade_memory_{label}.json"
+        memory = Memory() if fresh else Memory.load(mem_path)
+        result = solve(problem, proposer, memory, generations=generations, k=k,
+                       log=_logger(proposer))
+        memory.save(mem_path)
 
-    print()
-    print(f"BEST verified deflated OOS Sharpe: {result.best_score:+.3f}   "
-          f"(bar to clear {problem.target:.2f})")
-    if result.solved:
-        print("=> Found an alpha that survived OOS across regimes, after costs, deflated.")
-    elif result.best_score > 0:
-        print("=> Positive deflated OOS edge but under the bar to count as solved (honest).")
-    else:
-        print("=> No alpha cleared the anti-overfit gate in budget — an honest negative result.")
-    if memory.best_candidate is not None:
-        print(f"best alpha: {expr_to_str(memory.best_candidate)}")
-        print(f"expr:       {memory.best_candidate}")
-    if result.verdict and result.verdict.detail:
-        print(f"detail:     {result.verdict.detail}")
+        if result.solved:
+            solved_any = True
+            verdict = "survived OOS across regimes, after costs, deflated"
+        elif result.best_score > 0:
+            verdict = "positive deflated OOS edge, under the bar (honest)"
+        else:
+            verdict = "no alpha cleared the gate — honest negative result"
+        best = expr_to_str(memory.best_candidate) if memory.best_candidate is not None else "(none)"
+        print(f"  => {label}: deflated OOS Sharpe {result.best_score:+.3f} "
+              f"[bar {problem.target:.2f}] — {verdict}")
+        print(f"     best alpha: {best}")
+        if result.verdict and result.verdict.detail:
+            print(f"     {result.verdict.detail}\n")
+    print("Verification is the gate: every number above is a worst-regime, after-cost, "
+          f"deflated OOS Sharpe.{'' if solved_any else ' Nothing cleared the bar — honest.'}")
     return 0
 
 

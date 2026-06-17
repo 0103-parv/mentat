@@ -420,6 +420,34 @@ def test_trade_loop_discovers_a_robust_alpha_offline():
     assert result.best_candidate in BASELINE_ALPHAS          # the verified winner is grounded
 
 
+def test_load_price_csv_handles_fred_and_regimes():
+    """Parses a FRED date,value series, drops holiday ('.') rows, and tiles the
+    timeline into IS + N contiguous OOS eras with no gaps or overlaps."""
+    import os
+    import tempfile
+    from mentat.trade_lab import load_price_csv
+    rows = ["observation_date,SP500"]
+    for i in range(120):
+        rows.append(f"2020-01-{i:03d},{100.0 + i}")
+    rows.insert(50, "2020-02-09,.")                      # holiday -> dropped
+    with tempfile.NamedTemporaryFile("w", suffix=".csv", delete=False) as f:
+        f.write("\n".join(rows))
+        path = f.name
+    try:
+        bars = load_price_csv(path, n_oos_regimes=3, is_frac=0.4)
+    finally:
+        os.unlink(path)
+    assert len(bars.close) == 120                        # 120 prices, holiday row dropped
+    labels = [r[0] for r in bars.regimes]
+    assert labels[0] == "is_train" and labels.count("is_train") == 1
+    assert sum(1 for lab in labels if lab.startswith("oos")) == 3
+    assert bars.regimes[0][1] == 0 and bars.regimes[-1][2] == 120
+    for a, b in zip(bars.regimes, bars.regimes[1:]):     # contiguous, no gaps/overlaps
+        assert a[2] == b[1]
+    # close-only series: high==low==close, so hl_range is a dead feature (no leak)
+    assert bars.high == bars.close and bars.low == bars.close
+
+
 def _run_all():
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for fn in fns:

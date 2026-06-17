@@ -294,6 +294,71 @@ def synthetic_universe(seed: int = 7) -> Bars:
     return Bars(close, high, low, volume, ret, regimes)
 
 
+def _bars_with_auto_regimes(close, high, low, volume, ret, n_oos: int, is_frac: float) -> Bars:
+    """IS = first `is_frac` of the timeline; the rest split into `n_oos` equal
+    contiguous OOS eras. Equal contiguous chunks (not hand-picked dates) keep the
+    regime split honest — different market environments fall out on their own."""
+    n = len(close)
+    is_end = max(2, int(n * is_frac))
+    regimes = [("is_train", 0, is_end)]
+    rem = n - is_end
+    step = max(1, rem // max(1, n_oos))
+    for i in range(n_oos):
+        s = is_end + i * step
+        e = n if i == n_oos - 1 else min(n, is_end + (i + 1) * step)
+        if s < e:
+            regimes.append((f"oos_{i + 1}", s, e))
+    return Bars(close, high, low, volume, ret, regimes)
+
+
+def load_price_csv(path, *, n_oos_regimes: int = 3, is_frac: float = 0.4) -> Bars:
+    """Build Bars from a real price CSV. Accepts a generic OHLCV header
+    (date,open,high,low,close,volume — Stooq/Yahoo style) or a 2-column
+    date,value series (FRED style). Missing/holiday rows ('.' or blank) are
+    dropped. Close-only series get high=low=close and volume=1 (so hl_range and
+    the volume decoy go dark, while every return-based feature still works)."""
+    from pathlib import Path
+    lines = [ln for ln in Path(path).read_text().splitlines() if ln.strip()]
+    if len(lines) < 50:
+        raise ValueError(f"{path}: too few rows ({len(lines)}) for a backtest")
+    header = [h.strip().lower() for h in lines[0].split(",")]
+    if "close" in header:
+        ci = header.index("close")
+        hi = header.index("high") if "high" in header else None
+        li = header.index("low") if "low" in header else None
+        vi = header.index("volume") if "volume" in header else None
+    else:
+        ci, hi, li, vi = 1, None, None, None        # FRED date,value
+
+    def num(parts, i, default):
+        if i is None or i >= len(parts):
+            return default
+        raw = parts[i].strip()
+        if raw in ("", "."):
+            return default
+        try:
+            return float(raw)
+        except ValueError:
+            return default
+
+    close, high, low, volume = [], [], [], []
+    for line in lines[1:]:
+        parts = line.split(",")
+        if len(parts) <= ci:
+            continue
+        c = num(parts, ci, None)
+        if c is None or c <= 0:
+            continue
+        close.append(c)
+        high.append(num(parts, hi, c))
+        low.append(num(parts, li, c))
+        volume.append(num(parts, vi, 1.0))
+    if len(close) < 50:
+        raise ValueError(f"{path}: too few valid price rows ({len(close)})")
+    ret = [0.0] + [close[t] / close[t - 1] - 1.0 for t in range(1, len(close))]
+    return _bars_with_auto_regimes(close, high, low, volume, ret, n_oos_regimes, is_frac)
+
+
 # --------------------------------------------------------------------------- #
 # the brutal backtest                                                         #
 # --------------------------------------------------------------------------- #
