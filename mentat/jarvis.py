@@ -793,10 +793,10 @@ function showLive(txt){live.textContent='';const a=document.createElement('span'
 async function speak(t){setState('speaking');
   if(TTS_MODE==='elevenlabs'){try{
     const r=await fetch('/speak',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t})});
-    if(r.ok){const blob=await r.blob();if(blob.size>0){const url=URL.createObjectURL(blob);const a=new Audio(url);
+    if(r.ok){const blob=await r.blob();if(blob.size>0){const url=URL.createObjectURL(blob);const a=new Audio(url);a.playbackRate=1.75;
       a.onended=()=>{URL.revokeObjectURL(url);convo?listen():setState('idle');};
       a.onerror=()=>{convo?listen():setState('idle');};a.play();return;}}}catch(e){}}
-  try{const u=new SpeechSynthesisUtterance(t);u.rate=1.0;u.pitch=1.0;
+  try{const u=new SpeechSynthesisUtterance(t);u.rate=1.75;u.pitch=1.0;
     const v=voices.find(x=>x.name===voiceSel.value);if(v)u.voice=v;
     u.onend=()=>{convo?listen():setState('idle');};
     u.onerror=()=>{convo?listen():setState('idle');};
@@ -910,9 +910,9 @@ def main(argv: list[str] | None = None):
                     tmp = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
                     tmp.write(audio)
                     tmp.close()
-                    subprocess.run(["afplay", tmp.name], timeout=60)
+                    subprocess.run(["afplay", "-r", "1.75", tmp.name], timeout=60)
                 else:
-                    subprocess.run(["say", reply], timeout=30)
+                    subprocess.run(["say", "-r", "315", reply], timeout=30)
             except Exception:
                 pass
         return
