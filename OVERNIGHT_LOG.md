@@ -137,4 +137,16 @@ architecture doc.
   distillation, the offline fallback, and an end-to-end discovery run.
 - Known sandbox bug (spawn under `-c`/stdin, from FINDINGS.md) is untouched — it doesn't
   affect `trade_lab` (pure DSL eval, no spawned sandbox). Left for a follow-up.
-  Next: feed real OHLCV; let `mentat.trade` loop for real hours with the LLM core proposing.
+- **Real data — DONE, and the result is the honest one.** Fetched real daily index closes
+  from **FRED** (keyless, official: SP500, Nasdaq Composite back to 1971, DJIA) after Stooq
+  (JS proof-of-work) and Yahoo (rate-limited) both blocked keyless pulls. Added
+  `load_price_csv` (FRED date,value or generic OHLCV; drops holidays; auto-splits IS + N
+  contiguous OOS eras) and `mentat.trade --data PATH`. Ran the gate on all three: **nothing
+  cleared the bar** — every baseline alpha posts a negative worst-regime, after-cost,
+  deflated OOS Sharpe (SP500 −2.12, Nasdaq −1.03, DJIA −2.61). The trend alpha even looks
+  slightly positive in-sample on SP500 (+0.14) and still loses OOS → killed. So the gate
+  ADMITS the synthetic edge (+1.66) and REFUSES the fakes on real data — the anti-overfit
+  thesis demonstrated both directions. A negative result, honestly reported, is the win
+  here. Data lives in gitignored `data/`. 32 tests green; committed (d8c51d3).
+  Next: let `mentat.trade` loop for real hours with the **LLM core** proposing richer alphas
+  (the baselines are deliberately simple) — the gate guarantees only genuine OOS edges survive.
