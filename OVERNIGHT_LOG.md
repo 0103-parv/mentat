@@ -112,3 +112,29 @@ architecture doc.
   applied to Jarvis's own code edits). 20 tests; Jarvis up to 17 tools, restarted live.
   Next: Phase 5 — deepen "think like a brain" (a 2nd discovery domain / transfer) and
   polish (architecture doc + a final wake-up report).
+
+# Continued — 2026-06-17
+
+- **The flagship from VISION.md: anti-overfit alpha discovery (`mentat.trade`).** Built
+  `trade_lab.py` + `trade.py` — the fourth discovery domain and the honest version of
+  "ultimate trading agent." The reasoning core proposes an alpha as a DSL expression over
+  causal price/volume features; the verifier is a **brutal** walk-forward backtest, not a
+  friendly one: (1) positions trade on the NEXT bar (no look-ahead, tested), (2) every
+  position change pays a transaction cost, (3) scored OUT-OF-SAMPLE across multiple market
+  regimes with the **worst** regime taken (one good regime can't hide), and (4) a
+  **deflated-Sharpe / multiple-testing haircut** (Bailey & López de Prado 2014) discounts
+  the best-of-N search. Verification *is* the anti-overfit mechanism — exactly VISION.md's
+  thesis. Pure Python (no numpy), same as `math_lab`, so it runs and tests anywhere.
+- **Honest testbed, not a market claim.** The default universe is synthetic with a small,
+  *regime-consistent* lag-1 mean-reversion edge plus decoys (volume carries no signal) and
+  three OOS regimes (bull / bear / chop). Result: the mean-reversion alpha clears the gate
+  (deflated worst-regime OOS Sharpe **+1.66**), while momentum, always-long (wins 3 regimes,
+  loses the bear regime → killed by the worst-regime rule), and the volume decoy all fail.
+  Real OHLCV drops in later via `AlphaProblem(bars=...)` from a CSV — asked the user for data.
+- **11 new tests, all green (31 total via `python3 -m tests.test_core`).** Cover the grammar,
+  the no-look-ahead property, cost drag, deflation-grows-with-trials, worst-regime selection,
+  the robust-alpha-passes / overfits-fail split, degenerate quarantine, grounded-lesson
+  distillation, the offline fallback, and an end-to-end discovery run.
+- Known sandbox bug (spawn under `-c`/stdin, from FINDINGS.md) is untouched — it doesn't
+  affect `trade_lab` (pure DSL eval, no spawned sandbox). Left for a follow-up.
+  Next: feed real OHLCV; let `mentat.trade` loop for real hours with the LLM core proposing.

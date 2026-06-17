@@ -28,15 +28,22 @@ high-school senior; see the swechats-project memory + ~/college-strategy).
 - `discover.py` — runner: discover a verified Sidon set.
 - `self_research.py` + `improve.py` — improve the user's OWN `~/alpha-evolver` Max Cut
   heuristic, scored by alpha-evolver's own offline `maxcut_lab.evaluate_program`.
+- `trade_lab.py` + `trade.py` — anti-overfit alpha discovery (VISION.md flagship): an alpha
+  DSL + a walk-forward, cost-aware, multi-regime, **deflated-Sharpe** OOS verifier. Pure
+  Python. Verification IS the anti-overfit gate. Synthetic universe by default;
+  `AlphaProblem(bars=...)` takes real OHLCV.
 - `think.py` — runner: rediscover a hidden law from samples.
 - `jarvis.py` — the personal-ops hub: browser voice UI (Web Speech) + a manual Anthropic
   tool-use loop + **17 tools** (see below). The big one.
-- `tests/test_core.py` — **20 tests**, run with the system `python3` (no deps needed).
+- `tests/test_core.py` — **31 tests**, run with the system `python3` (no deps needed).
 
-## The three flagships (all proven, all in git history)
+## The flagships (all proven, all in git history)
 1. **Math discovery** (`mentat.discover`) — found a verified Sidon set 14→15 in [1,200].
 2. **Self-research** (`mentat.improve`) — beat the alpha-evolver baseline (fitness 0.7800 vs 0.7788).
 3. **Jarvis** (`mentat.jarvis`) — the assistant.
+4. **Anti-overfit alpha discovery** (`mentat.trade`) — found a robust mean-reversion alpha
+   (deflated worst-regime OOS Sharpe +1.66) while momentum/always-long/decoys were killed by
+   the OOS+cost+deflation gate. Synthetic testbed; real OHLCV plugs in.
 
 ## Jarvis tools (17)
 `get_datetime`, `get_weather`, `research_status`, `remember`/`recall` (flat notes),
@@ -55,7 +62,7 @@ Hub — dispatch real verified discovery).
   `~/swechats/.env`. Standard incantation:
   ```bash
   cd ~/mentat && set -a && . ~/swechats/.env && set +a && \
-    ~/swechats/.venv/bin/python -m mentat.<think|discover|improve|jarvis>
+    ~/swechats/.venv/bin/python -m mentat.<think|discover|improve|trade|jarvis>
   ```
 - **Jarvis server** runs at `http://localhost:8765` (open in Chrome). Restart it (in the
   background) whenever `jarvis.py` changes; the browser caches the old UI, so hard-refresh.
