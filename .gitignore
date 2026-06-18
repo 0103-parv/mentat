@@ -16,3 +16,4 @@ mentat/trade_memory*.json
 data/
 market_knowledge.json
 research_journal.json
+realm_knowledge.json

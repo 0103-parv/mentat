@@ -60,11 +60,16 @@ high-school senior; see the swechats-project memory + ~/college-strategy).
   keeps only verifier-proven results, accumulates best-ever into a persistent journal
   (`research_journal.json`), writes up what held. Also a Jarvis tool (`run_research`), so
   mandate mode can launch an overnight run.
+- `realm.py` — the REALM-MIND (toward "omniscient in one realm", honestly): maps a market
+  across a broad facet space, gates every hypothesis (deflated-OOS), accumulates a PERSISTENT
+  knowledge map of verified edges + ruled-out facets, LOOPS UNTIL DRY, reports coverage +
+  open frontier + the honest "edges are provisional" caveat. `--data <csv>` for a real market.
+  On real S&P 500: 0/12 facets survived 3,840 gated hypotheses — the honest anti-overfit map.
 - `operate.py` — runner: "you have full authority to <task>" and Mentat does it itself.
   `python3 -m mentat.operate "<task>"` runs a bounded, logged, autonomous tool loop to
   completion (safety floor stays on; `--no-guard` to drop it; `--steps N`). Uses stored
   credentials, verifies its own work, reports what (if anything) still needs the human.
-- `tests/test_core.py` — **49 tests**, run with the system `python3` (no deps needed).
+- `tests/test_core.py` — **50 tests**, run with the system `python3` (no deps needed).
   Capture the exit code directly (`python3 -m tests.test_core; echo $?`) — piping to `tail`
   masks a failing exit.
 
@@ -93,7 +98,7 @@ syntax-checked, optional verify_cmd + ROLLBACK on failure), `web_search` (+Brave
   `~/swechats/.env`. Standard incantation:
   ```bash
   cd ~/mentat && set -a && . ~/swechats/.env && set +a && \
-    ~/swechats/.venv/bin/python -m mentat.<think|discover|improve|trade|creativity|illuminate|discover_diverse|curriculum|research|operate|jarvis>
+    ~/swechats/.venv/bin/python -m mentat.<think|discover|improve|trade|creativity|illuminate|discover_diverse|curriculum|research|operate|realm|jarvis>
   ```
 - **Jarvis server** runs at `http://localhost:8765` (open in Chrome). Restart it (in the
   background) whenever `jarvis.py` changes; the browser caches the old UI, so hard-refresh.

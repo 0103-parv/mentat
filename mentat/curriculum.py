@@ -115,12 +115,13 @@ class KnowledgeBase:
         return "\n".join(lines)
 
 
-def study(domain: str, bars, *, gens: int = 12, k: int = 16, seed: int = 7,
+def study(domain: str, bars, *, facets=None, gens: int = 12, k: int = 16, seed: int = 7,
           mem_path: Path | None = None) -> tuple[KnowledgeBase, Memory]:
+    facets = facets or FACETS
     kb = KnowledgeBase(domain=domain)
     knowledge = Memory()                    # accumulates verified LESSONS across facets
-    problem = AlphaProblem(bars=bars, n_trials=len(FACETS) * gens * k)
-    for facet, question, features in FACETS:
+    problem = AlphaProblem(bars=bars, n_trials=len(facets) * gens * k)
+    for facet, question, features in facets:
         # FRESH search memory per facet so its elite pool can't leak another facet's
         # signal in — every finding is attributable to THIS facet's own features.
         facet_mem = Memory()

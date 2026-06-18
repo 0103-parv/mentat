@@ -603,6 +603,25 @@ def test_diverse_sidon_illuminates_a_verified_frontier():
         assert counterexample_sidon(sorted(set(cset))) is None   # every entry is proven Sidon
 
 
+def test_realm_mind_maps_and_loops_until_dry():
+    """The realm-mind explores every facet, loops until dry, and keeps only verified
+    edges — with the honest 'provisional' caveat in the report."""
+    import tempfile
+    from mentat import realm
+    orig = realm.MAP_PATH
+    with tempfile.TemporaryDirectory() as d:
+        realm.MAP_PATH = Path(d) / "realm.json"
+        try:
+            m = realm.map_realm("synthetic market", synthetic_universe(),
+                                dry_rounds=1, max_rounds=3, log=lambda *_: None)
+        finally:
+            realm.MAP_PATH = orig
+    assert len(m["facets"]) == len(realm.REALM_FACETS)    # full facet coverage
+    assert any(d["verified"] for d in m["facets"].values())   # finds the reversion edge
+    rpt = realm.report(m)
+    assert "VERIFIED" in rpt and "PROVISIONAL" in rpt     # honest caveat present
+
+
 def test_research_autopilot_accumulates_verified_findings():
     import tempfile
     from mentat import research
