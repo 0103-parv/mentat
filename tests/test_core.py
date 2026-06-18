@@ -362,7 +362,8 @@ def test_worst_regime_is_the_minimum_regime():
     per = {lab: segment_metrics(pos, bars.ret, s, e, 0.001)["sharpe"]
            for lab, s, e in bars.regimes if not lab.startswith("is")}
     m = walk_forward_backtest("c_1", bars, n_trials=72)
-    assert m["worst_oos_sharpe"] == min(per.values()) * (252 ** 0.5)
+    import math as _math
+    assert _math.isclose(m["worst_oos_sharpe"], min(per.values()) * _math.sqrt(252))
     assert max(per.values()) > 0 > min(per.values())         # good somewhere, bad somewhere
 
 
@@ -560,6 +561,18 @@ def test_illumination_returns_more_diverse_designs_than_greedy():
     greedy = statistics.mean(retained(GreedyProposer, False, s) for s in (1, 2, 3))
     illum = statistics.mean(retained(IlluminationProposer, True, s) for s in (1, 2, 3))
     assert illum > 2 * greedy                        # a far richer verified portfolio
+
+
+def test_curriculum_isolates_facets_no_leakage():
+    """Each market facet is studied in isolation: a finding must use only THAT
+    facet's own features — the reversion signal must not leak into other facets."""
+    from mentat.curriculum import FACETS, study
+    kb, knowledge = study("test", synthetic_universe(), gens=6, k=12, seed=7)
+    assert set(kb.facets) == {f[0] for f in FACETS}      # every facet studied
+    for name, _, feats in FACETS:
+        if "ret1" not in feats:                          # reversion must not leak in
+            assert "ret1" not in kb.facets[name]["best_alpha"]
+    assert all("verified" in d for d in kb.facets.values())
 
 
 def test_alpha_behavior_classifies_signal_families():
