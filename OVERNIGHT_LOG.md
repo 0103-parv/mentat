@@ -150,3 +150,24 @@ architecture doc.
   here. Data lives in gitignored `data/`. 32 tests green; committed (d8c51d3).
   Next: let `mentat.trade` loop for real hours with the **LLM core** proposing richer alphas
   (the baselines are deliberately simple) — the gate guarantees only genuine OOS edges survive.
+
+- **The "think like a brain" upgrade: the creativity engine, ported from Codex's
+  alpha-evolver.** The user asked to bring the brain-thinking idea in and confirmed Codex had
+  already built it. Verified directly (no `codex` CLI installed, so I read its work): the
+  alpha-evolver git log shows the full brain — productive surprise, quarantine, modes, sleep,
+  novelty, motifs, lineage, ablation. **Confirmed it's Codex's; reused it rather than
+  rebuilding.** Ported the engine into Mentat's domain-agnostic kernel (`BrainConfig`), so
+  every flagship can be creative: generic `novelty`/`fragments`, a **quality-diversity elite
+  pool** (keep the best AND the most novel — creativity with no proposer changes),
+  predict-then-test **productive surprise**, an **extreme-surprise quarantine** via a
+  `Problem.stress_verify` hook (the proven safety half — wired into the alpha flagship as a
+  2nd anti-overfit gate), **sleep/consolidation**, and a **motif library**. All **ablatable**;
+  `solve(brain=None)` is the old kernel, so nothing existing changed.
+- **Honest ablation (`mentat.creativity`).** Novelty is an explore/exploit **dial**: the
+  default raises pool diversity (0.26 → 0.29) at *equal* solve (creativity for free); cranked
+  up it maximizes diversity (→ 0.66) but trades convergence on a single-answer task — exactly
+  Codex's own finding (novelty helps open-ended, not convergent search). `discover`/`trade`
+  now run brain-ON. `fragments()` memoized so the brain stays cheap enough to loop for hours.
+  See `CREATIVITY.md`. **39 tests green**; committed (a717289, d3af742, 6f4341d).
+  Next: a 2nd open-ended discovery domain where high-novelty illumination clearly wins; an
+  overfit-trap universe to demonstrate the quarantine firewall's bite on adversarial data.
