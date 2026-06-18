@@ -520,6 +520,19 @@ def test_alpha_stress_verify_keeps_robust_flags_junk():
     assert junk.suspicious and not junk.passed               # a fragile/invalid alpha is caught
 
 
+def test_creativity_ablation_brain_raises_diversity():
+    """The headline creativity claim, deterministically: novelty pressure produces a
+    more DIVERSE pool of verified solutions than the plain kernel."""
+    import random
+    from mentat.creativity import _run
+    xs = [round(i * 0.4, 2) for i in range(-5, 6)]
+    prob = SymbolicRegression(lambda x: x * x - 1, xs, tol=0.2)
+    off = _run(BrainConfig.off(), range(1, 5), 25, 16, prob)
+    on = _run(BrainConfig(novelty_weight=3.0), range(1, 5), 25, 16, prob)
+    assert on["diversity"] > off["diversity"]      # creativity = a more diverse verified pool
+    _ = random  # (RandomProposer seeded inside _run)
+
+
 def _run_all():
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for fn in fns:

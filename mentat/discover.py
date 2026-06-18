@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import random
 
-from .core import Memory, solve
+from .core import BrainConfig, Memory, solve
 from .math_lab import CodeProposer, GREEDY, POWERS, SidonSet
 from .reasoning import AnthropicCore, core_available
 
@@ -53,7 +53,10 @@ def main():
     print(f"                 second smaller n, so a hardcoded table can't fake it)\n")
 
     memory = Memory()
-    result = solve(problem, proposer, memory, generations=8, k=5, log=_logger(proposer))
+    # Brain ON: the quality-diversity pool keeps a DIVERSE library of verified
+    # constructions (creativity), not just near-duplicates of the single largest.
+    result = solve(problem, proposer, memory, generations=8, k=5,
+                   log=_logger(proposer), brain=BrainConfig())
 
     print()
     if result.solved:

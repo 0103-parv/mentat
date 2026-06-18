@@ -17,7 +17,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from .core import Memory, solve
+from .core import BrainConfig, Memory, solve
 from .reasoning import AnthropicCore, core_available
 from .trade_lab import AlphaProblem, AlphaProposer, expr_to_str, load_price_csv, synthetic_universe
 
@@ -84,8 +84,11 @@ def main() -> int:
         # One memory file per series so warm-starts don't mix alphas across markets.
         mem_path = Path(__file__).parent / f"trade_memory_{label}.json"
         memory = Memory() if fresh else Memory.load(mem_path)
+        # Brain ON: a diverse pool of candidate alphas (creativity) PLUS the
+        # extreme-surprise quarantine (stress_verify under harsher costs) — a second
+        # anti-overfit firewall stacked on the deflated-Sharpe gate.
         result = solve(problem, proposer, memory, generations=generations, k=k,
-                       log=_logger(proposer))
+                       log=_logger(proposer), brain=BrainConfig())
         memory.save(mem_path)
 
         if result.solved:

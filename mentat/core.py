@@ -153,13 +153,24 @@ def keywords(text: str) -> set[str]:
 # --------------------------------------------------------------------------- #
 # creativity: generic novelty over arbitrary candidates  (from alpha-evolver) #
 # --------------------------------------------------------------------------- #
+_FRAG_CACHE: dict[str, set[str]] = {}
+
+
 def fragments(candidate: Any) -> set[str]:
     """A candidate's structural fingerprint: every sub-structure + every token.
 
     Works for any candidate the kernel sees — nested tuples/lists (expression
     trees), strings (code/DSL), dicts (programs). This is what lets novelty be
     measured domain-agnostically, the same way alpha-evolver fingerprints
-    sub-expressions to score how different a new idea is from everything tried."""
+    sub-expressions to score how different a new idea is from everything tried.
+
+    Memoized by canonical repr (fragments is pure): elites are fingerprinted over
+    and over across generations, so the cache is what keeps the brain cheap enough
+    to loop for hours."""
+    key = repr(candidate)
+    cached = _FRAG_CACHE.get(key)
+    if cached is not None:
+        return cached
     out: set[str] = set()
 
     def walk(node: Any) -> None:
@@ -180,7 +191,10 @@ def fragments(candidate: Any) -> set[str]:
             out.add(repr(node))
 
     walk(candidate)
-    return out or {repr(candidate)}
+    result = out or {repr(candidate)}
+    if len(_FRAG_CACHE) < 100_000:        # bounded; pure function so any entry is reusable
+        _FRAG_CACHE[key] = result
+    return result
 
 
 def novelty(candidate: Any, others: list) -> float:
