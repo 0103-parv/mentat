@@ -103,7 +103,16 @@ def main() -> int:
               f"[bar {problem.target:.2f}] — {verdict}")
         print(f"     best alpha: {best}")
         if result.verdict and result.verdict.detail:
-            print(f"     {result.verdict.detail}\n")
+            print(f"     {result.verdict.detail}")
+        # Illuminated FAMILY map: the best alpha of each signal family (a diverse
+        # portfolio of signals, not one). Each scored by the same deflated OOS gate.
+        if memory.archive:
+            print(f"     signal-family map ({len(memory.archive)} families illuminated):")
+            for fam, (score, alpha) in sorted(memory.archive.items(),
+                                              key=lambda kv: -kv[1][0]):
+                mark = "PASS" if score >= problem.target else "fail"
+                print(f"       {fam:11} deflated OOS={score:+.2f} [{mark}]  {expr_to_str(alpha)}")
+        print()
     print("Verification is the gate: every number above is a worst-regime, after-cost, "
           f"deflated OOS Sharpe.{'' if solved_any else ' Nothing cleared the bar — honest.'}")
     return 0

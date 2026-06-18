@@ -562,6 +562,17 @@ def test_illumination_returns_more_diverse_designs_than_greedy():
     assert illum > 2 * greedy                        # a far richer verified portfolio
 
 
+def test_alpha_behavior_classifies_signal_families():
+    from mentat.trade_lab import AlphaProblem
+    p = AlphaProblem()
+    assert p.behavior(["neg", "ret1"]) == "reversion"
+    assert p.behavior("mom20") == "momentum"
+    assert p.behavior(["safe_div", "vol10", "vol20"]) == "volatility"
+    assert p.behavior("volume_z") == "volume"
+    assert p.behavior("c_1") == "constant"             # no feature leaves
+    assert p.behavior(["frobnicate", "ret1"]) is None  # off-grammar -> no niche
+
+
 def test_diverse_sidon_illuminates_a_verified_frontier():
     """Illuminated math: many span niches, each holding a PROVEN Sidon set."""
     import random

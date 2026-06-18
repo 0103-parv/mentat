@@ -58,6 +58,26 @@ CONSTANTS = {
 }
 _UNARY = {"neg", "abs", "sign", "tanh", "zscore"}
 _BINARY = {"add", "sub", "mul", "safe_div", "min", "max"}
+
+# Each feature's signal FAMILY — the illumination niche, so the agent keeps the best
+# robust alpha of each kind (a diverse family of signals).
+_FEATURE_FAMILY = {
+    "ret1": "reversion", "accel": "reversion",
+    "mom5": "momentum", "mom10": "momentum", "mom20": "momentum",
+    "vol10": "volatility", "vol20": "volatility",
+    "volume_z": "volume", "price_ma_gap": "trend", "hl_range": "range",
+}
+
+
+def _feature_leaves(expr) -> list[str]:
+    if isinstance(expr, str):
+        return [expr] if expr in FEATURES else []
+    if isinstance(expr, (list, tuple)) and expr:
+        out: list[str] = []
+        for a in expr[1:]:
+            out.extend(_feature_leaves(a))
+        return out
+    return []
 _ZSCORE_WINDOW = 20
 _MAX_DEPTH = 5
 _MAX_SIZE = 40
@@ -515,6 +535,19 @@ class AlphaProblem(Problem):
 
     def solved(self, v: Verdict) -> bool:
         return v.passed
+
+    def behavior(self, candidate):
+        """Illumination niche = the alpha's SIGNAL FAMILY (cheap, structural — no
+        backtest). Lets the kernel keep the best robust alpha of EACH kind, so the
+        result is a diverse FAMILY of signals (reversion / momentum / volatility /
+        trend / volume / range), not one. Returns None for off-grammar alphas."""
+        if not valid_alpha(candidate):
+            return None
+        fams = [_FEATURE_FAMILY[f] for f in _feature_leaves(candidate)
+                if f in _FEATURE_FAMILY]
+        if not fams:
+            return "constant"
+        return max(sorted(set(fams)), key=fams.count)
 
     def stress_verify(self, candidate, verdict: Verdict) -> Verdict:
         """The safety half of productive surprise: re-backtest a suspiciously-good
