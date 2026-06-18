@@ -183,3 +183,23 @@ architecture doc.
   do this. **41 tests green**; committed (da31e3c) and **pushed** to GitHub.
   Next: an overfit-trap universe to show the quarantine firewall's bite on adversarial data;
   wire `behavior` into a real discovery domain (diverse Sidon sets / alpha families).
+
+- **Creativity on real domains + topic mastery (2026-06-17, cont).** Took illumination from
+  toy to real, in the order the user asked:
+  - **(A) Illuminated math** (`mentat.discover_diverse`): a diverse catalog of *proven* Sidon
+    sets — for each span bucket, the largest exhaustively-verified Sidon set. ~11 distinct
+    verified constructions forming the size-vs-span frontier, not one answer. Pure Python.
+  - **(B) Trading illumination** (`AlphaProblem.behavior` + `trade.py` family map): the best
+    robust alpha of EACH signal family (reversion / momentum / volatility / trend / volume /
+    range), each scored by the same deflated-OOS gate — the VISION's "family of signals."
+  - **(C) Topic mastery** (`mentat.curriculum`): study the stock market facet by facet —
+    search in-family alphas, backtest every one (OOS+cost+deflation), keep verified findings
+    as grounded lessons, record honest negatives, carry memory forward. Each facet ISOLATED
+    so findings are attributable (caught + fixed a real signal-leak bug where the shared elite
+    pool let reversion masquerade as other facets' edges). Honest synthetic result: 1/6 facets
+    verifies (mean_reversion); 5 honest negatives. A *verified* understanding of the market.
+  - Fixed a brittle test (exact float `==` on two sqrt forms → `isclose`); also caught that
+    piping the test run to `tail` had been MASKING the non-zero exit — now checked via `$?`.
+  **44 tests green** (exit-code verified); committed and pushed.
+  Next: run the curriculum on real FRED data; an LLM proposer for richer per-facet search;
+  the overfit-trap universe for the quarantine firewall.

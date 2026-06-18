@@ -41,9 +41,17 @@ high-school senior; see the swechats-project memory + ~/college-strategy).
 - `illuminate.py` — runner: **MAP-Elites illumination**, the clean creativity win. A greedy
   maximizer returns ~5 designs; illumination returns ~18 distinct verified designs across a
   behavior space (a portfolio, not a point). Uses the kernel's `Problem.behavior` hook + archive.
+- `discover_diverse.py` — illuminated MATH: a diverse catalog of *proven* Sidon sets (the
+  size-vs-span frontier), each exhaustively verified. Creativity on a real domain.
+- `curriculum.py` — **topic mastery**: study a domain (the stock market) facet by facet —
+  search, backtest every hypothesis (OOS+cost+deflation), keep verified findings as grounded
+  lessons, record honest negatives, move on. One memory carried across facets; each facet
+  isolated so findings are attributable. `--data <csv>` studies a real market.
 - `jarvis.py` — the personal-ops hub: browser voice UI (Web Speech) + a manual Anthropic
   tool-use loop + **17 tools** (see below). The big one.
-- `tests/test_core.py` — **41 tests**, run with the system `python3` (no deps needed).
+- `tests/test_core.py` — **44 tests**, run with the system `python3` (no deps needed).
+  Capture the exit code directly (`python3 -m tests.test_core; echo $?`) — piping to `tail`
+  masks a failing exit.
 
 ## The flagships (all proven, all in git history)
 1. **Math discovery** (`mentat.discover`) — found a verified Sidon set 14→15 in [1,200].
@@ -70,7 +78,7 @@ Hub — dispatch real verified discovery).
   `~/swechats/.env`. Standard incantation:
   ```bash
   cd ~/mentat && set -a && . ~/swechats/.env && set +a && \
-    ~/swechats/.venv/bin/python -m mentat.<think|discover|improve|trade|creativity|illuminate|jarvis>
+    ~/swechats/.venv/bin/python -m mentat.<think|discover|improve|trade|creativity|illuminate|discover_diverse|curriculum|jarvis>
   ```
 - **Jarvis server** runs at `http://localhost:8765` (open in Chrome). Restart it (in the
   background) whenever `jarvis.py` changes; the browser caches the old UI, so hard-refresh.
