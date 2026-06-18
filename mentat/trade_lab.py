@@ -516,6 +516,27 @@ class AlphaProblem(Problem):
     def solved(self, v: Verdict) -> bool:
         return v.passed
 
+    def stress_verify(self, candidate, verdict: Verdict) -> Verdict:
+        """The safety half of productive surprise: re-backtest a suspiciously-good
+        alpha under TRIPLED transaction costs. An edge that only survives at low
+        cost is a fragile/overfit fit — it fails here and gets quarantined; a
+        genuinely robust, low-turnover edge survives. (Codex's ablation showed this
+        quarantine is the piece that consistently earns its keep.)"""
+        try:
+            harsh = max(self.cost * 1.5, self.cost + 0.0003)
+            m = walk_forward_backtest(candidate, self.bars, cost=harsh, n_trials=self.n_trials)
+            d = m["deflated_oos"]
+            ok = math.isfinite(d) and d > 0.0 and m["worst_oos_sharpe"] > 0.0
+            return Verdict(
+                bool(ok and verdict.passed),
+                float(d) if math.isfinite(d) else -1e9,
+                f"stress(3x cost={harsh:.4f}) deflated OOS={d:+.3f}; {verdict.detail}",
+                suspicious=not ok,
+            )
+        except Exception as e:
+            return Verdict(False, -1e9, f"stress rejected: {type(e).__name__}: {e}",
+                           suspicious=True)
+
     def distill(self, best_candidate, best_verdict) -> list[Lesson]:
         if best_candidate is None or best_verdict is None or not best_verdict.detail:
             return []
