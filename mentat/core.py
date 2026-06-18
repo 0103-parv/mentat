@@ -65,6 +65,16 @@ class Problem(ABC):
         """Optionally turn the current best into grounded lesson(s). Default: none."""
         return []
 
+    def behavior(self, candidate: Any) -> Any:
+        """An optional low-dimensional BEHAVIOR descriptor for illumination
+        (MAP-Elites). Return a hashable niche key, or None to disable the archive.
+
+        Creativity-as-illumination: instead of one best answer, the kernel keeps the
+        best solution for EACH behavior niche, filling a whole space of diverse
+        verified solutions. A greedy maximizer collapses to one niche; this is what
+        lets the agent be genuinely inventive across a behavior space."""
+        return None
+
     def stress_verify(self, candidate: Any, verdict: Verdict) -> Verdict:
         """Re-check a TOO-GOOD-TO-BE-TRUE candidate under harsher conditions.
 
@@ -244,6 +254,7 @@ class Memory:
     elites: list = field(default_factory=list)   # [score, candidate], desc by score
     elite_cap: int = 12
     principles: list = field(default_factory=list)  # distilled-at-sleep durable lessons
+    archive: dict = field(default_factory=dict)  # MAP-Elites: behavior niche -> [score, candidate]
     # creativity (set from BrainConfig by solve(); off => identical to the plain pool)
     qd: bool = False                 # quality-diversity elite pool (keep best AND novel)
     novelty_weight: float = 0.0
@@ -257,6 +268,8 @@ class Memory:
             "best_score": self.best_score if math.isfinite(self.best_score) else None,
             "elites": self.elites,
             "principles": self.principles,
+            # JSON keys must be strings; behaviors round-trip as their str form.
+            "archive": [[str(b), s, c] for b, (s, c) in self.archive.items()],
         }, indent=2))
 
     @classmethod
@@ -273,6 +286,7 @@ class Memory:
             best_score=bs if bs is not None else -math.inf,
             elites=d.get("elites", []),
             principles=d.get("principles", []),
+            archive={b: [s, c] for b, s, c in d.get("archive", [])},
         )
 
     def consider_elite(self, score: float, candidate: Any) -> None:
@@ -314,6 +328,20 @@ class Memory:
             worst = min(range(len(self.elites)), key=value)
             del self.elites[worst]
         self.elites.sort(key=lambda sc: sc[0], reverse=True)
+
+    def consider_archive(self, score: float, candidate: Any, behavior: Any) -> None:
+        """MAP-Elites illumination: keep the best candidate for each behavior niche.
+        Filling many niches is creativity — a diverse space of verified solutions,
+        not one optimum."""
+        if behavior is None or not math.isfinite(score):
+            return
+        cur = self.archive.get(behavior)
+        if cur is None or score > cur[0]:
+            self.archive[behavior] = [score, candidate]
+
+    def archive_coverage(self) -> int:
+        """How many behavior niches are filled — the illumination metric."""
+        return len(self.archive)
 
     def mine_motifs(self, top_n: int = 12) -> None:
         """Refresh the motif library: the sub-structures that recur across elites,
@@ -386,6 +414,7 @@ class Result:
     history: list[dict]
     distinct_verified: int = 0   # creativity: # of DISTINCT candidates that passed the gate
     diversity: float = 1.0       # creativity: mean pairwise novelty of the final elite pool
+    coverage: int = 0            # creativity: # of behavior niches illuminated (MAP-Elites)
 
 
 def _predict(memory: Memory, best_score: float) -> float:
@@ -472,6 +501,9 @@ def solve(problem: Problem, proposer: Proposer, memory: Memory,
                 v = stress
             surprises.append(_surprise_signal(error, pe_scale, brain.surprise))
             memory.consider_elite(v.score, cand)
+            # Always record best-per-niche (no-op unless the Problem defines behavior),
+            # so coverage is measured the same way whatever the proposer does.
+            memory.consider_archive(v.score, cand, problem.behavior(cand))
             if v.passed:
                 verified_sigs.add(repr(cand))
             if v.score > best_score:
@@ -508,7 +540,8 @@ def solve(problem: Problem, proposer: Proposer, memory: Memory,
         history.append({"gen": gen, "mode": mode, "best": best_score,
                         "q": round(qrate, 2), "surprise": round(mean_surprise, 3),
                         "diversity": round(memory.pool_diversity(), 3),
-                        "distinct": len(verified_sigs)})
+                        "distinct": len(verified_sigs),
+                        "coverage": memory.archive_coverage()})
         log(f"gen {gen:>3} | {mode:7} | best={best_score:+.4f} "
             f"| quarantine={qrate:.2f} | surprise={mean_surprise:.2f}")
 
@@ -516,11 +549,13 @@ def solve(problem: Problem, proposer: Proposer, memory: Memory,
             log(f"  -> solved at gen {gen}: {best_v.detail}")
             return Result(True, best_cand, best_score, best_v, gen, history,
                           distinct_verified=len(verified_sigs),
-                          diversity=memory.pool_diversity())
+                          diversity=memory.pool_diversity(),
+                          coverage=memory.archive_coverage())
 
     solved = best_v is not None and problem.solved(best_v)
     return Result(solved, best_cand, best_score,
                   best_v or Verdict(False, best_score, "no candidate verified"),
                   generations, history,
                   distinct_verified=len(verified_sigs),
-                  diversity=memory.pool_diversity())
+                  diversity=memory.pool_diversity(),
+                  coverage=memory.archive_coverage())

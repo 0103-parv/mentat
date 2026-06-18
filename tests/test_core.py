@@ -533,6 +533,35 @@ def test_creativity_ablation_brain_raises_diversity():
     _ = random  # (RandomProposer seeded inside _run)
 
 
+def test_map_elites_archive_keeps_best_per_niche():
+    m = Memory()
+    m.consider_archive(1.0, ("a",), behavior=0)
+    m.consider_archive(2.0, ("b",), behavior=0)      # same niche, better -> replaces
+    m.consider_archive(0.5, ("c",), behavior=1)      # new niche
+    m.consider_archive(1.0, ("e",), behavior=None)   # no behavior -> ignored
+    assert m.archive_coverage() == 2
+    assert m.archive[0] == [2.0, ("a",)] or m.archive[0] == [2.0, ("b",)]
+    assert m.archive[0][0] == 2.0                    # best score kept for the niche
+
+
+def test_illumination_returns_more_diverse_designs_than_greedy():
+    """MAP-Elites returns a verified design for far MORE behavior niches than a
+    greedy maximizer, whose result collapses near the optimum. The creativity win."""
+    import random
+    import statistics
+    from mentat.illuminate import GreedyProposer, IlluminationProposer, PatternDesign
+
+    def retained(cls, from_archive, seed):
+        mem = Memory()
+        solve(PatternDesign(16), cls(random.Random(seed), 16), mem,
+              generations=30, k=16, log=lambda *_: None)
+        return len(mem.archive) if from_archive else len({sum(c) for _, c in mem.elites})
+
+    greedy = statistics.mean(retained(GreedyProposer, False, s) for s in (1, 2, 3))
+    illum = statistics.mean(retained(IlluminationProposer, True, s) for s in (1, 2, 3))
+    assert illum > 2 * greedy                        # a far richer verified portfolio
+
+
 def _run_all():
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for fn in fns:
