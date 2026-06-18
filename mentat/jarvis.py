@@ -141,6 +141,41 @@ SYSTEM = (
     "If you don't know something and have no tool for it, say so."
 )
 
+# Mandate mode: the user has granted explicit, full authority for a task. Work to
+# completion autonomously — but the hard limits stay, because they protect the USER's
+# own machine and research, not the task.
+MANDATE_SYSTEM = (
+    "You are Mentat operating under an explicit MANDATE: the user has granted you FULL "
+    "AUTHORITY to accomplish the task below, autonomously, using your tools. "
+    "Work to completion. Take the steps yourself and do NOT ask for confirmation on "
+    "reversible actions — you are authorized; just do them and keep going. "
+    "VERIFY your work before declaring done (re-read files, run the tests/checks) — the "
+    "verification gate still applies; never claim success you didn't confirm. "
+    "A few hard limits remain, and they protect the USER, not block the task: (1) the "
+    "catastrophic-command guard refuses irreversible destruction (wiping disks, deleting "
+    "home/credential trees) — it logs and tells you, so route around it. (2) Some steps "
+    "genuinely need the human: a login or captcha, creating an account as the user, or a "
+    "credential you don't have stored. Do EVERYTHING else, then report precisely what is "
+    "left for the human and why. "
+    "Think briefly out loud as you go. When finished, give a concise report: what you did, "
+    "what you verified, and anything still needing the human."
+)
+
+
+def integrations_report() -> str:
+    """Which integrations are LIVE (credentials present) vs need a key — names only,
+    never values. So you can see at a glance what the system can do hands-free."""
+    rows = [
+        ("Claude reasoning", bool(_load_key())),
+        ("ElevenLabs voice", bool(get_secret("ELEVENLABS_API_KEY"))),
+        ("Brave web search", bool(get_secret("BRAVE_API_KEY"))),
+    ]
+    lines = [f"  {'LIVE ' if ok else 'needs key'}  {name}" for name, ok in rows]
+    missing = [name for name, ok in rows if not ok]
+    tail = ("" if not missing
+            else "\n  (store a missing key once: python3 -m mentat.secrets set <NAME>)")
+    return "integrations:\n" + "\n".join(lines) + tail
+
 
 # --------------------------------------------------------------------------- #
 # tools                                                                       #
@@ -711,6 +746,47 @@ class Jarvis:
         _log_convo("user", text)
         _log_convo("jarvis", reply)
         return reply
+
+    def operate(self, goal: str, *, max_steps: int = 25, model: str | None = None,
+                on_step=None) -> str:
+        """Mandate mode: 'you have full authority to <goal>' — run autonomously to
+        completion. Fresh context (not the chat history), the MANDATE system prompt,
+        the same tools + safety floor + audit log. Bounded by max_steps. Returns the
+        final report."""
+        use_model = model if model in ALLOWED_MODELS else self.model
+        lessons = jarvis_lessons_context()
+        sys_prompt = MANDATE_SYSTEM + (f"\n\nWhat you have LEARNED (follow these):\n{lessons}"
+                                       if lessons else "")
+        history: list[dict] = [{"role": "user", "content": f"MANDATE / full authority:\n{goal}"}]
+        _log_action("mandate", goal)
+        final = ""
+        for step in range(max_steps):
+            resp = self.client.messages.create(
+                model=use_model, max_tokens=2048, system=sys_prompt,
+                tools=TOOLS, messages=history)
+            history.append({"role": "assistant", "content": resp.content})
+            text_now = "".join(b.text for b in resp.content if b.type == "text")
+            if text_now and on_step:
+                on_step(step, text_now)
+            if resp.stop_reason != "tool_use":
+                final = text_now or final
+                break
+            results = []
+            for block in resp.content:
+                if block.type == "tool_use":
+                    if on_step:
+                        on_step(step, f"[tool] {block.name} {dict(block.input or {})}")
+                    try:
+                        out = _DISPATCH[block.name](dict(block.input or {}))
+                    except Exception as e:
+                        out = f"tool error: {type(e).__name__}: {e}"
+                    results.append({"type": "tool_result", "tool_use_id": block.id,
+                                    "content": str(out)})
+            history.append({"role": "user", "content": results})
+        else:
+            final = (final or "") + "\n(reached the step limit before finishing.)"
+        _log_action("mandate-done", (final or "")[:200])
+        return final.strip() or "(mandate produced no report)"
 
 
 # --------------------------------------------------------------------------- #

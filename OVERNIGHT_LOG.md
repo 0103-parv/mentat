@@ -203,3 +203,23 @@ architecture doc.
   **44 tests green** (exit-code verified); committed and pushed.
   Next: run the curriculum on real FRED data; an LLM proposer for richer per-facet search;
   the overfit-trap universe for the quarantine firewall.
+
+- **Hands-free credentials + full-authority mandate mode (2026-06-17, cont).** The user's real
+  blocker wasn't "AI guardrails" — it was missing plumbing: the workflow kept stopping for "you
+  add the key yourself." Fixed properly:
+  - `mentat/secrets.py` — a credential layer (`get_secret`: env -> macOS Keychain -> gitignored
+    .env). Store a key ONCE, hidden: `python3 -m mentat.secrets set NAME` (Keychain, encrypted;
+    values never logged/printed/committed). Wired through `reasoning._load_key` (Anthropic) and
+    Jarvis's ElevenLabs/Brave reads, so the system authenticates autonomously with keys you
+    authorized. NOT bypassing anyone's security — only surfaces secrets you stored yourself.
+  - `Jarvis.operate()` + `mentat/operate.py` — MANDATE mode: "you have full authority to <task>"
+    and Mentat executes it end-to-end (bounded tool loop, audit-logged, safety floor on,
+    verifies its own work). Hard limits kept because they protect the USER's machine/research,
+    not the task; `--no-guard` is the user's explicit override. `integrations_report()` shows
+    which integrations are live.
+  - LIVE-PROVEN: ran a real mandate ("write the package's module list to /tmp and verify it") —
+    it located the package, wrote the file, read it back to confirm, and reported what it did +
+    that nothing needed the human. Fully autonomous, end to end.
+  **47 tests green** (exit-code verified); committed and pushed.
+  Next: an "integrations live" line on Jarvis startup; broaden mandate mode to long unattended
+  runs (chain with the discovery engines).

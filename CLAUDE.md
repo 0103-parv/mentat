@@ -53,8 +53,13 @@ high-school senior; see the swechats-project memory + ~/college-strategy).
   lessons, record honest negatives, move on. One memory carried across facets; each facet
   isolated so findings are attributable. `--data <csv>` studies a real market.
 - `jarvis.py` — the personal-ops hub: browser voice UI (Web Speech) + a manual Anthropic
-  tool-use loop + **17 tools** (see below). The big one.
-- `tests/test_core.py` — **44 tests**, run with the system `python3` (no deps needed).
+  tool-use loop + **17 tools** (see below) + `Jarvis.operate()` MANDATE mode (full-authority
+  autonomous task executor) + `integrations_report()`. The big one.
+- `operate.py` — runner: "you have full authority to <task>" and Mentat does it itself.
+  `python3 -m mentat.operate "<task>"` runs a bounded, logged, autonomous tool loop to
+  completion (safety floor stays on; `--no-guard` to drop it; `--steps N`). Uses stored
+  credentials, verifies its own work, reports what (if anything) still needs the human.
+- `tests/test_core.py` — **47 tests**, run with the system `python3` (no deps needed).
   Capture the exit code directly (`python3 -m tests.test_core; echo $?`) — piping to `tail`
   masks a failing exit.
 

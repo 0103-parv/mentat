@@ -603,6 +603,26 @@ def test_diverse_sidon_illuminates_a_verified_frontier():
         assert counterexample_sidon(sorted(set(cset))) is None   # every entry is proven Sidon
 
 
+def test_integrations_report_shows_status_not_secret_values():
+    import mentat.jarvis as J
+    orig_load, orig_get = J._load_key, J.get_secret
+    J._load_key = lambda: "sk-SECRETVALUE"
+    J.get_secret = lambda name, **kw: "brave-SECRET" if name == "BRAVE_API_KEY" else None
+    try:
+        r = J.integrations_report()
+    finally:
+        J._load_key, J.get_secret = orig_load, orig_get
+    assert "LIVE" in r and "Claude reasoning" in r        # key present -> live
+    assert "needs key" in r and "ElevenLabs" in r         # no key -> flagged
+    assert "SECRETVALUE" not in r and "brave-SECRET" not in r   # NEVER leaks the value
+
+
+def test_mandate_mode_is_defined_and_bounded():
+    import mentat.jarvis as J
+    assert "FULL AUTHORITY" in J.MANDATE_SYSTEM and "VERIFY" in J.MANDATE_SYSTEM
+    assert hasattr(J.Jarvis, "operate")                   # the autonomous executor exists
+
+
 def test_secrets_resolution_and_env_parsing():
     """The secrets layer resolves env-first and parses .env safely. (No value is
     ever logged; this only surfaces credentials the user stored themselves.)"""
