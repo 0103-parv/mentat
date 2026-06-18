@@ -562,6 +562,19 @@ def test_illumination_returns_more_diverse_designs_than_greedy():
     assert illum > 2 * greedy                        # a far richer verified portfolio
 
 
+def test_diverse_sidon_illuminates_a_verified_frontier():
+    """Illuminated math: many span niches, each holding a PROVEN Sidon set."""
+    import random
+    from mentat.discover_diverse import DiverseSidon, SidonSetProposer
+    from mentat.math_lab import counterexample_sidon
+    mem = Memory()
+    solve(DiverseSidon(60), SidonSetProposer(random.Random(1), 60), mem,
+          generations=40, k=20, log=lambda *_: None)
+    assert mem.archive_coverage() >= 3                       # a frontier, not one point
+    for _, cset in mem.archive.values():
+        assert counterexample_sidon(sorted(set(cset))) is None   # every entry is proven Sidon
+
+
 def _run_all():
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for fn in fns:
