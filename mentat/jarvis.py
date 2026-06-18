@@ -328,6 +328,22 @@ def tool_discover_sidon(n: int = 100, target: int = 10, generations: int = 4) ->
             f"[1,{n}] has size {size} (target {target}). {res.verdict.detail[:140]}")
 
 
+def tool_run_research(minutes: float = 0, rounds: int = 1) -> str:
+    """Run the research autopilot: loop the gated discovery engines, keeping only
+    verifier-PROVEN results, accumulating them into the journal. This is how you hand
+    it an overnight goal — pass minutes for a long unattended run."""
+    try:
+        from . import research
+    except Exception as e:
+        return f"(research autopilot unavailable: {type(e).__name__})"
+    mins = float(minutes or 0)
+    n = max(1, int(rounds or 1))
+    _log_action("engine", f"run_research minutes={mins} rounds={n}")
+    journal = research.run(minutes=mins if mins > 0 else None,
+                           rounds=None if mins > 0 else n, log=lambda *_: None)
+    return research.report(journal)
+
+
 def tool_shell(command: str, timeout: int = 60) -> str:
     if _GUARD and _is_catastrophic(command):
         _log_action("shell-BLOCKED", command)
@@ -605,6 +621,14 @@ TOOLS = [
      "input_schema": {"type": "object", "properties": {
          "n": {"type": "integer"}, "target": {"type": "integer"},
          "generations": {"type": "integer"}}}},
+    {"name": "run_research",
+     "description": "Run the research AUTOPILOT: loop ALL the gated discovery engines, keep only "
+                    "verifier-proven results, accumulate them into the journal, and return a "
+                    "report. Pass `minutes` for a long unattended/overnight run, or `rounds` for "
+                    "a fixed count. This is how you 'run research all night and write up what "
+                    "verified'.",
+     "input_schema": {"type": "object", "properties": {
+         "minutes": {"type": "number"}, "rounds": {"type": "integer"}}}},
     {"name": "shell",
      "description": "Run any shell command on the user's Mac and return its output. Full "
                     "terminal access. Use for files, apps, searches, status, automation.",
@@ -659,6 +683,7 @@ _DISPATCH = {
     "improve_maxcut": lambda a: tool_improve_maxcut(a.get("generations", 4)),
     "discover_sidon": lambda a: tool_discover_sidon(a.get("n", 100), a.get("target", 10),
                                                     a.get("generations", 4)),
+    "run_research": lambda a: tool_run_research(a.get("minutes", 0), a.get("rounds", 1)),
     "shell": lambda a: tool_shell(a.get("command", ""), int(a.get("timeout", 60) or 60)),
     "applescript": lambda a: tool_applescript(a.get("script", "")),
     "read_file": lambda a: tool_read_file(a.get("path", "")),

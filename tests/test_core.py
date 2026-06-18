@@ -603,6 +603,30 @@ def test_diverse_sidon_illuminates_a_verified_frontier():
         assert counterexample_sidon(sorted(set(cset))) is None   # every entry is proven Sidon
 
 
+def test_research_autopilot_accumulates_verified_findings():
+    import tempfile
+    from mentat import research
+    orig = research.JOURNAL
+    with tempfile.TemporaryDirectory() as d:
+        research.JOURNAL = Path(d) / "j.json"
+        try:
+            j = research.run(rounds=1, log=lambda *_: None)
+        finally:
+            research.JOURNAL = orig
+    assert j["rounds"] == 1
+    dom = j["domains"]
+    assert dom["sidon_frontier"]["max_size"] >= 5         # found proven Sidon sets
+    assert dom["design_illumination"]["niches_covered"] >= 5
+    assert "market_topics" in dom
+    assert "PROVEN" in research.report(j)                 # report claims only verified results
+
+
+def test_jarvis_run_research_tool_wired():
+    import mentat.jarvis as J
+    assert "run_research" in J._DISPATCH
+    assert any(t["name"] == "run_research" for t in J.TOOLS)
+
+
 def test_integrations_report_shows_status_not_secret_values():
     import mentat.jarvis as J
     orig_load, orig_get = J._load_key, J.get_secret

@@ -53,13 +53,18 @@ high-school senior; see the swechats-project memory + ~/college-strategy).
   lessons, record honest negatives, move on. One memory carried across facets; each facet
   isolated so findings are attributable. `--data <csv>` studies a real market.
 - `jarvis.py` — the personal-ops hub: browser voice UI (Web Speech) + a manual Anthropic
-  tool-use loop + **17 tools** (see below) + `Jarvis.operate()` MANDATE mode (full-authority
+  tool-use loop + **18 tools** (see below) + `Jarvis.operate()` MANDATE mode (full-authority
   autonomous task executor) + `integrations_report()`. The big one.
+- `research.py` — the research AUTOPILOT: hand it a time budget (`--minutes N`) and walk away.
+  Loops the gated discovery engines (Sidon frontier, market topics, design illumination),
+  keeps only verifier-proven results, accumulates best-ever into a persistent journal
+  (`research_journal.json`), writes up what held. Also a Jarvis tool (`run_research`), so
+  mandate mode can launch an overnight run.
 - `operate.py` — runner: "you have full authority to <task>" and Mentat does it itself.
   `python3 -m mentat.operate "<task>"` runs a bounded, logged, autonomous tool loop to
   completion (safety floor stays on; `--no-guard` to drop it; `--steps N`). Uses stored
   credentials, verifies its own work, reports what (if anything) still needs the human.
-- `tests/test_core.py` — **47 tests**, run with the system `python3` (no deps needed).
+- `tests/test_core.py` — **49 tests**, run with the system `python3` (no deps needed).
   Capture the exit code directly (`python3 -m tests.test_core; echo $?`) — piping to `tail`
   masks a failing exit.
 
@@ -71,13 +76,13 @@ high-school senior; see the swechats-project memory + ~/college-strategy).
    (deflated worst-regime OOS Sharpe +1.66) while momentum/always-long/decoys were killed by
    the OOS+cost+deflation gate. Synthetic testbed; real OHLCV plugs in.
 
-## Jarvis tools (17)
+## Jarvis tools (18)
 `get_datetime`, `get_weather`, `research_status`, `remember`/`recall` (flat notes),
 `learn_lesson` (durable GROUNDED rules from corrections — injected into every future
 chat), `shell`, `applescript`, `read_file`, `write_file`, `edit_file` (surgical,
 syntax-checked, optional verify_cmd + ROLLBACK on failure), `web_search` (+Brave-ready),
-`web_fetch`, `add_reminder`, `calendar_today`, `improve_maxcut` + `discover_sidon` (the
-Hub — dispatch real verified discovery).
+`web_fetch`, `add_reminder`, `calendar_today`, `improve_maxcut` + `discover_sidon` +
+`run_research` (the Hub — dispatch real verified discovery + the overnight autopilot).
 
 ## How to run
 - **Tests** (any python, no deps): `cd ~/mentat && python3 -m tests.test_core`
@@ -88,7 +93,7 @@ Hub — dispatch real verified discovery).
   `~/swechats/.env`. Standard incantation:
   ```bash
   cd ~/mentat && set -a && . ~/swechats/.env && set +a && \
-    ~/swechats/.venv/bin/python -m mentat.<think|discover|improve|trade|creativity|illuminate|discover_diverse|curriculum|jarvis>
+    ~/swechats/.venv/bin/python -m mentat.<think|discover|improve|trade|creativity|illuminate|discover_diverse|curriculum|research|operate|jarvis>
   ```
 - **Jarvis server** runs at `http://localhost:8765` (open in Chrome). Restart it (in the
   background) whenever `jarvis.py` changes; the browser caches the old UI, so hard-refresh.
