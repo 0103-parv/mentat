@@ -27,6 +27,7 @@ from pathlib import Path
 
 from .core import Lesson as _Lesson, Memory as _Memory
 from .reasoning import DEFAULT_MODEL, _load_key
+from .secrets import get_secret
 import os
 
 MODEL = os.environ.get("MENTAT_MODEL", DEFAULT_MODEL)
@@ -399,7 +400,7 @@ def tool_web_search(query: str) -> str:
     Keyless open-web scraping is blocked everywhere now; these are the reliable paths.
     For anything specific, pair with web_fetch to read a chosen URL.
     If BRAVE_API_KEY is set, uses the Brave Search API for real-time open-web results."""
-    bk = os.environ.get("BRAVE_API_KEY")
+    bk = get_secret("BRAVE_API_KEY")
     if bk:
         try:
             req = urllib.request.Request(
@@ -504,12 +505,12 @@ def tool_calendar_today() -> str:
 
 
 def elevenlabs_enabled() -> bool:
-    return bool(os.environ.get("ELEVENLABS_API_KEY"))
+    return bool(get_secret("ELEVENLABS_API_KEY"))
 
 
 def elevenlabs_tts(text: str) -> bytes | None:
     """Synthesize speech with ElevenLabs (human-sounding). None if no key / on error."""
-    key = os.environ.get("ELEVENLABS_API_KEY")
+    key = get_secret("ELEVENLABS_API_KEY")
     if not key:
         return None
     body = json.dumps({"text": text, "model_id": "eleven_turbo_v2_5",

@@ -24,7 +24,12 @@ high-school senior; see the swechats-project memory + ~/college-strategy).
   / extreme-surprise quarantine / sleep / motifs — ported from alpha-evolver/Codex,
   ablatable; `solve(brain=None)` is the plain kernel). Zero deps.
 - `reasoning.py` — `AnthropicCore` (Claude-backed proposer), `_load_key` (reads
-  ANTHROPIC_API_KEY from env or a `.env`), `elevenlabs_tts`, JSON/code extractors.
+  ANTHROPIC_API_KEY from env / `.env` / Keychain), `elevenlabs_tts`, JSON/code extractors.
+- `secrets.py` — credential layer so the system USES keys you authorized without re-entering
+  them: `get_secret(NAME)` resolves env -> macOS Keychain -> gitignored `.env`. Store one with
+  `python3 -m mentat.secrets set NAME` (typed hidden, saved to Keychain; values never logged).
+  Jarvis reads ELEVENLABS/BRAVE/Anthropic keys through it. Not for bypassing anyone's security —
+  only surfaces credentials you stored yourself.
 - `demo.py` — symbolic-rediscovery domain (offline mutation proposer + `LLMProposer`).
 - `math_lab.py` — Sidon-set discovery: sandboxed (spawned, resource-capped, hard-killable
   child process) execution of model code + exhaustive counterexample search.

@@ -224,15 +224,19 @@ def test_jarvis_shell_runs_but_guards_catastrophe():
 
 
 def test_jarvis_web_and_voice_helpers():
-    import os
     import mentat.jarvis as J
     # web_fetch degrades gracefully on a bad host (no raise; .invalid never resolves)
     assert J.tool_web_fetch("http://nonexistent.invalid.localhost.test/").startswith("(could not fetch")
     # (web_search hits the network — covered by the live runner, not this unit test)
-    # ElevenLabs is cleanly disabled without a key
-    if not os.environ.get("ELEVENLABS_API_KEY"):
+    # ElevenLabs is cleanly disabled when NO key resolves (force it, so the test does
+    # not depend on whether this machine happens to have a key stored).
+    orig = J.get_secret
+    J.get_secret = lambda name, **kw: None
+    try:
         assert J.elevenlabs_enabled() is False
         assert J.elevenlabs_tts("hello") is None
+    finally:
+        J.get_secret = orig
     assert "web_search" in J._DISPATCH and "web_fetch" in J._DISPATCH
     # calendar/reminder tools are wired; empty reminder is a no-op (no OS side effect)
     assert "add_reminder" in J._DISPATCH and "calendar_today" in J._DISPATCH
@@ -597,6 +601,30 @@ def test_diverse_sidon_illuminates_a_verified_frontier():
     assert mem.archive_coverage() >= 3                       # a frontier, not one point
     for _, cset in mem.archive.values():
         assert counterexample_sidon(sorted(set(cset))) is None   # every entry is proven Sidon
+
+
+def test_secrets_resolution_and_env_parsing():
+    """The secrets layer resolves env-first and parses .env safely. (No value is
+    ever logged; this only surfaces credentials the user stored themselves.)"""
+    import os
+    import tempfile
+    from mentat import secrets as sec
+    os.environ["MENTAT_TEST_SECRET"] = "from_env"
+    try:
+        assert sec.get_secret("MENTAT_TEST_SECRET") == "from_env"      # env wins
+        assert sec.has_secret("MENTAT_TEST_SECRET")
+    finally:
+        del os.environ["MENTAT_TEST_SECRET"]
+    assert sec.get_secret("DEFINITELY_MISSING_XYZ_123", default="d") == "d"
+    with tempfile.NamedTemporaryFile("w", suffix=".env", delete=False) as f:
+        f.write('FOO="bar baz"\nNOPE\nBAR=qux # inline\n')
+        path = Path(f.name)
+    try:
+        assert sec._parse_env_file(path, "FOO") == "bar baz"           # quoted value
+        assert sec._parse_env_file(path, "BAR") == "qux"               # inline comment stripped
+        assert sec._parse_env_file(path, "MISSING") is None
+    finally:
+        os.unlink(path)
 
 
 def _run_all():

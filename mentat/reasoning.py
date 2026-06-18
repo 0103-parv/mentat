@@ -55,7 +55,11 @@ def _load_key() -> str | None:
                         return val
         except OSError:
             pass
-    return None
+    try:                                  # last resort: the macOS Keychain (stored once)
+        from .secrets import _from_keychain
+        return _from_keychain("ANTHROPIC_API_KEY")
+    except Exception:
+        return None
 
 
 def core_available() -> bool:
