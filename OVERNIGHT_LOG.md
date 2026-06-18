@@ -169,5 +169,17 @@ architecture doc.
   Codex's own finding (novelty helps open-ended, not convergent search). `discover`/`trade`
   now run brain-ON. `fragments()` memoized so the brain stays cheap enough to loop for hours.
   See `CREATIVITY.md`. **39 tests green**; committed (a717289, d3af742, 6f4341d).
-  Next: a 2nd open-ended discovery domain where high-novelty illumination clearly wins; an
-  overfit-trap universe to demonstrate the quarantine firewall's bite on adversarial data.
+- **The clean creativity win: MAP-Elites illumination.** Pure novelty is a tradeoff dial and
+  (honestly) does NOT beat greedy on convergent/constrained tasks — confirmed across a
+  deceptive trap, subset-sum, and a Hamming shell (all honest negatives, not forced). The
+  RIGHT mechanism for "find many diverse verified solutions" is illumination: keep the best
+  solution per behavior niche (Mouret & Clune, MAP-Elites). Added a `Problem.behavior` hook +
+  a MAP-Elites archive to the kernel (`Memory.consider_archive`/`archive_coverage`,
+  `Result.coverage`, persisted; maintained whenever a Problem defines behavior, else no-op).
+  `mentat.illuminate`: design a 20-bit pattern, niche = # active bits (21 niches). Honest
+  result (equal exploration, measured by what each method RETURNS): greedy collapses to ~5
+  designs near the optimum; illumination returns ~18 distinct verified designs — **~4x more of
+  the space**, a portfolio not a point, optimum still among them. By construction greedy can't
+  do this. **41 tests green**; committed (da31e3c) and **pushed** to GitHub.
+  Next: an overfit-trap universe to show the quarantine firewall's bite on adversarial data;
+  wire `behavior` into a real discovery domain (diverse Sidon sets / alpha families).

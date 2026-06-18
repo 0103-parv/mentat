@@ -36,12 +36,14 @@ high-school senior; see the swechats-project memory + ~/college-strategy).
   Python. Verification IS the anti-overfit gate. Synthetic universe by default;
   `AlphaProblem(bars=...)` takes real OHLCV.
 - `think.py` — runner: rediscover a hidden law from samples.
-- `creativity.py` — runner: the creativity ablation (brain off vs on). Shows novelty is an
-  explore/exploit dial — diversity for free at the default, illumination when turned up. See
-  `CREATIVITY.md`.
+- `creativity.py` — runner: the novelty ablation (brain off vs on). Shows novelty is an
+  explore/exploit dial — diversity for free at the default. See `CREATIVITY.md`.
+- `illuminate.py` — runner: **MAP-Elites illumination**, the clean creativity win. A greedy
+  maximizer returns ~5 designs; illumination returns ~18 distinct verified designs across a
+  behavior space (a portfolio, not a point). Uses the kernel's `Problem.behavior` hook + archive.
 - `jarvis.py` — the personal-ops hub: browser voice UI (Web Speech) + a manual Anthropic
   tool-use loop + **17 tools** (see below). The big one.
-- `tests/test_core.py` — **39 tests**, run with the system `python3` (no deps needed).
+- `tests/test_core.py` — **41 tests**, run with the system `python3` (no deps needed).
 
 ## The flagships (all proven, all in git history)
 1. **Math discovery** (`mentat.discover`) — found a verified Sidon set 14→15 in [1,200].
@@ -68,7 +70,7 @@ Hub — dispatch real verified discovery).
   `~/swechats/.env`. Standard incantation:
   ```bash
   cd ~/mentat && set -a && . ~/swechats/.env && set +a && \
-    ~/swechats/.venv/bin/python -m mentat.<think|discover|improve|trade|creativity|jarvis>
+    ~/swechats/.venv/bin/python -m mentat.<think|discover|improve|trade|creativity|illuminate|jarvis>
   ```
 - **Jarvis server** runs at `http://localhost:8765` (open in Chrome). Restart it (in the
   background) whenever `jarvis.py` changes; the browser caches the old UI, so hard-refresh.

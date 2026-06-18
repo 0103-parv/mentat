@@ -86,11 +86,24 @@ Same search (rediscover `y = x³ − 2x + 1`), creativity brain OFF vs ON, 8 see
   search, not convergent needle-finding). So: **turn it up for open-ended discovery, keep it
   low when there's one answer to converge on.**
 
-Two creativity wins that *are* robust and shipped:
+Three creativity wins that *are* robust and shipped:
 1. **Diversity for free** at the default, across every domain (the quality-diversity pool).
 2. **The quarantine firewall** (`stress_verify`): the proven safety half, now a second
    anti-overfit gate on the alpha flagship (a too-good alpha is re-tested under harsher costs
    before it's trusted).
+3. **MAP-Elites illumination** (`python3 -m mentat.illuminate`) — the clean win. Define a
+   `Problem.behavior` descriptor and the kernel keeps the best verified solution per niche.
+   Honest result (design a 20-bit pattern, niche = # active bits, equal exploration, measured
+   by what each method *returns*):
+
+   | method | distinct verified designs returned | finds optimum |
+   |---|---|---|
+   | greedy maximizer | ~5 / 21 (collapses near the optimum) | 10/10 |
+   | **MAP-Elites illumination** | **~18 / 21** (a portfolio) | 9/10 |
+
+   This is the creativity that pure novelty *couldn't* deliver on convergent tasks:
+   illumination returns a diverse **portfolio** of verified solutions — a map, not a point —
+   with the optimum still among them. By construction a greedy search can't do this.
 
 The rule stays the same as everywhere else in Mentat: a creative idea is only believed once a
 verifier passes it. **Creativity widens what gets proposed; verification decides what gets
