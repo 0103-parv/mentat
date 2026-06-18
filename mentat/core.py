@@ -65,6 +65,15 @@ class Problem(ABC):
         """Optionally turn the current best into grounded lesson(s). Default: none."""
         return []
 
+    def stress_verify(self, candidate: Any, verdict: Verdict) -> Verdict:
+        """Re-check a TOO-GOOD-TO-BE-TRUE candidate under harsher conditions.
+
+        Called only when the brain flags an extreme-surprise result (a score wildly
+        better than predicted — the classic overfit/bug signature). Default trusts
+        the original verdict; a domain that can stress-test (e.g. a backtest under
+        higher costs) overrides this to confirm or quarantine the surprise."""
+        return verdict
+
 
 # --------------------------------------------------------------------------- #
 # cognitive modes + productive surprise   (from alpha-evolver)                #
@@ -101,6 +110,33 @@ class Mind:
         return {"focus": 0.25, "dream": 0.50, "recover": 0.15}[self.mode]
 
 
+@dataclass
+class BrainConfig:
+    """The creativity brain, ported from alpha-evolver (Codex's design), made
+    domain-agnostic and ABLATABLE so we can prove each piece earns its keep.
+
+    Default is the FULL brain. `solve(brain=None)` runs the plain kernel (every
+    piece off), so existing flagships are unchanged unless they opt in."""
+    novelty: bool = True            # quality-diversity elite pool: keep best AND novel
+    surprise: str = "inverted_u"    # "none" | "monotonic" | "inverted_u"
+    quarantine: bool = True         # stress-test too-good-to-be-true (extreme surprise)
+    modes: bool = True              # dream/focus/recover steer exploration
+    sleep_every: int = 6            # consolidate every N gens (0 disables)
+    motifs: bool = True             # mine reusable sub-structures from elites
+    novelty_weight: float = 0.30    # weight on novelty in the QD pool (alpha-evolver: 0.30)
+    surprise_weight: float = 0.25   # weight on productive surprise in the QD pool
+    surprise_quarantine: float = 3.0  # |error|/scale above this = extreme -> stress-test
+
+    @classmethod
+    def off(cls) -> "BrainConfig":
+        """The baseline: the plain kernel as it was before the creativity engine.
+        Cognitive modes stay on (the original kernel always had them); only the
+        creativity ADDITIONS — novelty, surprise, quarantine, sleep, motifs — are
+        off. `solve(brain=None)` uses this, so existing flagships are unchanged."""
+        return cls(novelty=False, surprise="none", quarantine=False, modes=True,
+                   sleep_every=0, motifs=False, novelty_weight=0.0, surprise_weight=0.0)
+
+
 # --------------------------------------------------------------------------- #
 # grounded memory   (from swechats)                                           #
 # --------------------------------------------------------------------------- #
@@ -112,6 +148,58 @@ _STOP = {"the", "a", "an", "of", "to", "and", "or", "is", "in", "on", "for",
 def keywords(text: str) -> set[str]:
     return {w for w in re.findall(r"[a-zA-Z_][a-zA-Z0-9_]+", text.lower())
             if len(w) > 2 and w not in _STOP}
+
+
+# --------------------------------------------------------------------------- #
+# creativity: generic novelty over arbitrary candidates  (from alpha-evolver) #
+# --------------------------------------------------------------------------- #
+def fragments(candidate: Any) -> set[str]:
+    """A candidate's structural fingerprint: every sub-structure + every token.
+
+    Works for any candidate the kernel sees — nested tuples/lists (expression
+    trees), strings (code/DSL), dicts (programs). This is what lets novelty be
+    measured domain-agnostically, the same way alpha-evolver fingerprints
+    sub-expressions to score how different a new idea is from everything tried."""
+    out: set[str] = set()
+
+    def walk(node: Any) -> None:
+        if isinstance(node, (list, tuple)):
+            out.add(repr(node))                       # the whole sub-structure
+            for i, x in enumerate(node):
+                out.add(f"{i}:{x!r}")                 # positional fragment (Hamming-aware)
+                walk(x)
+        elif isinstance(node, dict):
+            for k, v in sorted(node.items(), key=lambda kv: str(kv[0])):
+                out.add(f"{k}={v!r}")
+                walk(v)
+        elif isinstance(node, str):
+            out.add(node)
+            for tok in re.findall(r"[A-Za-z_][A-Za-z0-9_]+", node):
+                out.add(tok)
+        else:
+            out.add(repr(node))
+
+    walk(candidate)
+    return out or {repr(candidate)}
+
+
+def novelty(candidate: Any, others: list) -> float:
+    """1 - (max Jaccard similarity of this candidate's fingerprint to any other).
+
+    1.0 = unlike anything seen; 0.0 = a duplicate. This is the curiosity signal
+    that rewards genuinely new ideas, not just high-scoring ones."""
+    fa = fragments(candidate)
+    if not others or not fa:
+        return 1.0
+    best = 0.0
+    for o in others:
+        fb = fragments(o)
+        if not fb:
+            continue
+        j = len(fa & fb) / len(fa | fb)
+        if j > best:
+            best = j
+    return 1.0 - best
 
 
 @dataclass
@@ -135,12 +223,16 @@ class Lesson:
 @dataclass
 class Memory:
     lessons: list[Lesson] = field(default_factory=list)
-    motifs: dict[str, float] = field(default_factory=dict)  # fragment -> best score
+    motifs: dict[str, float] = field(default_factory=dict)  # fragment -> frequency weight
     best_candidate: Any = None
     best_score: float = -math.inf
     cap: int = 200
     elites: list = field(default_factory=list)   # [score, candidate], desc by score
     elite_cap: int = 12
+    principles: list = field(default_factory=list)  # distilled-at-sleep durable lessons
+    # creativity (set from BrainConfig by solve(); off => identical to the plain pool)
+    qd: bool = False                 # quality-diversity elite pool (keep best AND novel)
+    novelty_weight: float = 0.0
 
     # -- persistence --------------------------------------------------------
     def save(self, path: str | Path) -> None:
@@ -150,6 +242,7 @@ class Memory:
             "best_candidate": self.best_candidate,
             "best_score": self.best_score if math.isfinite(self.best_score) else None,
             "elites": self.elites,
+            "principles": self.principles,
         }, indent=2))
 
     @classmethod
@@ -165,6 +258,7 @@ class Memory:
             best_candidate=d.get("best_candidate"),
             best_score=bs if bs is not None else -math.inf,
             elites=d.get("elites", []),
+            principles=d.get("principles", []),
         )
 
     def consider_elite(self, score: float, candidate: Any) -> None:
@@ -180,8 +274,54 @@ class Memory:
                 del self.elites[i]
                 break
         self.elites.append([score, candidate])
+        if self.qd and len(self.elites) > self.elite_cap:
+            self._trim_quality_diversity()
+        else:
+            self.elites.sort(key=lambda sc: sc[0], reverse=True)
+            del self.elites[self.elite_cap:]
+
+    def _trim_quality_diversity(self) -> None:
+        """Trim the pool by value = normalized score + novelty_weight * novelty, so
+        it keeps the best AND the most novel (quality-diversity / novelty search).
+
+        A plain top-by-score pool collapses to near-duplicate variants of one
+        lineage; reserving room for novel-but-good candidates is what keeps the
+        search creative — diverse parents breed ideas a greedy pool never reaches."""
+        while len(self.elites) > self.elite_cap:
+            scores = [s for s, _ in self.elites]
+            lo, hi = min(scores), max(scores)
+            span = (hi - lo) or 1.0
+
+            def value(i: int) -> float:
+                s, c = self.elites[i]
+                others = [cc for j, (_, cc) in enumerate(self.elites) if j != i]
+                return (s - lo) / span + self.novelty_weight * novelty(c, others)
+
+            worst = min(range(len(self.elites)), key=value)
+            del self.elites[worst]
         self.elites.sort(key=lambda sc: sc[0], reverse=True)
-        del self.elites[self.elite_cap:]
+
+    def mine_motifs(self, top_n: int = 12) -> None:
+        """Refresh the motif library: the sub-structures that recur across elites,
+        ranked by frequency. These are the agent's own reusable building blocks."""
+        counts: dict[str, float] = {}
+        for _, cand in self.elites:
+            for frag in fragments(cand):
+                counts[frag] = counts.get(frag, 0.0) + 1.0
+        ranked = sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))[:top_n]
+        self.motifs = dict(ranked)
+
+    def pool_diversity(self) -> float:
+        """Mean pairwise novelty within the elite pool (0 = clones, 1 = all distinct).
+        A creativity health metric: a healthy creative search keeps this high."""
+        cands = [c for _, c in self.elites]
+        if len(cands) < 2:
+            return 1.0
+        total, n = 0.0, 0
+        for i, c in enumerate(cands):
+            total += novelty(c, cands[:i] + cands[i + 1:])
+            n += 1
+        return total / n
 
     # -- write path (firewalled: only grounded lessons enter) ---------------
     def learn(self, lesson: Lesson) -> bool:
@@ -230,16 +370,45 @@ class Result:
     verdict: Verdict
     generations: int
     history: list[dict]
+    distinct_verified: int = 0   # creativity: # of DISTINCT candidates that passed the gate
+    diversity: float = 1.0       # creativity: mean pairwise novelty of the final elite pool
+
+
+def _predict(memory: Memory, best_score: float) -> float:
+    """Expected score of the next idea = mean of the current elites (alpha-evolver's
+    _predict_sharpe). Surprise is measured against this, so it tracks generalisation,
+    not just raw quality."""
+    vals = [s for s, _ in memory.elites if math.isfinite(s)]
+    if vals:
+        return sum(vals) / len(vals)
+    return best_score if math.isfinite(best_score) else 0.0
+
+
+def _surprise_signal(error: float, scale: float, mode: str) -> float:
+    if mode == "none":
+        return 0.0
+    if mode == "monotonic":              # Surprise-Search style: linear in |error|
+        return min(abs(error) / max(scale, 1e-9), 1.0)
+    return productive_surprise(error, scale)   # inverted_u: reward moderate, distrust extreme
 
 
 def solve(problem: Problem, proposer: Proposer, memory: Memory,
-          *, generations: int = 40, k: int = 24, log=print) -> Result:
+          *, generations: int = 40, k: int = 24, log=print,
+          brain: "BrainConfig | None" = None) -> Result:
     """Run propose -> verify -> remember -> reflect until solved or out of budget.
 
     `memory` is mutated in place and carries state across runs when persisted —
     a warm (loaded) memory is the difference between thinking from scratch and
     thinking with everything you learned last time still in hand.
+
+    `brain` turns on the creativity engine (ported from alpha-evolver): a
+    quality-diversity elite pool, predict-then-test productive surprise, an
+    extreme-surprise quarantine, cognitive modes, and a sleep/consolidation pass.
+    `brain=None` runs the plain kernel, so existing flagships are unchanged.
     """
+    brain = brain or BrainConfig.off()
+    memory.qd = brain.novelty
+    memory.novelty_weight = brain.novelty_weight
     mind = Mind()
     best_cand = memory.best_candidate
     best_score = memory.best_score
@@ -255,12 +424,15 @@ def solve(problem: Problem, proposer: Proposer, memory: Memory,
             log(f"  warm-start verify raised, discarding remembered best: {type(e).__name__}: {e}")
             best_cand, best_v, best_score = None, None, -math.inf
     history: list[dict] = []
+    pe_scale = 1.0                           # EWMA of |prediction error| -> the surprise scale
+    verified_sigs: set[str] = set()          # distinct ideas that passed the gate (creativity)
 
     for gen in range(1, generations + 1):
         candidates = proposer.propose(problem, memory, mind, k)
         improved = False
         quarantined = 0
         surprises: list[float] = []
+        pred = _predict(memory, best_score)  # predict BEFORE testing this generation
 
         for cand in candidates:
             try:
@@ -271,8 +443,23 @@ def solve(problem: Problem, proposer: Proposer, memory: Memory,
             if v.suspicious:
                 quarantined += 1
                 continue
-            surprises.append(productive_surprise(best_score - v.score, mind.surprise_scale))
+            error = v.score - pred
+            ratio = abs(error) / max(pe_scale, 1e-9)
+            pe_scale = 0.9 * pe_scale + 0.1 * max(abs(error), 1e-6)
+            # Extreme-surprise quarantine: a NEW BEST that is wildly better than
+            # predicted is the classic overfit/bug signature. Stress-test it before
+            # trusting it (the safety half of productive surprise). Default trusts.
+            if (brain.quarantine and v.score > best_score
+                    and ratio > brain.surprise_quarantine):
+                stress = problem.stress_verify(cand, v)
+                if (not stress.passed) or stress.suspicious:
+                    quarantined += 1
+                    continue
+                v = stress
+            surprises.append(_surprise_signal(error, pe_scale, brain.surprise))
             memory.consider_elite(v.score, cand)
+            if v.passed:
+                verified_sigs.add(repr(cand))
             if v.score > best_score:
                 best_score, best_cand, best_v = v.score, cand, v
                 improved = True
@@ -280,24 +467,46 @@ def solve(problem: Problem, proposer: Proposer, memory: Memory,
         qrate = quarantined / max(1, len(candidates))
         mind.surprise_scale = 0.8 * mind.surprise_scale + 0.2 * max(1e-6, abs(best_score))
         mode = mind.reflect(improved, qrate)
+        if not brain.modes:                  # ablate cognitive modes -> always focus
+            mind.mode = mode = "focus"
 
         if best_v is not None:
             for lesson in problem.distill(best_cand, best_v):
                 memory.learn(lesson)
+        # Sleep / consolidation: refresh motifs and distill durable principles from
+        # the TOP DISTINCT elites (not just the single best), the way alpha-evolver
+        # consolidates during sleep.
+        if brain.sleep_every and gen % brain.sleep_every == 0:
+            if brain.motifs:
+                memory.mine_motifs()
+            for _, c in memory.elites[:3]:
+                try:
+                    cv = problem.verify(c)
+                except Exception:
+                    continue
+                for lesson in problem.distill(c, cv):
+                    if memory.learn(lesson):
+                        memory.principles.append({"when": lesson.when, "do": lesson.do})
         memory.best_candidate, memory.best_score = best_cand, best_score
         memory.decay()
 
         mean_surprise = sum(surprises) / len(surprises) if surprises else 0.0
         history.append({"gen": gen, "mode": mode, "best": best_score,
-                        "q": round(qrate, 2), "surprise": round(mean_surprise, 3)})
+                        "q": round(qrate, 2), "surprise": round(mean_surprise, 3),
+                        "diversity": round(memory.pool_diversity(), 3),
+                        "distinct": len(verified_sigs)})
         log(f"gen {gen:>3} | {mode:7} | best={best_score:+.4f} "
             f"| quarantine={qrate:.2f} | surprise={mean_surprise:.2f}")
 
         if best_v is not None and problem.solved(best_v):
             log(f"  -> solved at gen {gen}: {best_v.detail}")
-            return Result(True, best_cand, best_score, best_v, gen, history)
+            return Result(True, best_cand, best_score, best_v, gen, history,
+                          distinct_verified=len(verified_sigs),
+                          diversity=memory.pool_diversity())
 
     solved = best_v is not None and problem.solved(best_v)
     return Result(solved, best_cand, best_score,
                   best_v or Verdict(False, best_score, "no candidate verified"),
-                  generations, history)
+                  generations, history,
+                  distinct_verified=len(verified_sigs),
+                  diversity=memory.pool_diversity())

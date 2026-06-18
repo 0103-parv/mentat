@@ -11,7 +11,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from mentat.core import Lesson, Memory, Mind, Verdict, productive_surprise, solve
+from mentat.core import (
+    BrainConfig, Lesson, Memory, Mind, Verdict, fragments, novelty,
+    productive_surprise, solve,
+)
 from mentat.demo import LLMProposer, RandomProposer, SymbolicRegression, ev, parse_infix, to_str
 from mentat.reasoning import ScriptedCore, extract_json_list
 from mentat.trade_lab import (
@@ -446,6 +449,75 @@ def test_load_price_csv_handles_fred_and_regimes():
         assert a[2] == b[1]
     # close-only series: high==low==close, so hl_range is a dead feature (no leak)
     assert bars.high == bars.close and bars.low == bars.close
+
+
+# --------------------------------------------------------------------------- #
+# the creativity engine (ported from alpha-evolver / Codex)                    #
+# --------------------------------------------------------------------------- #
+def test_fragments_and_novelty():
+    a = ("+", ("x",), ("c", 2.0))
+    fa = fragments(a)
+    assert "x" in fa and any(f.startswith("0:") for f in fa)   # leaf + positional fragments
+    assert novelty(a, []) == 1.0                               # nothing to compare to
+    assert novelty(a, [a]) == 0.0                              # identical -> not novel
+    assert 0.0 < novelty(a, [("-", ("x",), ("c", 5.0))]) < 1.0  # partial overlap
+
+
+def test_quality_diversity_pool_keeps_novel():
+    """Greedy keeps top-by-score and drops the odd-one-out; the QD pool reserves
+    room for the novel candidate. This is the core creativity mechanism."""
+    near1, near2, novel = ("a", "a", "a", "a"), ("a", "a", "a", "b"), ("x", "y", "z", "w")
+    plain = Memory(elite_cap=2)
+    for s, c in [(1.0, near1), (0.9, near2), (0.5, novel)]:
+        plain.consider_elite(s, c)
+    assert novel not in [c for _, c in plain.elites]          # greedy discards the novel one
+
+    qd = Memory(elite_cap=2, qd=True, novelty_weight=3.0)
+    for s, c in [(1.0, near1), (0.9, near2), (0.5, novel)]:
+        qd.consider_elite(s, c)
+    assert novel in [c for _, c in qd.elites]                 # quality-diversity keeps it
+    assert near1 in [c for _, c in qd.elites]                 # ...without losing the best
+
+
+def test_mine_motifs_and_pool_diversity():
+    m = Memory()
+    for s, c in [(1.0, ("+", ("x",), ("c", 1.0))),
+                 (0.9, ("+", ("x",), ("c", 2.0))),
+                 (0.5, ("x",))]:
+        m.consider_elite(s, c)
+    m.mine_motifs()
+    assert m.motifs and any("x" in k for k in m.motifs)       # 'x' recurs across elites
+    assert 0.0 <= m.pool_diversity() <= 1.0
+
+
+def test_solve_brain_records_creativity_metrics():
+    import random
+    xs = [round(i * 0.5, 2) for i in range(-4, 5)]
+    prob = SymbolicRegression(lambda x: x * x - 1, xs, tol=0.2)
+    r = solve(prob, RandomProposer(random.Random(0)), Memory(),
+              generations=10, k=12, log=lambda *_: None, brain=BrainConfig())
+    assert 0.0 <= r.diversity <= 1.0
+    assert r.distinct_verified >= 0
+    assert "diversity" in r.history[0] and "distinct" in r.history[0]
+
+
+def test_brain_off_is_the_plain_kernel():
+    """solve(brain=None) must reproduce the original kernel exactly (modes on, no
+    creativity additions), so every existing flagship is unchanged."""
+    off = BrainConfig.off()
+    assert off.modes and not off.novelty and off.surprise == "none"
+    assert not off.quarantine and off.sleep_every == 0
+
+
+def test_alpha_stress_verify_keeps_robust_flags_junk():
+    from mentat.trade_lab import AlphaProblem
+    p = AlphaProblem()
+    rev = ["neg", "ret1"]
+    v = p.verify(rev)
+    s = p.stress_verify(rev, v)
+    assert v.passed and s.passed and not s.suspicious        # robust edge survives harsher costs
+    junk = p.stress_verify(["frobnicate", "ret1"], Verdict(True, 1.0, "x"))
+    assert junk.suspicious and not junk.passed               # a fragile/invalid alpha is caught
 
 
 def _run_all():
