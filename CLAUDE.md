@@ -69,14 +69,15 @@ high-school senior; see the swechats-project memory + ~/college-strategy).
   reshape/specialize) over the alpha DSL, fired by the brain's modes, synthesizing novel
   hypotheses FROM the verified knowledge base (creativity compounds) — plus an `LLMImaginer`
   that invents a novel concept+rationale. Imagine boldly, verify everything. See `OVERNIGHT_CREATIVITY.md`.
-- `rag.py` + `finance_docs/` — grounded finance QA (the anti-haze fix): pure-Python BM25
-  retrieval, answers ONLY from retrieved passages WITH citations, and REFUSES when no
+- `rag.py` + `embed.py` + `finance_docs/` — grounded finance QA (anti-haze): HYBRID retrieval
+  (BM25 + embedding cosine; `embed.py` is semantic via model2vec/sentence-transformers if installed,
+  else a dependency-free hashing embedder), answers ONLY from retrieved passages WITH citations, and REFUSES when no
   source is relevant. Jarvis tool `finance_qa`. See `GROUNDING.md`. `python3 -m mentat.rag "..."`.
 - `operate.py` — runner: "you have full authority to <task>" and Mentat does it itself.
   `python3 -m mentat.operate "<task>"` runs a bounded, logged, autonomous tool loop to
   completion (safety floor stays on; `--no-guard` to drop it; `--steps N`). Uses stored
   credentials, verifies its own work, reports what (if anything) still needs the human.
-- `tests/test_core.py` — **58 tests**, run with the system `python3` (no deps needed).
+- `tests/test_core.py` — **59 tests**, run with the system `python3` (no deps needed).
   Capture the exit code directly (`python3 -m tests.test_core; echo $?`) — piping to `tail`
   masks a failing exit.
 

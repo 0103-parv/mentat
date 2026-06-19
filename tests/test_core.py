@@ -603,6 +603,19 @@ def test_diverse_sidon_illuminates_a_verified_frontier():
         assert counterexample_sidon(sorted(set(cset))) is None   # every entry is proven Sidon
 
 
+def test_embeddings_and_hybrid_ranking():
+    """Vector embeddings (semantic if installed, hashing otherwise) + hybrid BM25/cosine
+    ranking puts the right doc on top."""
+    from mentat.embed import backend_name, cosine, embed
+    assert backend_name() in ("model2vec", "sentence-transformers", "hashing")
+    v = embed(["sharpe ratio", "sharpe ratio"])
+    assert len(v) == 2 and abs(cosine(v[0], v[1]) - 1.0) < 1e-6      # identical -> cosine 1
+    assert cosine(embed(["deflated sharpe"])[0], embed(["world cup"])[0]) < 0.99
+    from mentat.rag import Rag
+    top = Rag.from_dir().retrieve("deflated sharpe ratio", k=1)
+    assert top and top[0][1] == "risk_adjusted_return"             # hybrid ranks the right doc
+
+
 def test_rag_grounds_and_refuses_off_corpus():
     """Grounded QA: in-corpus questions get cited answers; off-corpus questions are
     REFUSED rather than hallucinated (the anti-haze guarantee)."""

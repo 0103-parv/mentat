@@ -46,6 +46,7 @@ def _chunk(text: str, doc: str, max_words: int = 90) -> list[tuple[str, str]]:
 @dataclass
 class Rag:
     passages: list[tuple[str, str]]            # (doc, text)
+    use_embeddings: bool = True                 # hybrid BM25 + embedding cosine ranking
 
     def __post_init__(self):
         self.toks = [_tok(t) for _, t in self.passages]
@@ -55,6 +56,12 @@ class Rag:
         for tk in self.toks:
             for w in set(tk):
                 self.df[w] = self.df.get(w, 0) + 1
+        self._pvecs = None                      # lazily-computed passage embeddings
+
+    def _ensure_vecs(self) -> None:
+        if self._pvecs is None:
+            from .embed import embed
+            self._pvecs = embed([t for _, t in self.passages])
 
     @classmethod
     def from_dir(cls, path: Path | str = DOCS_DIR) -> "Rag":
@@ -81,9 +88,24 @@ class Rag:
         return s
 
     def retrieve(self, query: str, k: int = 4) -> list[tuple[float, str, str]]:
+        """Hybrid ranking: normalized BM25 + normalized embedding cosine. The returned
+        score is the BM25 (lexical) score, which `answer` uses to guard refusal — so
+        embeddings improve RANKING while grounding stays lexically anchored (anti-haze)."""
         q = _tok(query)
-        scored = sorted(((self._score(q, i), i) for i in range(self.N)), reverse=True)
-        return [(s, self.passages[i][0], self.passages[i][1]) for s, i in scored[:k] if s > 0]
+        bm = [self._score(q, i) for i in range(self.N)]
+        rank = list(bm)
+        if self.use_embeddings:
+            try:
+                from .embed import cosine, embed
+                self._ensure_vecs()
+                qv = embed([query])[0]
+                cos = [max(0.0, cosine(qv, self._pvecs[i])) for i in range(self.N)]
+                bmax, cmax = (max(bm) or 1.0), (max(cos) or 1.0)
+                rank = [bm[i] / bmax + cos[i] / cmax for i in range(self.N)]
+            except Exception:
+                rank = list(bm)
+        order = sorted(range(self.N), key=lambda i: rank[i], reverse=True)[:k]
+        return [(bm[i], self.passages[i][0], self.passages[i][1]) for i in order if rank[i] > 0]
 
     def answer(self, query: str, *, core=None, min_score: float = MIN_SCORE) -> dict:
         """Grounded answer or honest refusal. `core` (a reasoning core) synthesizes a
