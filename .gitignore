@@ -17,3 +17,5 @@ data/
 market_knowledge.json
 research_journal.json
 realm_knowledge.json
+mentat/finetune/data/
+mentat/finetune/adapters/

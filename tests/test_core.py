@@ -603,6 +603,19 @@ def test_diverse_sidon_illuminates_a_verified_frontier():
         assert counterexample_sidon(sorted(set(cset))) is None   # every entry is proven Sidon
 
 
+def test_finetune_dataset_builds_chat_format():
+    """The LoRA path produces a valid chat-format instruction dataset from the corpus."""
+    import json
+    import tempfile
+    from mentat.finetune.prepare_data import build
+    with tempfile.TemporaryDirectory() as d:
+        n_train, n_valid = build(out=d)
+        assert n_train >= 1 and n_valid >= 1
+        rec = json.loads((Path(d) / "train.jsonl").read_text().splitlines()[0])
+        assert [m["role"] for m in rec["messages"]] == ["user", "assistant"]
+        assert rec["messages"][1]["content"]              # non-empty answer
+
+
 def test_embeddings_and_hybrid_ranking():
     """Vector embeddings (semantic if installed, hashing otherwise) + hybrid BM25/cosine
     ranking puts the right doc on top."""
