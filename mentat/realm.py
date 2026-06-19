@@ -49,6 +49,26 @@ REALM_FACETS = [
 ]
 
 
+def generate_facets(rng, n: int = 8) -> list:
+    """B3 — the self-extending idea space (open-endedness): INVENT new facets by
+    combining feature families, so the question-space grows itself instead of being
+    hand-picked. (v1 is combinatorial; LLM-proposed facets are the next layer.)"""
+    from .trade_lab import _FEATURE_FAMILY
+    feats = sorted(_FEATURE_FAMILY)
+    seen = {tuple(sorted(f)) for _, _, f in REALM_FACETS}
+    out, tries = [], 0
+    while len(out) < n and tries < n * 20:
+        tries += 1
+        combo = tuple(sorted(rng.sample(feats, rng.randint(2, 3))))
+        fams = sorted({_FEATURE_FAMILY[f] for f in combo})
+        if combo in seen or len(fams) < 2:           # want a CROSS-family novel question
+            continue
+        seen.add(combo)
+        out.append(("x_".join(fams), f"auto: does {' × '.join(combo)} predict returns?",
+                    list(combo)))
+    return out
+
+
 def _load_map(market: str) -> dict:
     if MAP_PATH.exists():
         try:
@@ -98,8 +118,8 @@ def report(realm: dict) -> str:
     lines.append(f"  RULED OUT / open frontier ({len(frontier)} facets) — searched, no edge held:")
     lines.append("      " + (", ".join(sorted(frontier)) or "(none — every facet has an edge)"))
     lines.append("")
-    cov = 100.0 * len(facets) / max(len(REALM_FACETS), 1)
-    lines.append(f"  Coverage: {len(facets)}/{len(REALM_FACETS)} facets explored ({cov:.0f}%).")
+    lines.append(f"  Coverage: {len(facets)} facets explored "
+                 f"({len(verified)} verified, {len(frontier)} ruled out).")
     lines.append("  Honest caveat: a market edge is PROVISIONAL — it survived our brutal test on "
                  "PAST data;\n  markets are adversarial and non-stationary, so 'verified' means "
                  "'survived', not 'will hold'.")
@@ -107,12 +127,13 @@ def report(realm: dict) -> str:
 
 
 def map_realm(market: str, bars, *, dry_rounds: int = DRY_ROUNDS,
-              max_rounds: int = MAX_ROUNDS, log=print) -> dict:
+              max_rounds: int = MAX_ROUNDS, facets=None, log=print) -> dict:
+    facets = facets or REALM_FACETS
     realm = _load_map(market)
     dry = 0
     while realm["rounds"] < max_rounds and dry < dry_rounds:
         seed = 100 + realm["rounds"]
-        kb, _ = study(market, bars, facets=REALM_FACETS, gens=10, k=16, seed=seed)
+        kb, _ = study(market, bars, facets=facets, gens=10, k=16, seed=seed)
         new = _merge_round(realm, kb.facets, realm["rounds"])
         realm["rounds"] += 1
         MAP_PATH.write_text(json.dumps(realm, indent=2))     # checkpoint each round
@@ -141,9 +162,14 @@ def main() -> int:
     else:
         bars, market = synthetic_universe(), "synthetic market"
 
+    facets = list(REALM_FACETS)
+    if "--auto" in argv:                              # self-extend the idea space (B3)
+        import random as _r
+        facets = facets + generate_facets(_r.Random(0), n=8)
     print(f"REALM-MIND — mapping {market} until dry (toward omniscient-in-one-realm, honestly)")
-    print(f"FACETS   {len(REALM_FACETS)};  GATE   walk-forward OOS + cost + deflated Sharpe\n")
-    realm = map_realm(market, bars)
+    print(f"FACETS   {len(facets)}{' (incl. auto-generated)' if '--auto' in argv else ''};  "
+          "GATE   walk-forward OOS + cost + deflated Sharpe\n")
+    realm = map_realm(market, bars, facets=facets)
     print("\n" + report(realm))
     print(f"\n(map saved to {MAP_PATH.name}; re-run to deepen coverage — it builds on itself.)")
     return 0

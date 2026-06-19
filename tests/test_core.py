@@ -700,6 +700,20 @@ def test_creative_discovery_finds_a_verified_alpha():
     assert r.best_score > 0.5                                     # a real, gated, creative edge
 
 
+def test_generate_facets_extends_idea_space():
+    """B3: the idea space self-extends — auto-generated cross-family facets that are valid
+    and genuinely new (open-endedness)."""
+    import random
+    from mentat.realm import REALM_FACETS, generate_facets
+    from mentat.trade_lab import _FEATURE_FAMILY
+    gen = generate_facets(random.Random(0), n=6)
+    assert len(gen) == 6
+    existing = {tuple(sorted(f)) for _, _, f in REALM_FACETS}
+    for _, _, feats in gen:
+        assert all(f in _FEATURE_FAMILY for f in feats) and len(feats) >= 2
+        assert tuple(sorted(feats)) not in existing      # a genuinely new question
+
+
 def test_realm_mind_maps_and_loops_until_dry():
     """The realm-mind explores every facet, loops until dry, and keeps only verified
     edges — with the honest 'provisional' caveat in the report."""

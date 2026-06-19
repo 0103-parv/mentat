@@ -106,5 +106,28 @@ runs nothing"). Ran the roadmap live instead.
   `job_creative_market` (CreativeProposer at risk 0.6, gated) — the overnight autopilot
   discovers by *imagining*, not random search. Live: it synthesized a verified reversion
   alpha across 6 signal families.
-- 57 tests green. **B3 (self-extending idea space — LLM proposes NEW facets/descriptors, not
-  just alphas) still open** — the open-endedness lever, next.
+- 57 tests green.
+- **B3 — self-extending idea space (open-endedness).** `realm.generate_facets()` INVENTS new
+  cross-family facets by combining feature families, so the question-space grows itself
+  instead of being hand-picked. `python3 -m mentat.realm --auto` studies the base 12 + 8
+  auto-generated facets (20 total). (LLM-proposed facets are the next layer.) 58 tests green.
+
+## Prior art — "has this been done?" (pqa over ~/papers, cited)
+The honest answer: the individual mechanisms are ESTABLISHED; our contribution is the FUSION
++ the verification gate + grounded memory, applied to markets. Notably, prior art *validates*
+our specific choices:
+- **Adaptive novelty↔reward = our risk dial.** NSRA-ES dynamically raises novelty search when
+  progress stalls and reverts to reward when it resumes — exactly our risk dial / `Mind` modes
+  (dream when stalled) (Conti et al. 2017, arXiv 1712.06560).
+- **Curiosity's failure mode = why we quarantine extreme surprise.** Prediction-error curiosity
+  can fixate on *stochastic* (un-learnable) novelty — which is precisely what our inverted-U
+  productive surprise distrusts and quarantines (Pathak et al. 2017, arXiv 1705.05363).
+- **Open-endedness = our self-extending facets.** POET co-evolves problems and solvers for
+  open-ended progress without a fixed objective (Wang et al. 2019, arXiv 1901.01753).
+- Open problems named in the literature — adaptively balancing novelty/reward, scaling
+  open-ended curricula, avoiding the stochastic-novelty trap — are exactly what mentat's fusion
+  (risk dial + verification gate + grounded memory) targets. (MAP-Elites & FunSearch/AlphaEvolve
+  aren't in the local corpus; cited from knowledge in CREATIVITY.md.)
+
+**So: artificial creativity, as a tunable, measured, gated, self-extending engine, is now a
+thing in mentat — and it sits exactly where the literature says the open problems are.**
