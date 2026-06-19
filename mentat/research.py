@@ -60,7 +60,23 @@ def job_design_illumination(seed: int) -> dict:
             "of": 21}
 
 
-JOBS = [job_sidon_frontier, job_market_topics, job_design_illumination]
+def job_creative_market(seed: int) -> dict:
+    """CREATIVE synthesis on the market: imagine alphas via creative operators (blend/
+    invert/transfer...) at moderate risk, every one gated by the deflated-OOS verifier."""
+    from .core import BrainConfig
+    from .imagine import CreativeProposer
+    from .trade_lab import AlphaProblem, expr_to_str, synthetic_universe
+    mem = Memory()
+    prob = AlphaProblem(bars=synthetic_universe(), n_trials=12 * 16)
+    r = solve(prob, CreativeProposer(random.Random(seed), risk=0.6), mem,
+              generations=12, k=16, log=lambda *_: None, brain=BrainConfig())
+    return {"domain": "creative_market", "best_deflated": round(r.best_score, 2),
+            "families": r.coverage,
+            "best_alpha": expr_to_str(mem.best_candidate)
+            if mem.best_candidate is not None else "(none)"}
+
+
+JOBS = [job_sidon_frontier, job_market_topics, job_design_illumination, job_creative_market]
 
 
 # --------------------------------------------------------------------------- #
@@ -94,6 +110,15 @@ def _merge(journal: dict, finding: dict) -> None:
     elif dom == "design_illumination":
         best = max(finding["niches_covered"], (cur or {}).get("niches_covered", 0))
         journal["domains"][dom] = {"niches_covered": best, "of": finding["of"]}
+    elif dom == "creative_market":
+        prev = (cur or {}).get("best_deflated", -1e9)
+        if finding["best_deflated"] >= prev:                # keep the best creative alpha
+            journal["domains"][dom] = {"best_deflated": finding["best_deflated"],
+                                       "families": finding["families"],
+                                       "best_alpha": finding["best_alpha"]}
+        else:
+            cur["families"] = max(cur.get("families", 0), finding["families"])
+            journal["domains"][dom] = cur
 
 
 def report(journal: dict) -> str:
@@ -111,6 +136,10 @@ def report(journal: dict) -> str:
         i = d["design_illumination"]
         lines.append(f"  Design illumination: {i['niches_covered']}/{i['of']} behavior niches "
                      "filled with verified designs")
+    if "creative_market" in d:
+        c = d["creative_market"]
+        lines.append(f"  Creative market synthesis: best deflated OOS {c['best_deflated']:+.2f} "
+                     f"across {c['families']} signal families — {c['best_alpha']}")
     lines.append("")
     lines.append("  Every line above is a verifier-PROVEN result (or an honest negative). "
                  "Nothing asserted.")

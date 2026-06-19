@@ -645,6 +645,29 @@ def test_creative_operators_and_proposer():
         assert len(out) == 8 and all(valid_alpha(c) for c in out)
 
 
+def test_risk_dial_selects_bolder_operators():
+    """B4: the thought-risk dial shifts the operator set — bold at high risk,
+    conservative at low risk."""
+    import random
+    from mentat import imagine as I
+    from mentat.core import Mind
+    bold = I.CreativeProposer(random.Random(0), risk=0.9)
+    safe = I.CreativeProposer(random.Random(0), risk=0.1)
+    assert bold._ops(Mind()) == I._OPS_BY_MODE["dream"]
+    assert safe._ops(Mind()) == I._OPS_BY_MODE["recover"]
+
+
+def test_creativity_ablation_explores_idea_space():
+    """B2: creative synthesis explores at least as much of the signal-family space as
+    random search (creativity = broader exploration), and the ablation is well-formed."""
+    from mentat.imagine import creativity_ablation
+    rows = creativity_ablation(seeds=range(1, 3), gens=6, k=10)
+    assert len(rows) == 4
+    rnd = next(r for r in rows if r[0] == "random/baseline")
+    creative_max_families = max(r[3] for r in rows if r[0] != "random/baseline")
+    assert creative_max_families >= rnd[3]
+
+
 def test_llm_imaginer_parses_and_falls_back():
     import random
     from mentat import imagine as I

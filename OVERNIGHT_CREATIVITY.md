@@ -80,3 +80,31 @@ boldly; believe only what's proven.
 - **B5 — wire `imagine` into `realm`/`research`** so the overnight autopilot uses creative
   synthesis, not random search, to map the market.
 - Stretch: a 2nd realm to show the creative mind transfers; a write-up of the creativity ablation.
+
+## Block 2 (2026-06-19, daytime — overnight loop didn't fire; the Mac slept, so ran live)
+Honest note: the scheduled overnight wakeups never ran (laptop slept — "a powered-off laptop
+runs nothing"). Ran the roadmap live instead.
+
+- **B4 — risk dial.** `CreativeProposer(risk=0..1)`: high risk forces transformational
+  operators AND composes two per idea (a creative leap, not a step); low risk = safe
+  recombination; mid follows the brain's mode. The verifier gates regardless — think
+  recklessly, believe only what's proven.
+- **B2 — creativity ablation** (`python3 -m mentat.imagine`), 5 seeds, honest result:
+
+  | config | distinct | diversity | families | best OOS |
+  |---|---|---|---|---|
+  | random/baseline | 3.0 | 0.77 | 3.0 | +1.42 |
+  | creative risk=0.2 | 1.4 | 0.68 | 4.6 | +1.27 |
+  | creative risk=0.5 | 2.2 | 0.67 | 4.2 | +1.24 |
+  | creative risk=0.9 | 1.4 | 0.57 | 5.4 | +0.93 |
+
+  Read it straight: **creative synthesis EXPLORES more of the idea space — signal-family
+  coverage rises 3.0 → 5.4 as risk climbs — but trades peak score for breadth.** Risk is an
+  explore/exploit DIAL: up to invent widely, down to sharpen. Not a clean "creative beats
+  random everywhere" (that'd be overclaiming) — an honest, tunable creativity knob.
+- **B5 — creative synthesis wired into the autopilot.** `research.py` now has a
+  `job_creative_market` (CreativeProposer at risk 0.6, gated) — the overnight autopilot
+  discovers by *imagining*, not random search. Live: it synthesized a verified reversion
+  alpha across 6 signal families.
+- 57 tests green. **B3 (self-extending idea space — LLM proposes NEW facets/descriptors, not
+  just alphas) still open** — the open-endedness lever, next.

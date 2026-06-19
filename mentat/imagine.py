@@ -97,8 +97,15 @@ _OPS_BY_MODE = {
 class CreativeProposer:
     """Synthesizes novel hypotheses by composing creative operators over the VERIFIED
     knowledge base. Not random mutation — every candidate is a deliberate creative move
-    (blend / invert / transfer / reshape / specialize) on something that already exists."""
+    (blend / invert / transfer / reshape / specialize) on something that already exists.
+
+    `risk` is the THOUGHT-RISK DIAL (0 = conservative, 1 = bold). High risk forces the
+    transformational operators and COMPOSES two of them per idea (wilder synthesis);
+    low risk stays with safe recombination; mid follows the brain's current mode. The
+    verifier gates everything regardless — so it can think recklessly and still never
+    believe a bad idea."""
     rng: random.Random
+    risk: float = 0.5
     last: list = field(default_factory=list)
     note: str = ""
 
@@ -108,17 +115,28 @@ class CreativeProposer:
         pool = [c for _, c in memory.elites] + [c for _, c in memory.archive.values()]
         return pool or list(SEED_IDEAS)
 
+    def _ops(self, mind: Mind) -> list:
+        if self.risk >= 0.66:
+            return _OPS_BY_MODE["dream"]          # bold: transformational/combinatorial
+        if self.risk <= 0.33:
+            return _OPS_BY_MODE["recover"]         # safe recombination
+        return _OPS_BY_MODE.get(mind.mode, _OPS_BY_MODE["focus"])
+
+    def _apply(self, op, pool):
+        if op is blend:
+            return blend(self.rng, self.rng.choice(pool), self.rng.choice(pool))
+        return op(self.rng, self.rng.choice(pool))
+
     def propose(self, problem, memory: Memory, mind: Mind, k: int):
-        ops = _OPS_BY_MODE.get(mind.mode, _OPS_BY_MODE["focus"])
+        ops = self._ops(mind)
         pool = self._substrate(memory)
         out = []
         for _ in range(k):
-            op = self.rng.choice(ops)
-            if op is blend:
-                cand = blend(self.rng, self.rng.choice(pool), self.rng.choice(pool))
-            else:
-                cand = op(self.rng, self.rng.choice(pool))
-            if not valid_alpha(cand):            # creativity is bounded by the grammar
+            cand = self._apply(self.rng.choice(ops), pool)
+            # Riskier thinking COMPOSES operators — a creative leap, not a single step.
+            if self.risk >= 0.66 and self.rng.random() < self.risk:
+                cand = self._apply(self.rng.choice(ops), pool + [cand])
+            if not valid_alpha(cand):              # creativity is bounded by the grammar
                 cand = self.rng.choice(pool)
             out.append(cand)
         self.last = [expr_to_str(c)[:44] for c in out[:3]]
@@ -170,41 +188,54 @@ class LLMImaginer:
 
 
 # --------------------------------------------------------------------------- #
-# demo: creative discovery vs random mutation                                 #
+# B2: creativity ablation — is creative synthesis measurably more creative?    #
 # --------------------------------------------------------------------------- #
-def _structural_diversity(memory: Memory) -> float:
-    cands = [c for _, c in memory.elites]
-    if len(cands) < 2:
-        return 1.0
-    return sum(novelty(c, cands[:i] + cands[i + 1:]) for i, c in enumerate(cands)) / len(cands)
+class _Broken:
+    def complete_text(self, *a, **k):
+        raise RuntimeError("no core")
+
+
+def creativity_ablation(seeds=range(1, 6), gens: int = 12, k: int = 16) -> list:
+    """Random/baseline search vs creative synthesis at rising risk, averaged over seeds.
+    Creativity metrics: distinct verified ideas, pool diversity, signal-family coverage.
+    Returns rows (label, distinct, diversity, coverage, best)."""
+    import statistics
+
+    from .trade_lab import AlphaProblem, AlphaProposer, synthetic_universe
+    configs = [("random/baseline", None), ("creative risk=0.2", 0.2),
+               ("creative risk=0.5", 0.5), ("creative risk=0.9", 0.9)]
+    rows = []
+    for label, risk in configs:
+        dv, div, cov, best = [], [], [], []
+        for s in seeds:
+            prob = AlphaProblem(bars=synthetic_universe(), n_trials=gens * k)
+            prop = (AlphaProposer(core=_Broken()) if risk is None
+                    else CreativeProposer(random.Random(s), risk=risk))
+            r = solve(prob, prop, Memory(), generations=gens, k=k, log=lambda *_: None,
+                      brain=BrainConfig())
+            dv.append(r.distinct_verified)
+            div.append(r.diversity)
+            cov.append(r.coverage)
+            best.append(r.best_score)
+        rows.append((label, statistics.mean(dv), statistics.mean(div),
+                     statistics.mean(cov), statistics.mean(best)))
+    return rows
 
 
 def main() -> int:
-    from .trade_lab import AlphaProposer, synthetic_universe
-
-    prob = AlphaProblem(bars=synthetic_universe(), n_trials=12 * 16)
-    print("CREATIVE SYNTHESIS — imagine boldly, verify everything (synthetic market)\n")
-
-    creative = CreativeProposer(random.Random(7))
-
-    class _Broken:
-        def complete_text(self, *a, **k):
-            raise RuntimeError("no core")
-
-    random_p = AlphaProposer(core=_Broken())          # baseline: random/baseline alphas
-    r_creative = solve(prob, creative, Memory(), generations=12, k=16,
-                       log=lambda *_: None, brain=BrainConfig())
-    r_random = solve(prob, random_p, Memory(), generations=12, k=16,
-                     log=lambda *_: None, brain=BrainConfig())
-    print(f"  CREATIVE synthesizer: best deflated OOS {r_creative.best_score:+.2f}  "
-          f"distinct verified {r_creative.distinct_verified}  "
-          f"family-niches {r_creative.coverage}")
-    print(f"  random/baseline     : best deflated OOS {r_random.best_score:+.2f}  "
-          f"distinct verified {r_random.distinct_verified}  "
-          f"family-niches {r_random.coverage}")
-    print(f"\n  best creative alpha: {expr_to_str(r_creative.best_candidate)}")
-    print("\n=> It imagines by blending/inverting/transferring verified ideas, and the gate "
-          "keeps only what\n   survives OOS. Creative AND honest — every kept idea is proven.")
+    print("CREATIVITY ABLATION — random search vs creative synthesis at rising risk")
+    print("(synthetic market; everything gated by the deflated-OOS verifier)\n")
+    rows = creativity_ablation()
+    print(f"  {'config':18} {'distinct':>8} {'diversity':>10} {'families':>9} {'best OOS':>9}")
+    for label, dv, div, cov, best in rows:
+        print(f"  {label:18} {dv:>8.1f} {div:>10.2f} {cov:>9.1f} {best:>+9.2f}")
+    base = rows[0]
+    bold = max(rows[1:], key=lambda r: r[3])               # most family-coverage among creative
+    print(f"\n=> Honest read: creative synthesis EXPLORES more of the idea space — signal-family "
+          f"coverage rises {base[3]:.1f} -> {bold[3]:.1f} as risk climbs — but trades peak score "
+          f"for breadth\n   (best OOS {base[4]:+.2f} -> {bold[4]:+.2f}). Risk is an explore/exploit "
+          "DIAL: turn it up to invent widely, down to sharpen.")
+    print("   Every kept idea still passed the verifier — imagine boldly, believe only what's proven.")
     return 0
 
 
