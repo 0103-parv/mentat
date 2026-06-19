@@ -69,11 +69,14 @@ high-school senior; see the swechats-project memory + ~/college-strategy).
   reshape/specialize) over the alpha DSL, fired by the brain's modes, synthesizing novel
   hypotheses FROM the verified knowledge base (creativity compounds) — plus an `LLMImaginer`
   that invents a novel concept+rationale. Imagine boldly, verify everything. See `OVERNIGHT_CREATIVITY.md`.
+- `rag.py` + `finance_docs/` — grounded finance QA (the anti-haze fix): pure-Python BM25
+  retrieval, answers ONLY from retrieved passages WITH citations, and REFUSES when no
+  source is relevant. Jarvis tool `finance_qa`. See `GROUNDING.md`. `python3 -m mentat.rag "..."`.
 - `operate.py` — runner: "you have full authority to <task>" and Mentat does it itself.
   `python3 -m mentat.operate "<task>"` runs a bounded, logged, autonomous tool loop to
   completion (safety floor stays on; `--no-guard` to drop it; `--steps N`). Uses stored
   credentials, verifies its own work, reports what (if anything) still needs the human.
-- `tests/test_core.py` — **53 tests**, run with the system `python3` (no deps needed).
+- `tests/test_core.py` — **55 tests**, run with the system `python3` (no deps needed).
   Capture the exit code directly (`python3 -m tests.test_core; echo $?`) — piping to `tail`
   masks a failing exit.
 
@@ -85,7 +88,7 @@ high-school senior; see the swechats-project memory + ~/college-strategy).
    (deflated worst-regime OOS Sharpe +1.66) while momentum/always-long/decoys were killed by
    the OOS+cost+deflation gate. Synthetic testbed; real OHLCV plugs in.
 
-## Jarvis tools (18)
+## Jarvis tools (20)
 `get_datetime`, `get_weather`, `research_status`, `remember`/`recall` (flat notes),
 `learn_lesson` (durable GROUNDED rules from corrections — injected into every future
 chat), `shell`, `applescript`, `read_file`, `write_file`, `edit_file` (surgical,
@@ -102,7 +105,7 @@ syntax-checked, optional verify_cmd + ROLLBACK on failure), `web_search` (+Brave
   `~/swechats/.env`. Standard incantation:
   ```bash
   cd ~/mentat && set -a && . ~/swechats/.env && set +a && \
-    ~/swechats/.venv/bin/python -m mentat.<think|discover|improve|trade|creativity|illuminate|discover_diverse|curriculum|research|operate|realm|imagine|jarvis>
+    ~/swechats/.venv/bin/python -m mentat.<think|discover|improve|trade|creativity|illuminate|discover_diverse|curriculum|research|operate|realm|imagine|rag|jarvis>
   ```
 - **Jarvis server** runs at `http://localhost:8765` (open in Chrome). Restart it (in the
   background) whenever `jarvis.py` changes; the browser caches the old UI, so hard-refresh.

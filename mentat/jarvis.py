@@ -344,6 +344,24 @@ def tool_run_research(minutes: float = 0, rounds: int = 1) -> str:
     return research.report(journal)
 
 
+def tool_finance_qa(question: str) -> str:
+    """Answer a finance question GROUNDED in the local corpus, with citations — and
+    REFUSE (rather than guess) when the corpus has no relevant source. The cure for
+    hazy answers is grounding, not guessing."""
+    try:
+        from .rag import Rag
+        from .reasoning import AnthropicCore, core_available
+    except Exception as e:
+        return f"(grounded QA unavailable: {type(e).__name__})"
+    rag = Rag.from_dir()
+    res = rag.answer(question, core=AnthropicCore() if core_available() else None)
+    _log_action("finance_qa", question[:120])
+    if not res["grounded"]:
+        return res["answer"]
+    cites = ", ".join(sorted({s["doc"] for s in res["sources"]}))
+    return f"{res['answer']}\n(grounded in: {cites})"
+
+
 def tool_shell(command: str, timeout: int = 60) -> str:
     if _GUARD and _is_catastrophic(command):
         _log_action("shell-BLOCKED", command)
@@ -621,6 +639,12 @@ TOOLS = [
      "input_schema": {"type": "object", "properties": {
          "n": {"type": "integer"}, "target": {"type": "integer"},
          "generations": {"type": "integer"}}}},
+    {"name": "finance_qa",
+     "description": "Answer a FINANCE question grounded in the local finance corpus, with "
+                    "citations. Refuses (does not guess) when the corpus lacks a relevant "
+                    "source — use this for factual finance questions to avoid hazy answers.",
+     "input_schema": {"type": "object", "properties": {"question": {"type": "string"}},
+                      "required": ["question"]}},
     {"name": "run_research",
      "description": "Run the research AUTOPILOT: loop ALL the gated discovery engines, keep only "
                     "verifier-proven results, accumulate them into the journal, and return a "
@@ -684,6 +708,7 @@ _DISPATCH = {
     "discover_sidon": lambda a: tool_discover_sidon(a.get("n", 100), a.get("target", 10),
                                                     a.get("generations", 4)),
     "run_research": lambda a: tool_run_research(a.get("minutes", 0), a.get("rounds", 1)),
+    "finance_qa": lambda a: tool_finance_qa(a.get("question", "")),
     "shell": lambda a: tool_shell(a.get("command", ""), int(a.get("timeout", 60) or 60)),
     "applescript": lambda a: tool_applescript(a.get("script", "")),
     "read_file": lambda a: tool_read_file(a.get("path", "")),

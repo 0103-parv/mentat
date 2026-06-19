@@ -603,6 +603,28 @@ def test_diverse_sidon_illuminates_a_verified_frontier():
         assert counterexample_sidon(sorted(set(cset))) is None   # every entry is proven Sidon
 
 
+def test_rag_grounds_and_refuses_off_corpus():
+    """Grounded QA: in-corpus questions get cited answers; off-corpus questions are
+    REFUSED rather than hallucinated (the anti-haze guarantee)."""
+    from mentat.rag import Rag
+    rag = Rag.from_dir()
+    docs = {d for _, d, _ in rag.retrieve("deflated sharpe ratio overfitting", k=4)}
+    assert "risk_adjusted_return" in docs or "backtest_overfitting" in docs
+    grounded = rag.answer("what is the deflated sharpe ratio?")
+    assert grounded["grounded"] and grounded["sources"]
+    refused = rag.answer("who won the 2010 world cup?")
+    assert refused["grounded"] is False and not refused["sources"]
+
+
+def test_rag_llm_path_cites_sources():
+    from mentat.rag import Rag
+    from mentat.reasoning import ScriptedCore
+    rag = Rag.from_dir()
+    core = ScriptedCore(["The deflated Sharpe ratio corrects for multiple testing [1]."])
+    res = rag.answer("deflated sharpe ratio", core=core)
+    assert res["grounded"] and "[1]" in res["answer"] and res["sources"]
+
+
 def test_creative_operators_and_proposer():
     """Boden's operators produce valid alphas, and the creative proposer synthesizes
     valid hypotheses in every mode (creativity bounded by the grammar)."""
