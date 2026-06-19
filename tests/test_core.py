@@ -603,6 +603,58 @@ def test_diverse_sidon_illuminates_a_verified_frontier():
         assert counterexample_sidon(sorted(set(cset))) is None   # every entry is proven Sidon
 
 
+def test_creative_operators_and_proposer():
+    """Boden's operators produce valid alphas, and the creative proposer synthesizes
+    valid hypotheses in every mode (creativity bounded by the grammar)."""
+    import random
+    from mentat import imagine as I
+    from mentat.core import Memory, Mind
+    from mentat.trade_lab import valid_alpha
+    rng = random.Random(0)
+    assert I.invert(rng, "ret1") == ["neg", "ret1"]               # transformational: flip
+    assert I.blend(rng, ["neg", "ret1"], "mom20")[1:] == [["neg", "ret1"], "mom20"]  # fuse
+    assert valid_alpha(I.transfer(rng, ["neg", "ret1"]))          # analogy: remap features
+    assert valid_alpha(I.reshape(rng, "mom20")) and valid_alpha(I.specialize(rng, "vol20"))
+    prop = I.CreativeProposer(random.Random(1))
+    for mode in ("dream", "focus", "recover"):
+        m = Mind()
+        m.mode = mode
+        out = prop.propose(None, Memory(), m, 8)
+        assert len(out) == 8 and all(valid_alpha(c) for c in out)
+
+
+def test_llm_imaginer_parses_and_falls_back():
+    import random
+    from mentat import imagine as I
+    from mentat.core import Memory, Mind
+    from mentat.reasoning import ScriptedCore
+    from mentat.trade_lab import AlphaProblem, valid_alpha
+    good = ScriptedCore(['[["neg","ret1"], ["safe_div","mom20","vol20"]]'])
+    im = I.LLMImaginer(core=good, fallback=I.CreativeProposer(random.Random(2)))
+    out = im.propose(AlphaProblem(), Memory(), Mind(), 4)
+    assert len(out) == 4 and all(valid_alpha(c) for c in out)
+
+    class _Broken:
+        def complete_text(self, *a, **k):
+            raise RuntimeError("no core")
+    im2 = I.LLMImaginer(core=_Broken(), fallback=I.CreativeProposer(random.Random(3)))
+    out2 = im2.propose(AlphaProblem(), Memory(), Mind(), 4)
+    assert len(out2) == 4 and im2.note                            # degraded to the offline proposer
+
+
+def test_creative_discovery_finds_a_verified_alpha():
+    """End to end: the creative synthesizer, gated, discovers a positive verified edge —
+    imagination that survives the verifier."""
+    import random
+    from mentat import imagine as I
+    from mentat.core import BrainConfig, Memory, solve
+    from mentat.trade_lab import AlphaProblem, synthetic_universe
+    prob = AlphaProblem(bars=synthetic_universe(), n_trials=12 * 16)
+    r = solve(prob, I.CreativeProposer(random.Random(7)), Memory(),
+              generations=12, k=16, log=lambda *_: None, brain=BrainConfig())
+    assert r.best_score > 0.5                                     # a real, gated, creative edge
+
+
 def test_realm_mind_maps_and_loops_until_dry():
     """The realm-mind explores every facet, loops until dry, and keeps only verified
     edges — with the honest 'provisional' caveat in the report."""
