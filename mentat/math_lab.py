@@ -80,7 +80,22 @@ def _construction_child(code: str, n: int, q) -> None:
         q.put(("err", f"{type(e).__name__}: {e}"))
 
 
-_MP = mp.get_context("spawn")
+def _mp_context():
+    """Pick a multiprocessing start method that survives any entry point.
+
+    `spawn` re-imports the parent's __main__, which crashes when the entry point is
+    `-c`/stdin (`<stdin>` has no file) — a real, documented bug. `fork` does NOT re-import
+    __main__ and gives the same process isolation (separate PID, resource caps, hard kill)
+    for our pure-compute child, so prefer it; fall back to spawn where fork is unavailable."""
+    for method in ("fork", "spawn"):
+        try:
+            return mp.get_context(method)
+        except ValueError:
+            continue
+    return mp.get_context()
+
+
+_MP = _mp_context()
 
 
 def run_construction(code: str, n: int, time_limit: float = 2.0) -> list[int]:
