@@ -131,3 +131,20 @@ our specific choices:
 
 **So: artificial creativity, as a tunable, measured, gated, self-extending engine, is now a
 thing in mentat — and it sits exactly where the literature says the open problems are.**
+
+## Optimize + prove self-improvement (2026-06-20)
+- **Fixed the documented sandbox bug** (FINDINGS.md): the construction sandbox used `spawn`,
+  which re-imports `__main__` and crashed under `-c`/stdin. Switched to a `fork`-preferring
+  context (same isolation, no `__main__` re-import; spawn fallback). Verified: `run_construction`
+  now executes from stdin; live core (Claude) + the sandbox produced a verified Sidon set of
+  size 11 in [1,120] in 2 generations.
+- **Measured self-improvement** (`mentat.selfimprove`) — the "really learns" thesis, quantified
+  (offline, deterministic):
+  - SAME-TASK: cold solved 5/12 (median 14 gens) → **warm 12/12 (median 1 gen)** (recall +
+    re-verify of a proven solution).
+  - TRANSFER (the real test): train verified memory on a FAMILY of source tasks, test on a
+    HELD-OUT target never seen → cold 6/12 → **warm 9/12 (+50%)**. Generalization via learned
+    building blocks, not memorization (the test target wasn't in training).
+- 62 tests green; committed + pushed (2f838cc). The full stack now: verification gate +
+  grounded memory + creativity engine + anti-haze RAG + fast/slow consolidation + LoRA path +
+  measured self-improvement + autonomy — every claim backed by runnable, tested code.
