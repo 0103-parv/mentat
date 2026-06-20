@@ -603,6 +603,24 @@ def test_diverse_sidon_illuminates_a_verified_frontier():
         assert counterexample_sidon(sorted(set(cset))) is None   # every entry is proven Sidon
 
 
+def test_warm_memory_recalls_verified_solution():
+    """The mechanism behind self-improvement: a warm memory carrying a VERIFIED solution
+    recalls + re-verifies it instantly (solved at generation 1), where a cold run must
+    search. Deterministic — the statistical cold-vs-warm + transfer result lives in
+    `mentat.selfimprove`."""
+    import random
+    from mentat.demo import RandomProposer, SymbolicRegression, parse_infix
+    xs = [round(i * 0.2, 2) for i in range(-10, 11)]
+    prob = SymbolicRegression(lambda x: x * x - 2 * x - 1, xs, tol=0.10)
+    sol = parse_infix("x*x - 2*x - 1")
+    warm = Memory()
+    warm.best_candidate = sol
+    warm.best_score = prob.verify(sol).score
+    r = solve(prob, RandomProposer(random.Random(0)), warm, generations=20, k=8,
+              log=lambda *_: None)
+    assert r.solved and r.generations == 1               # recall + re-verify, instant
+
+
 def test_consolidation_abstracts_and_exports():
     """The brain's sleep (CLS): replay clusters verified lessons into a principle and
     exports a consolidation dataset for the slow LoRA step. Only verified memory enters."""
