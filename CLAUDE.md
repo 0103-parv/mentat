@@ -73,6 +73,10 @@ high-school senior; see the swechats-project memory + ~/college-strategy).
   (BM25 + embedding cosine; `embed.py` is semantic via model2vec/sentence-transformers if installed,
   else a dependency-free hashing embedder), answers ONLY from retrieved passages WITH citations, and REFUSES when no
   source is relevant. Jarvis tool `finance_qa`. See `GROUNDING.md`. `python3 -m mentat.rag "..."`.
+- `consolidate.py` — the brain's SLEEP (Complementary Learning Systems): replays the FAST
+  grounded memory, strengthens corroborated lessons, abstracts recurring ones into principles,
+  prunes the weak, and exports a consolidation dataset for the SLOW LoRA step. Only verified
+  memory consolidates. `python3 -m mentat.consolidate`.
 - `finetune/` — the LoRA path (cheap one-time specialization, NOT from-scratch): `prepare_data`
   builds a chat-format finance instruction set from the corpus; `train` runs LoRA free + local
   on Apple Silicon via mlx-lm (or prints the command). See `finetune/README.md`. (model2vec is
@@ -81,7 +85,7 @@ high-school senior; see the swechats-project memory + ~/college-strategy).
   `python3 -m mentat.operate "<task>"` runs a bounded, logged, autonomous tool loop to
   completion (safety floor stays on; `--no-guard` to drop it; `--steps N`). Uses stored
   credentials, verifies its own work, reports what (if anything) still needs the human.
-- `tests/test_core.py` — **60 tests**, run with the system `python3` (no deps needed).
+- `tests/test_core.py` — **61 tests**, run with the system `python3` (no deps needed).
   Capture the exit code directly (`python3 -m tests.test_core; echo $?`) — piping to `tail`
   masks a failing exit.
 

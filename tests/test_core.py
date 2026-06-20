@@ -603,6 +603,28 @@ def test_diverse_sidon_illuminates_a_verified_frontier():
         assert counterexample_sidon(sorted(set(cset))) is None   # every entry is proven Sidon
 
 
+def test_consolidation_abstracts_and_exports():
+    """The brain's sleep (CLS): replay clusters verified lessons into a principle and
+    exports a consolidation dataset for the slow LoRA step. Only verified memory enters."""
+    import json
+    import tempfile
+    from mentat.consolidate import consolidate, export_consolidation_dataset
+    m = Memory()
+    m.learn(Lesson(when="building a trading alpha tested out of sample",
+                   do="reuse the verified reversion alpha",
+                   evidence="verified reversion alpha out of sample"))
+    m.learn(Lesson(when="building a trading alpha judged after costs",
+                   do="prefer low turnover signals",
+                   evidence="low turnover trading alpha after costs"))
+    rep = consolidate(m)
+    assert rep["new_principles"] >= 1 and m.principles      # abstracted a principle
+    with tempfile.TemporaryDirectory() as d:
+        n = export_consolidation_dataset(m, d)
+        assert n >= 2
+        rec = json.loads((Path(d) / "consolidation.jsonl").read_text().splitlines()[0])
+        assert rec["messages"][0]["role"] == "user"
+
+
 def test_finetune_dataset_builds_chat_format():
     """The LoRA path produces a valid chat-format instruction dataset from the corpus."""
     import json
