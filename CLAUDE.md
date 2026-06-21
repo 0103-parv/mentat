@@ -109,6 +109,8 @@ syntax-checked, optional verify_cmd + ROLLBACK on failure), `web_search` (+Brave
 `run_research` (the Hub — dispatch real verified discovery + the overnight autopilot).
 
 ## How to run
+- **One front door:** `python3 -m mentat` (overview + what's live + all engines); `python3 -m mentat <engine> [args]` runs any of them; `python3 -m mentat list`.
+
 - **Tests** (any python, no deps): `cd ~/mentat && python3 -m tests.test_core`
 - **Offline demo**: `python3 -m mentat.demo`
 - **Anything using the reasoning core / engines** needs `anthropic` + (for the engines)

@@ -166,7 +166,7 @@ def integrations_report() -> str:
     """Which integrations are LIVE (credentials present) vs need a key — names only,
     never values. So you can see at a glance what the system can do hands-free."""
     rows = [
-        ("Claude reasoning", bool(_load_key())),
+        ("Claude reasoning", bool(get_secret("ANTHROPIC_API_KEY") or _load_key())),
         ("ElevenLabs voice", bool(get_secret("ELEVENLABS_API_KEY"))),
         ("Brave web search", bool(get_secret("BRAVE_API_KEY"))),
     ]
