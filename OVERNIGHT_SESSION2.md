@@ -26,6 +26,15 @@ of swechats/alpha-evolver, the venv, and downloaded data/models).
 
 ## Log
 - **start** — Amphetamine confirmed holding the Mac awake; mlx-lm install launched; roadmap set.
+- **block 2 (01:00) — LoRA verified + PERF 13.6x (roadmap #1 done, #2 done).** LoRA finished
+  (600 iters, val loss 3.35→2.79 — it learned). Verified honestly (base vs adapter on a
+  finance question): the adapter shifted STYLE toward finance Q&A but didn't clearly beat the
+  base on accuracy — confirms the thesis (LoRA = style/surface; facts belong in RAG; full
+  stack = LoRA-style + RAG-facts + gate). Then PROFILED the brain path: the real bottleneck
+  was `compute_features` recomputed on every alpha eval (~85% of runtime) though features
+  depend only on the bars. Cached features on the Bars instance → **creative solve 0.476s →
+  0.035s (13.6x)**; every market engine (trade/realm/curriculum/imagine/research) is now ~13x
+  faster. 62 tests green; committed. NEXT: roadmap #3 (bounded live verified discovery).
 - **block 1 — LoRA ACTUALIZED (roadmap #1).** Downloaded a real dataset (finance-alpaca,
   68,912 records). Enhanced `prepare_data --extra` to ingest it -> 2412 train / 604 valid
   examples (finance-alpaca + local corpus). Installed mlx-lm (0.31.3). Launched a real LoRA
