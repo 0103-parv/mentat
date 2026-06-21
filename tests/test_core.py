@@ -603,6 +603,18 @@ def test_diverse_sidon_illuminates_a_verified_frontier():
         assert counterexample_sidon(sorted(set(cset))) is None   # every entry is proven Sidon
 
 
+def test_costas_discovery_finds_proven_array():
+    """A 2nd verified-discovery domain: the kernel discovers a PROVEN Costas array, and the
+    verifier rejects a non-Costas permutation."""
+    from mentat.costas import CostasArray, discover_costas
+    assert not CostasArray(4).verify((1, 2, 3, 4)).passed      # identity has repeats
+    r = discover_costas(7, seed=0, generations=40, k=24)
+    assert r.solved
+    p, n = r.best_candidate, 7
+    vs = [(j - i, p[j] - p[i]) for i in range(n) for j in range(i + 1, n)]
+    assert len(vs) == len(set(vs)) and sorted(p) == list(range(1, 8))   # independently valid
+
+
 def test_cli_front_door():
     """The unified entry point lists engines, shows the overview, and rejects unknowns."""
     import importlib

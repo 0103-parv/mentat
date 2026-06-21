@@ -26,6 +26,38 @@ of swechats/alpha-evolver, the venv, and downloaded data/models).
 
 ## Log
 - **start** — Amphetamine confirmed holding the Mac awake; mlx-lm install launched; roadmap set.
+- **block 5 (02:29) — 2nd verified-discovery domain: COSTAS ARRAYS.** Built `mentat/costas.py`:
+  a Costas array (order-n permutation with all DISTINCT pairwise displacement vectors — a 2-D
+  Sidon set, radar/sonar) with an exhaustive verifier. Same kernel as the Sidon engine, a
+  genuinely different problem. Discovered + INDEPENDENTLY verified a proven order-9 array
+  (4,3,6,8,9,1,7,5,2); test finds a proven order-7 array and checks the verifier rejects a
+  non-Costas permutation; wired into the `python3 -m mentat` front door. 66 tests green, ruff
+  clean; committed. The gate generalizes — that's the substantive win. STOPPING the loop here
+  (next items would be padding; live work waits for API credits).
+
+## FINAL WAKE-UP SUMMARY (loop stopped ~02:30, disciplined — not padding)
+**What got done tonight (all committed + pushed, 66 tests green, ruff clean):**
+1. **LoRA fine-tune ACTUALIZED** (was scaffold) — downloaded finance-alpaca (68,912 records),
+   `prepare_data --extra` ingests it, trained a real LoRA on Qwen2.5-0.5B locally on the Mac.
+   Honest verification: it trained (val loss 3.35→2.79) and shifted STYLE toward finance Q&A
+   but did NOT beat base on accuracy — confirms the thesis (LoRA=style, RAG=facts).
+2. **13.6× perf win** — `compute_features` was recomputed per-alpha-eval (~85% of runtime);
+   cached on the Bars instance. Every market engine (trade/realm/curriculum/imagine/research)
+   is now ~13× faster. (creative solve 0.476s → 0.035s.)
+3. **Lint fully clean** (ruff: fixed 12 issues) + **edge-case robustness test**.
+4. **Safety + CLI coverage** — locked in the catastrophic-command guard (verified on 19 cases)
+   and the unified `python3 -m mentat` front door.
+5. **2nd verified-discovery domain** — Costas arrays (`mentat.costas`), proving the kernel
+   generalizes beyond Sidon.
+
+**The one external blocker:** the **Anthropic API is out of credits**. That gates the most
+exciting work — roadmap #3 (live verified discovery: push Sidon past 15, beat the maxcut
+baseline) and #5 (the live self-amplifying loop: me-core → verify → consolidate → sharper).
+**When you wake: add API credits**, then run `python3 -m mentat discover` / `improve` (with the
+key in ~/swechats/.env) to unlock live discovery, and the self-amplifying loop becomes buildable.
+
+**Tests/lint:** `python3 -m tests.test_core` (66, green) · `uv run --with ruff ruff check mentat/`.
+
 - **block 4 (02:00) — coverage sweep: safety guard + front-door (offline).** Empirically
   verified the catastrophic-command guard (`_is_catastrophic`) on 19 real cases, then locked it
   in with a thorough SAFETY test (blocks `rm -rf /` ~ `$HOME` `~/.ssh` `~/mentat` shred/dd/mkfs/

@@ -18,6 +18,7 @@ ENGINES = {
     "discover": "discover a verified Sidon set (math, exhaustively proven)",
     "discover_diverse": "illuminate a catalog of proven Sidon sets (the frontier)",
     "discover_capset": "discover a verified AP-free / cap set",
+    "costas": "discover a verified Costas array (2-D Sidon; radar/sonar)",
     "improve": "improve alpha-evolver's Max Cut heuristic (self-research)",
     "trade": "anti-overfit alpha discovery (deflated worst-regime OOS gate)",
     "realm": "map a market until dry (toward omniscient-in-one-realm, honestly)",
