@@ -123,18 +123,39 @@ scored by your research.
      exhaustive counterexample search (`mentat.discover`).~~ ✓
    - ~~**Personal-ops Jarvis** — tools + machine control + durable memory + voice (`mentat.jarvis`).~~ ✓
    - ~~**Self-research** — beat alpha-evolver's own Max Cut benchmark (`mentat.improve`).~~ ✓
-3. **Transfer** — lessons learned on one problem accelerate a *different* one
-   (swechats already has the counterfactual harness to measure it). *(next)*
-4. **The hub** — agents, tools, and channels around the spine.
+3. ~~**Transfer** — lessons learned on one problem accelerate a *different* one.~~ ✓
+   Measured (`mentat.selfimprove`): warm memory from a family of tasks solves a **held-out**
+   target **9/12 vs 6/12 cold** — generalization, not memorization.
+4. ~~**Creativity** — novelty, quality-diversity illumination, a tunable risk dial.~~ ✓
+   (`mentat.imagine` / `illuminate`; see `CREATIVITY.md`.)
+5. ~~**Grounding** — anti-haze RAG that cites or refuses; fast/slow consolidation; a LoRA
+   specialization path.~~ ✓ (`mentat.rag` / `consolidate` / `finetune`; see `GROUNDING.md`.)
+6. **The hub** — more agents, tools, and channels around the spine. *(ongoing)*
+
+## What's built (every claim backed by runnable, tested code)
+A verification-gated kernel plus grounded anti-fabrication memory; a creativity engine
+(novelty, quality-diversity **illumination**, productive surprise, a tunable risk dial —
+ported from `alpha-evolver`); **anti-haze RAG** (cites sources or refuses); **fast/slow
+memory consolidation** (Complementary Learning Systems); a **LoRA** specialization path;
+**measured self-improvement**; and a full-authority autonomy mode. Honest headline results:
+a verified Sidon-set frontier (math); on real S&P 500, **0/12 strategy facets survived
+3,840 deflated out-of-sample tests** (the anti-overfit map — where naive search would "find"
+false edges); transfer memory solves a held-out task **9/12 vs 6/12**. See `PAPER.md`.
 
 ## Run it
 
 ```bash
-python3 -m mentat.demo      # offline proposer — no dependencies, ~seconds
-python3 -m tests.test_core  # 12 tests, no network
+python3 -m mentat              # one front door: what's live + every engine
+python3 -m mentat list        # engine names
+python3 -m tests.test_core    # 62 tests, no dependencies, no network
 
-# the real reasoning core (needs `pip install anthropic` + an API key):
-ANTHROPIC_API_KEY=sk-... python3 -m mentat.think      # rediscover a hidden law
-ANTHROPIC_API_KEY=sk-... python3 -m mentat.discover   # discover a verified Sidon set
-# the key may instead live in a .env file; MENTAT_MODEL overrides the model.
+# a few engines (offline + deterministic unless noted):
+python3 -m mentat selfimprove   # MEASURED learning: cold vs warm + transfer
+python3 -m mentat illuminate    # MAP-Elites: a diverse portfolio of verified designs
+python3 -m mentat realm         # map a market until dry (deflated-OOS gate)
+python3 -m mentat rag "what is the deflated sharpe ratio?"   # grounded QA: cites or refuses
+
+# the live reasoning core (Claude) needs an API key (env / .env / Keychain):
+python3 -m mentat think         # rediscover a hidden law with the live core
+python3 -m mentat discover      # discover a verified Sidon set with the live core
 ```
