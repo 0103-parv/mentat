@@ -28,7 +28,7 @@ from __future__ import annotations
 import random
 from dataclasses import dataclass, field
 
-from .core import BrainConfig, Memory, Mind, Problem, fragments, novelty, solve
+from .core import BrainConfig, Memory, Mind, solve
 from .trade_lab import (
     BASELINE_ALPHAS,
     CONSTANTS,
@@ -167,7 +167,6 @@ class LLMImaginer:
     }
 
     def propose(self, problem, memory: Memory, mind: Mind, k: int):
-        import json
         verified = [expr_to_str(c) for _, c in memory.elites[:6]] or ["(none yet)"]
         user = (f"{problem.brief()}\n\nVERIFIED ideas to create from:\n{verified}\n\n"
                 f"Mode: {mind.mode} — {self._MODE.get(mind.mode, '')}\n"
@@ -201,7 +200,7 @@ def creativity_ablation(seeds=range(1, 6), gens: int = 12, k: int = 16) -> list:
     Returns rows (label, distinct, diversity, coverage, best)."""
     import statistics
 
-    from .trade_lab import AlphaProblem, AlphaProposer, synthetic_universe
+    from .trade_lab import AlphaProposer, synthetic_universe
     configs = [("random/baseline", None), ("creative risk=0.2", 0.2),
                ("creative risk=0.5", 0.5), ("creative risk=0.9", 0.9)]
     rows = []

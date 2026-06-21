@@ -603,6 +603,27 @@ def test_diverse_sidon_illuminates_a_verified_frontier():
         assert counterexample_sidon(sorted(set(cset))) is None   # every entry is proven Sidon
 
 
+def test_edge_cases_do_not_crash():
+    """Robustness: empty/degenerate inputs are handled gracefully, not with a traceback."""
+    import random
+    import tempfile
+    from mentat.consolidate import consolidate
+    from mentat.embed import embed
+    from mentat.rag import Rag
+    from mentat.realm import generate_facets
+    rep = consolidate(Memory())                          # empty memory -> no crash
+    assert rep["lessons"] == 0 and rep["new_principles"] == 0
+    v = embed(["", "   ", "a real finance question"])     # empty/whitespace -> still vectors
+    assert len(v) == 3 and all(len(vec) > 0 for vec in v)
+    assert generate_facets(random.Random(0), n=0) == []  # zero facets requested -> empty
+    with tempfile.TemporaryDirectory() as d:             # empty corpus -> clear error, not crash
+        try:
+            Rag.from_dir(d)
+            raise AssertionError("expected ValueError on empty corpus")
+        except ValueError:
+            pass
+
+
 def test_warm_memory_recalls_verified_solution():
     """The mechanism behind self-improvement: a warm memory carrying a VERIFIED solution
     recalls + re-verifies it instantly (solved at generation 1), where a cold run must

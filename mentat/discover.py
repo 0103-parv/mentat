@@ -8,7 +8,6 @@ Run:  python3 -m mentat.discover
 """
 from __future__ import annotations
 
-import random
 
 from .core import BrainConfig, Memory, solve
 from .math_lab import CodeProposer, GREEDY, POWERS, SidonSet
@@ -48,9 +47,9 @@ def main():
     head = core.model if core else "offline baselines"
     print(f"REASONING CORE   {head}")
     print(f"PROBLEM          {problem.statement}")
-    print(f"GATE             a construction is kept only if an exhaustive pairwise-sum")
-    print(f"                 counterexample search finds NOTHING (checked at n=200 and a")
-    print(f"                 second smaller n, so a hardcoded table can't fake it)\n")
+    print("GATE             a construction is kept only if an exhaustive pairwise-sum")
+    print("                 counterexample search finds NOTHING (checked at n=200 and a")
+    print("                 second smaller n, so a hardcoded table can't fake it)\n")
 
     memory = Memory()
     # Brain ON: the quality-diversity pool keeps a DIVERSE library of verified

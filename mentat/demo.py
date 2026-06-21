@@ -280,7 +280,9 @@ def _throttle(prefix):
 
 def main():
     xs = [round(i * 0.2, 2) for i in range(-10, 11)]      # -2.0 .. 2.0
-    target = lambda x: x ** 3 - 2 * x + 1                  # the hidden law
+
+    def target(x):                                        # the hidden law
+        return x ** 3 - 2 * x + 1
     problem = SymbolicRegression(target, xs, tol=0.10)
     mem_path = Path(__file__).parent / "memory.json"
     BUDGET, K, SEEDS = 80, 48, [1, 2, 3, 4, 5]

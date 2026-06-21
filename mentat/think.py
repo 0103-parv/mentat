@@ -45,7 +45,7 @@ def main():
     proposer = LLMProposer(core=core, fallback=RandomProposer(random.Random(0)))
 
     print(f"REASONING CORE   {core.model} (adaptive thinking)")
-    print(f"PROBLEM          rediscover a hidden y = f(x) from 21 samples")
+    print("PROBLEM          rediscover a hidden y = f(x) from 21 samples")
     print(f"GATE             a candidate is believed only if RMSE < {problem.tol}")
     print("                 (the core sees the data, never the hidden law)\n")
 

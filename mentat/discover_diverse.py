@@ -15,7 +15,6 @@ Run:  python3 -m mentat.discover_diverse
 from __future__ import annotations
 
 import random
-import statistics
 
 from .core import Memory, Problem, Verdict, solve
 from .math_lab import counterexample_sidon

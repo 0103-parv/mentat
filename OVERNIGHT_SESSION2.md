@@ -26,6 +26,15 @@ of swechats/alpha-evolver, the venv, and downloaded data/models).
 
 ## Log
 - **start** — Amphetamine confirmed holding the Mac awake; mlx-lm install launched; roadmap set.
+- **block 3 (01:29) — live discovery BLOCKED (credits); did robustness instead.** Tried roadmap
+  #3 (live Sidon discovery): the Claude core errors on every call — diagnosed the actual cause:
+  **"Your credit balance is too low to access the Anthropic API."** So #3 (live discovery) and
+  #5 (live self-amplifying loop) are BLOCKED until the user adds API credits — not a code bug.
+  (Offline baselines only reach 14–15, which is already near-optimal for n=200, so little
+  offline headroom there.) Pivoted to roadmap #4: ran ruff → fixed 12 real issues (stray
+  f-prefixes, lambda-assignments) across 5 files, **lint now fully clean**; added an edge-case
+  robustness test (empty memory / whitespace embeddings / empty corpus / zero facets). 63 tests
+  green; committed. **Loop refocused to OFFLINE value** (the live items wait for credits).
 - **block 2 (01:00) — LoRA verified + PERF 13.6x (roadmap #1 done, #2 done).** LoRA finished
   (600 iters, val loss 3.35→2.79 — it learned). Verified honestly (base vs adapter on a
   finance question): the adapter shifted STYLE toward finance Q&A but didn't clearly beat the

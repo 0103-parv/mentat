@@ -27,8 +27,14 @@ from .demo import RandomProposer, SymbolicRegression
 XS = [round(i * 0.2, 2) for i in range(-10, 11)]
 SOURCE_TARGETS = [lambda x: x * x - 1, lambda x: x * x + x,
                   lambda x: 2 * x * x - x, lambda x: x * x - 2 * x]
-HELD_OUT = lambda x: x * x - 3          # a NEW quadratic, not in the source family
-SAME_TASK = lambda x: x * x - 2 * x - 1     # solvable at this budget, so warm-vs-cold is visible
+
+
+def HELD_OUT(x):       # a NEW quadratic, not in the source family (the transfer test)
+    return x * x - 3
+
+
+def SAME_TASK(x):      # solvable at this budget, so warm-vs-cold is visible
+    return x * x - 2 * x - 1
 
 
 def _run(problem, seed, mem, gens, k):
