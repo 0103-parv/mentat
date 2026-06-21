@@ -26,6 +26,12 @@ of swechats/alpha-evolver, the venv, and downloaded data/models).
 
 ## Log
 - **start** — Amphetamine confirmed holding the Mac awake; mlx-lm install launched; roadmap set.
+- **block 4 (02:00) — coverage sweep: safety guard + front-door (offline).** Empirically
+  verified the catastrophic-command guard (`_is_catastrophic`) on 19 real cases, then locked it
+  in with a thorough SAFETY test (blocks `rm -rf /` ~ `$HOME` `~/.ssh` `~/mentat` shred/dd/mkfs/
+  fork-bomb; allows deeper dev deletes / `/tmp` / normal commands). Added a test for the unified
+  `python3 -m mentat` front door (list / overview / unknown-engine). 65 tests green, ruff clean;
+  committed. Genuine coverage on the two highest-value untested surfaces (safety + the new CLI).
 - **block 3 (01:29) — live discovery BLOCKED (credits); did robustness instead.** Tried roadmap
   #3 (live Sidon discovery): the Claude core errors on every call — diagnosed the actual cause:
   **"Your credit balance is too low to access the Anthropic API."** So #3 (live discovery) and

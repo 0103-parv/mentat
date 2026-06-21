@@ -603,6 +603,33 @@ def test_diverse_sidon_illuminates_a_verified_frontier():
         assert counterexample_sidon(sorted(set(cset))) is None   # every entry is proven Sidon
 
 
+def test_cli_front_door():
+    """The unified entry point lists engines, shows the overview, and rejects unknowns."""
+    import importlib
+    cli = importlib.import_module("mentat.__main__")
+    assert "trade" in cli.ENGINES and "rag" in cli.ENGINES and "selfimprove" in cli.ENGINES
+    assert cli.main(["list"]) == 0          # list engine names
+    assert cli.main([]) == 0                # overview (also exercises integrations_report)
+    assert cli.main(["definitely_not_an_engine"]) == 1   # unknown -> non-zero
+
+
+def test_catastrophic_guard_blocks_danger_allows_dev_work():
+    """The safety floor (Jarvis _is_catastrophic) must block irreversible destruction of
+    the machine / research / credentials, and must NOT block ordinary dev work."""
+    from mentat.jarvis import _is_catastrophic as cat
+    must_block = ["rm -rf /", "rm -rf ~", "rm -rf $HOME", "rm -rf ~/.ssh", "rm -rf ~/.ssh/",
+                  "sudo rm -rf /usr", "rm -rf /etc/passwd", "rm -rf ~/mentat",
+                  "shred ~/.ssh/id_rsa", "dd if=/dev/zero of=/dev/disk0",
+                  ":(){ :|:& };:", "mkfs.ext4 /dev/sda"]
+    must_allow = ["ls -la", "rm -rf /tmp/build", "rm scratch.txt", "git status",
+                  "rm -rf ~/mentat/finetune/data", "python3 -m mentat.trade",
+                  "rm -rf ~/projects/scratch"]
+    for c in must_block:
+        assert cat(c), f"guard should BLOCK: {c}"
+    for c in must_allow:
+        assert not cat(c), f"guard should ALLOW: {c}"
+
+
 def test_edge_cases_do_not_crash():
     """Robustness: empty/degenerate inputs are handled gracefully, not with a traceback."""
     import random
