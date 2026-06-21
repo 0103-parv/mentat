@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import re
+import sys
 from pathlib import Path
 
 DOCS = Path(__file__).resolve().parent.parent / "finance_docs"
@@ -36,11 +37,33 @@ def _pairs(docs_dir: Path) -> list[tuple[str, str]]:
     return pairs
 
 
-def build(out: Path | str = OUT, docs_dir: Path | str = DOCS,
-          valid_frac: float = 0.2) -> tuple[int, int]:
+def _extra_pairs(path: Path, limit: int) -> list[tuple[str, str]]:
+    """Ingest an external instruction set (e.g. finance-alpaca: instruction/input/output)."""
+    try:
+        data = json.loads(Path(path).read_text())
+    except Exception:
+        return []
+    out: list[tuple[str, str]] = []
+    for rec in data:
+        if not isinstance(rec, dict):
+            continue
+        q = (rec.get("instruction") or "").strip()
+        ctx = (rec.get("input") or "").strip()
+        a = (rec.get("output") or "").strip()
+        if q and a:
+            out.append((f"{q}\n{ctx}".strip(), a))
+        if len(out) >= limit:
+            break
+    return out
+
+
+def build(out: Path | str = OUT, docs_dir: Path | str = DOCS, valid_frac: float = 0.2,
+          extra: Path | str | None = None, extra_limit: int = 3000) -> tuple[int, int]:
     out, docs_dir = Path(out), Path(docs_dir)
     out.mkdir(parents=True, exist_ok=True)
     pairs = _pairs(docs_dir)
+    if extra:
+        pairs = _extra_pairs(Path(extra), extra_limit) + pairs   # external set + local corpus
     cut = max(1, int(len(pairs) * (1 - valid_frac)))
 
     def fmt(q: str, a: str) -> str:
@@ -53,9 +76,13 @@ def build(out: Path | str = OUT, docs_dir: Path | str = DOCS,
 
 
 def main() -> int:
-    n_train, n_valid = build()
+    extra = None
+    if "--extra" in sys.argv:
+        extra = sys.argv[sys.argv.index("--extra") + 1]
+    n_train, n_valid = build(extra=extra)
+    src = f"{extra} + the local corpus" if extra else "the local corpus (SEED — expand it)"
     print(f"wrote {n_train} train + {n_valid} valid finance instruction examples to {OUT}")
-    print("(SEED set from the local corpus — expand it for a real fine-tune; see README.md)")
+    print(f"(from {src})")
     return 0
 
 
