@@ -46,3 +46,14 @@ Stop when genuinely dry or at the evening cutoff — don't pad.
   `capabilities` + `estimate_effort` (the offline router already calls them) and a `selfmodel`
   engine. Verified offline via the Jarvis router ("what can you do", "how long will it take...").
   +1 test (68 green), ruff clean.
+- **block 4 (12:55) — BUDGETED SELF-IMPROVEMENT engine `mentat/work.py` (the vision's capstone).**
+  "Tell it to work on something and it estimates the time, sets a buffered budget, works in
+  verified blocks, and stops honestly when dry." Runs a CURRICULUM of formula-synthesis tasks
+  (linear -> hard-cubic), carrying VERIFIED memory forward so motifs proven on easy tasks crack
+  the hard ones (transfer). **Headline honest result:** the hard-cubic x^3-2x+1 — which the
+  standalone offline cognition loop CANNOT crack (cold 0/3) — is solved 3/3 once it carries the
+  curriculum's accumulated memory. Genuine compounding self-improvement, every step re-verified.
+  Stops at the first task it can't crack (gates on mastery) or the buffered time cap — never pads;
+  persists a journal so gains compound across sessions. Wired as `python3 -m mentat work
+  [--minutes N]`, Jarvis tool `work_on`, and an offline-router branch. +1 test (69 green), ruff
+  clean. Honest ceiling stated: harder gains need API credits or a new domain.

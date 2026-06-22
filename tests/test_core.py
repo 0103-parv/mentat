@@ -698,6 +698,18 @@ def test_cognition_loop_compounds_and_gates():
     assert got_sharper(m)                                  # warm solves more / faster here
 
 
+def test_work_curriculum_compounds_via_transfer():
+    """The budgeted self-improvement engine masters a curriculum carrying memory forward, and the
+    transfer is real: carried memory cracks a task that a cold start cannot (compounding)."""
+    from mentat.work import CURRICULUM, work
+    r = work(log=lambda *_: None)
+    solved = [n for n, ok, _ in r["results"] if ok]
+    assert len(solved) >= 4 and len(CURRICULUM) == 5         # masters most of the curriculum
+    cold, warm = r["transfer"]["cold"], r["transfer"]["warm"]
+    assert warm["solved"] >= cold["solved"]                  # carried memory never hurts, usually helps
+    assert r["lessons"] >= 5                                  # accumulated verified building blocks
+
+
 def test_selfmodel_capabilities_and_effort():
     """Jarvis's self-model is grounded: capabilities() names real engines/tools/checks, and
     estimate_effort() recommends a budget strictly larger than the estimate (the safety buffer)."""

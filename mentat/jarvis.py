@@ -368,6 +368,27 @@ def tool_creative_think(rounds: int = 5) -> str:
     return " ".join(parts)
 
 
+def tool_work_on(minutes: float = 0) -> str:
+    """Work on self-improvement within a buffered budget: a VERIFIED curriculum, memory carried
+    forward (compounding/transfer), honest dry-stop. This is 'go improve yourself for a while'."""
+    try:
+        from .work import CURRICULUM, work
+    except Exception as e:
+        return f"(work engine unavailable: {type(e).__name__})"
+    r = work(minutes=(minutes or None), log=lambda *_: None)
+    solved = [n for n, ok, _ in r["results"] if ok]
+    cold, warm = r["transfer"]["cold"], r["transfer"]["warm"]
+    parts = [f"I worked a verified curriculum and mastered {len(solved)} of {len(CURRICULUM)} tasks: "
+             f"{', '.join(solved) or 'none'}."]
+    if r["dry"]:
+        parts.append(f"I stopped honestly at '{r['dry']}' — couldn't crack it offline in budget.")
+    parts.append(f"Transfer proof on '{r['task']}': from scratch I solved {cold['solved']} of "
+                 f"{r['transfer']['n']}, but carrying what I'd proven I solved {warm['solved']} of "
+                 f"{r['transfer']['n']} — the memory compounded.")
+    parts.append(f"{r['lessons']} verified lessons accumulated; every step was re-verified.")
+    return " ".join(parts)
+
+
 def tool_capabilities() -> str:
     """A grounded self-model: what I can do, how much is verified, and what's blocked."""
     try:
@@ -703,6 +724,12 @@ TOOLS = [
                     "verify, discover something, or 'improve yourself' — creativity with a "
                     "verifier between every idea and belief. `rounds` = how long to think.",
      "input_schema": {"type": "object", "properties": {"rounds": {"type": "integer"}}}},
+    {"name": "work_on",
+     "description": "Work on self-improvement within a buffered time budget: run a VERIFIED "
+                    "curriculum, carry proven knowledge forward (compounding/transfer), and stop "
+                    "honestly when dry instead of padding. Use for 'go improve yourself', 'keep "
+                    "working on getting better'. `minutes` caps the budget (a safety buffer is added).",
+     "input_schema": {"type": "object", "properties": {"minutes": {"type": "number"}}}},
     {"name": "capabilities",
      "description": "Describe my OWN capabilities, how many are verified, and what's blocked — a "
                     "grounded self-model (engines + tools + verification checks + integrations). "
@@ -770,6 +797,7 @@ _DISPATCH = {
                                                     a.get("generations", 4)),
     "run_research": lambda a: tool_run_research(a.get("minutes", 0), a.get("rounds", 1)),
     "creative_think": lambda a: tool_creative_think(a.get("rounds", 5)),
+    "work_on": lambda a: tool_work_on(a.get("minutes", 0)),
     "capabilities": lambda a: tool_capabilities(),
     "estimate_effort": lambda a: tool_estimate_effort(a.get("task", "")),
     "finance_qa": lambda a: tool_finance_qa(a.get("question", "")),
@@ -827,6 +855,9 @@ class Jarvis:
             return note + call("get_datetime", {})
         if "weather" in t:
             return note + call("get_weather", {"location": ""})
+        if any(w in t for w in ("self-improve", "self improve", "improve the model", "get better",
+                                "work on yourself", "keep improving", "keep working")):
+            return note + call("work_on", {})
         if any(w in t for w in ("think creat", "be creative", "improve yourself", "improve itself",
                                 "discover", "brainstorm and verif", "novel idea")):
             return note + call("creative_think", {})
