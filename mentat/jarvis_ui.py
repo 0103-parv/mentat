@@ -48,6 +48,7 @@ main{display:grid;grid-template-columns:1.35fr .95fr;gap:0;min-height:0}
 .jarvis{align-self:flex-start;background:var(--panel);border:1px solid var(--line);border-bottom-left-radius:4px;backdrop-filter:blur(6px)}
 .jarvis.sys{border-color:rgba(255,178,89,.3)}
 .jarvis .rt{font-size:11px;color:var(--amber);letter-spacing:.06em;margin-bottom:4px;font-family:ui-monospace,monospace}
+.jarvis .rt.ok{color:var(--teal)} .jarvis .rt.warn{color:var(--dim)}
 /* capability deck */
 .deck{padding:16px 16px 8px;overflow:auto;display:flex;flex-direction:column;gap:10px}
 .deckhdr{font-size:10px;letter-spacing:.28em;color:var(--dim);text-transform:uppercase;padding:2px 4px 4px}
@@ -160,7 +161,7 @@ voiceSel.onchange=()=>{localStorage.setItem('jarvisVoice',voiceSel.value);speak(
 
 /* ---- conversation ---- */
 function add(who,t,rt){const d=document.createElement('div');d.className='msg '+who;
-  if(rt){const r=document.createElement('div');r.className='rt';r.textContent=rt;d.appendChild(r);}
+  if(rt){const r=document.createElement('div');r.className='rt'+(/NOT verified/.test(rt)?' warn':(/verified/.test(rt)?' ok':''));r.textContent=rt;d.appendChild(r);}
   const s=document.createElement('span');s.textContent=t;d.appendChild(s);log.appendChild(d);log.scrollTop=log.scrollHeight;}
 function setState(s){state=s;const m={listening:'listening',thinking:'thinking',speaking:'speaking',working:'working',idle:'standby'};
   stateLbl.textContent=m[s]||'standby';stateLbl.classList.toggle('active',s!=='idle');}
@@ -173,7 +174,7 @@ async function speak(t){setState('speaking');
     speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){if(convo)listen();}}
 async function ask(t){add('you',t);try{rec&&rec.stop();}catch(e){}setState('thinking');const t0=performance.now();
   try{const r=await fetch('/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t,model:modelSel.value})});
-    const j=await r.json();add('jarvis',j.reply,((performance.now()-t0)/1000).toFixed(1)+'s · verified');speak(j.reply);}
+    const j=await r.json();add('jarvis',j.reply,((performance.now()-t0)/1000).toFixed(1)+'s · '+modelSel.value.replace('claude-','')+' · live, NOT verified');speak(j.reply);}
   catch(e){add('jarvis','(could not reach the server)');convo?listen():setState('idle');}}
 
 /* ---- capability deck → real verifier-gated engines ---- */
@@ -200,5 +201,5 @@ function stopConvo(){convo=false;talk.classList.remove('live');talkTxt.textConte
   try{rec.stop();}catch(e){}speechSynthesis.cancel();clearTimeout(timer);setState('idle');}
 talk.onclick=()=>convo?stopConvo():startConvo();
 form.onsubmit=e=>{e.preventDefault();const t=input.value.trim();if(t){input.value='';ask(t);}};
-add('jarvis','Online. I am a verification-gated cognitive system — nothing I tell you is believed until a verifier passes it. Hit Start conversation and just talk, tap a capability on the right, or type a command.');
+add('jarvis','Online. Honest about what is what: the CAPABILITIES on the right are verifier-gated — those results are proven. This conversation is me reasoning live (Opus 4.8) — it is NOT verified and I can be wrong, so call it out and I will check. Tools (weather, web, files) can also be off. Start a conversation, tap a capability, or type a command.');
 </script></body></html>"""
