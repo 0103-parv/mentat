@@ -368,6 +368,25 @@ def tool_creative_think(rounds: int = 5) -> str:
     return " ".join(parts)
 
 
+def tool_capabilities() -> str:
+    """A grounded self-model: what I can do, how much is verified, and what's blocked."""
+    try:
+        from .selfmodel import capabilities
+    except Exception as e:
+        return f"(self-model unavailable: {type(e).__name__})"
+    return capabilities()
+
+
+def tool_estimate_effort(task: str) -> str:
+    """Estimate how long a task takes and recommend a work budget with a safety buffer,
+    grounded in measured timings — the 'that'll take ~8h so I'll budget 10h' capability."""
+    try:
+        from .selfmodel import estimate_effort
+    except Exception as e:
+        return f"(effort estimator unavailable: {type(e).__name__})"
+    return estimate_effort(task)
+
+
 def tool_finance_qa(question: str) -> str:
     """Answer a finance question GROUNDED in the local corpus, with citations — and
     REFUSE (rather than guess) when the corpus has no relevant source. The cure for
@@ -684,6 +703,17 @@ TOOLS = [
                     "verify, discover something, or 'improve yourself' — creativity with a "
                     "verifier between every idea and belief. `rounds` = how long to think.",
      "input_schema": {"type": "object", "properties": {"rounds": {"type": "integer"}}}},
+    {"name": "capabilities",
+     "description": "Describe my OWN capabilities, how many are verified, and what's blocked — a "
+                    "grounded self-model (engines + tools + verification checks + integrations). "
+                    "Use for 'what can you do', 'run diagnostics', 'what are your abilities'.",
+     "input_schema": {"type": "object", "properties": {}}},
+    {"name": "estimate_effort",
+     "description": "Estimate how long a task will take and recommend a work budget WITH a safety "
+                    "buffer, grounded in measured timings. Use for 'how long will X take', 'how "
+                    "much can you get done', or before kicking off a long autonomous run.",
+     "input_schema": {"type": "object", "properties": {"task": {"type": "string"}},
+                      "required": ["task"]}},
     {"name": "shell",
      "description": "Run any shell command on the user's Mac and return its output. Full "
                     "terminal access. Use for files, apps, searches, status, automation.",
@@ -740,6 +770,8 @@ _DISPATCH = {
                                                     a.get("generations", 4)),
     "run_research": lambda a: tool_run_research(a.get("minutes", 0), a.get("rounds", 1)),
     "creative_think": lambda a: tool_creative_think(a.get("rounds", 5)),
+    "capabilities": lambda a: tool_capabilities(),
+    "estimate_effort": lambda a: tool_estimate_effort(a.get("task", "")),
     "finance_qa": lambda a: tool_finance_qa(a.get("question", "")),
     "shell": lambda a: tool_shell(a.get("command", ""), int(a.get("timeout", 60) or 60)),
     "applescript": lambda a: tool_applescript(a.get("script", "")),

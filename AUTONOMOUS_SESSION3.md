@@ -35,3 +35,14 @@ Stop when genuinely dry or at the evening cutoff — don't pad.
   web (honest "needs a key"), and the fallback all work with NO anthropic and NO credits. 67 tests
   green, ruff clean. This makes Jarvis genuinely usable today — the foundation for the no-credits
   autonomous loop.
+- **block 2+3 (12:42) — CAPABILITY SELF-AWARENESS + grounded EFFORT ESTIMATION** (the user's
+  headline asks). Measured real unit costs offline (cognition round ~1.25s, math-discovery solve
+  ~0.1s, consolidate ~0s). Built `mentat/selfmodel.py`: `capabilities()` introspects the LIVE
+  engine registry (22) + Jarvis tools (22) + verification-check count (68) + the integrations
+  report into one honest self-description with explicit limits; `estimate_effort(task)` maps a
+  task to the capability that would do it and estimates wall-clock from the MEASURED timings, then
+  recommends a work budget with a 25% safety buffer (the user's "8h -> set 10h": "9h -> 12h
+  budget"), saying plainly when an estimate is a heuristic vs measured. Wired as Jarvis tools
+  `capabilities` + `estimate_effort` (the offline router already calls them) and a `selfmodel`
+  engine. Verified offline via the Jarvis router ("what can you do", "how long will it take...").
+  +1 test (68 green), ruff clean.

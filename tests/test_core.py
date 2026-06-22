@@ -698,6 +698,23 @@ def test_cognition_loop_compounds_and_gates():
     assert got_sharper(m)                                  # warm solves more / faster here
 
 
+def test_selfmodel_capabilities_and_effort():
+    """Jarvis's self-model is grounded: capabilities() names real engines/tools/checks, and
+    estimate_effort() recommends a budget strictly larger than the estimate (the safety buffer)."""
+    from mentat.selfmodel import BUFFER, capabilities, estimate_effort
+    cap = capabilities()
+    assert "engines" in cap and "verification checks" in cap and "offline" in cap.lower()
+    assert BUFFER > 1.0
+    # a known capability -> grounded, measured estimate that mentions a budget
+    est = estimate_effort("think creatively for 8 rounds")
+    assert "budget" in est.lower() and "buffer" in est.lower()
+    # an hour target -> the recommended budget exceeds the requested hours (buffer applied)
+    hrs = estimate_effort("keep improving the model for 8 hours")
+    import re
+    nums = [int(n) for n in re.findall(r"(\d+)h", hrs)]
+    assert nums and max(nums) > 8                          # 8h request -> >8h budget
+
+
 def test_consolidation_abstracts_and_exports():
     """The brain's sleep (CLS): replay clusters verified lessons into a principle and
     exports a consolidation dataset for the slow LoRA step. Only verified memory enters."""

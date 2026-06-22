@@ -28,6 +28,7 @@ ENGINES = {
     "imagine": "creative synthesis (Boden operators + risk dial), all gated",
     "selfimprove": "measured cold-vs-warm + transfer — does it really learn?",
     "cognition": "creative cognition loop — propose, verify, remember, sleep, get sharper",
+    "selfmodel": "self-awareness — capabilities + grounded effort/time estimation",
     "consolidate": "fast+slow memory consolidation (the brain's sleep)",
     "rag": "grounded finance QA — cites sources or refuses",
     "research": "research autopilot — loop the gated engines and keep what's proven",
