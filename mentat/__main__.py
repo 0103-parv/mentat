@@ -32,6 +32,7 @@ ENGINES = {
     "work": "budgeted self-improvement — a verified curriculum, compounding, honest dry-stop",
     "local_brain": "a local on-device LLM (mlx) proposing in the gated loop — no API (.venv-mlx)",
     "cad": "CAD-as-code — design a verified parametric part, emit OpenSCAD (zero GPU)",
+    "vision": "LOOK through the Mac camera — native face/person detection (Apple Vision)",
     "consolidate": "fast+slow memory consolidation (the brain's sleep)",
     "rag": "grounded finance QA — cites sources or refuses",
     "research": "research autopilot — loop the gated engines and keep what's proven",

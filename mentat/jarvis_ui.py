@@ -98,6 +98,7 @@ select{background:rgba(8,12,20,.8);color:#cfe3f5;border:1px solid var(--line);bo
     <div class="deckhdr">Capabilities — every result is verified</div>
     <button class="cap" data-tool="creative_think"><div class="ic">✷</div><div><div class="tt">Think creatively</div><div class="sb">propose → verify → keep, get sharper</div></div></button>
     <button class="cap" data-tool="work_on"><div class="ic t">⟳</div><div><div class="tt">Self-improve</div><div class="sb">a verified curriculum, compounding</div></div></button>
+    <button class="cap" data-tool="look"><div class="ic t">◉</div><div><div class="tt">Look (vision)</div><div class="sb">camera + Apple Vision, real detection</div></div></button>
     <button class="cap" data-tool="design_part"><div class="ic a">⬡</div><div><div class="tt">Design a part</div><div class="sb">parametric CAD, verified, OpenSCAD</div></div></button>
     <button class="cap" data-tool="discover_sidon"><div class="ic">∑</div><div><div class="tt">Discover (math)</div><div class="sb">a proven Sidon set, exhaustively</div></div></button>
     <button class="cap" data-tool="capabilities"><div class="ic t">◈</div><div><div class="tt">Diagnostics</div><div class="sb">what I am, grounded — no vibes</div></div></button>

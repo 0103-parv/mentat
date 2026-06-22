@@ -373,6 +373,17 @@ def tool_creative_think(rounds: int = 5) -> str:
     return " ".join(parts)
 
 
+def tool_look() -> str:
+    """LOOK through the Mac's camera and report what's actually in frame (faces/people), verified
+    by Apple's Vision — grounded perception, not a guess. Needs one-time camera permission."""
+    try:
+        from .vision import describe
+    except Exception as e:
+        return f"(vision unavailable: {type(e).__name__})"
+    _log_action("vision", "look")
+    return describe()
+
+
 def tool_design_part(part: str = "bracket") -> str:
     """Design a VERIFIED parametric part (a mounting bracket or a standoff/spacer) as code —
     analytic checks, zero GPU — and emit printable OpenSCAD. 'Design a prototype with me.'"""
@@ -749,6 +760,12 @@ TOOLS = [
                     "verify, discover something, or 'improve yourself' — creativity with a "
                     "verifier between every idea and belief. `rounds` = how long to think.",
      "input_schema": {"type": "object", "properties": {"rounds": {"type": "integer"}}}},
+    {"name": "look",
+     "description": "LOOK through the Mac's camera and report what's actually in frame (faces/"
+                    "people, with confidence) - real detection via Apple's Vision, not a guess. Use "
+                    "for 'what do you see', 'look', 'is anyone there', 'who is in the room', camera/"
+                    "vision/intruder requests.",
+     "input_schema": {"type": "object", "properties": {}}},
     {"name": "design_part",
      "description": "Design a VERIFIED parametric part as code — checked analytically for fit, "
                     "clearance, strength, and mass — and emit printable OpenSCAD. `part` is "
@@ -830,6 +847,7 @@ _DISPATCH = {
     "run_research": lambda a: tool_run_research(a.get("minutes", 0), a.get("rounds", 1)),
     "creative_think": lambda a: tool_creative_think(a.get("rounds", 5)),
     "work_on": lambda a: tool_work_on(a.get("minutes", 0)),
+    "look": lambda a: tool_look(),
     "design_part": lambda a: tool_design_part(a.get("part", "bracket")),
     "capabilities": lambda a: tool_capabilities(),
     "estimate_effort": lambda a: tool_estimate_effort(a.get("task", "")),
@@ -888,6 +906,9 @@ class Jarvis:
             return note + call("get_datetime", {})
         if "weather" in t:
             return note + call("get_weather", {"location": ""})
+        if any(w in t for w in ("what do you see", "look through", "is anyone there", "who's there",
+                                "who is there", "check the camera", "see me", "intruder", "in the room")):
+            return note + call("look", {})
         if any(w in t for w in ("design a part", "design a bracket", "design a prototype",
                                 "model a part", "cad", "openscad", "3d model", "standoff", "spacer")):
             return note + call("design_part",

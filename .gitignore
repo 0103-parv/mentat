@@ -30,3 +30,4 @@ mentat/cognition_journal.json
 
 # isolated mlx venv (local brain — not the shared swechats venv)
 .venv-mlx/
+mentat/vision/look
