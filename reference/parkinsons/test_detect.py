@@ -45,6 +45,23 @@ def test_predict_returns_probability():
     assert r["prediction"] in ("Parkinson's", "healthy")
 
 
+def test_sakar_replication_if_present():
+    """If the larger Sakar dataset is downloaded, the methodology must replicate (and leak)."""
+    from .detect_sakar import DATA as SAKAR
+    if not SAKAR.exists():
+        print("  (skip Sakar replication — dataset not downloaded)")
+        return
+    from .detect_sakar import evaluate as s_eval
+    from .detect_sakar import load as s_load
+    X, y, groups, feats = s_load()
+    assert len(set(groups)) == 252 and len(feats) == 752
+    # fast config (logreg + top-30) — keeps the smoke test quick; full report is in detect_sakar.main
+    honest = s_eval(X, y, groups, "logreg", subject_level=True, k=30)
+    leaky = s_eval(X, y, groups, "logreg", subject_level=False, k=30)
+    assert honest["auc_subject"] > 0.75, "independent subject-level detector should be strong"
+    assert leaky["auc"] > honest["auc"], "record-level leakage must inflate here too"
+
+
 def main() -> int:
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     for t in tests:

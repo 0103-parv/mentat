@@ -40,23 +40,38 @@ that **fewer features generalise better** — all 22 features overfit on only 32
 The deployable model (`final_model.py`) trains that panel on all the data and predicts on a new
 recording with an **expected subject-level AUC of 0.91** stored alongside it.
 
+## Independent replication on a second, larger dataset
+
+`detect_sakar.py` re-runs the exact same honest methodology on a completely independent study —
+**Sakar et al. 2018 (UCI), 756 recordings / 252 people / 752 features** (8× more healthy subjects
+than dataset 1). Best honest subject-level **AUC ≈ 0.91**, and the record-level-vs-subject-level
+leakage gap reappears. One *honest nuance* it surfaces: on the tiny 32-person set, logistic
+regression overfit 22 correlated features so selection *helped* (0.70→0.91); here, with 252 people
+and a gradient-boosted model, **all 752 features generalise better than top-30** — selection's
+value is model- and data-size-dependent, not a universal law. What replicates everywhere is
+subject-level rigor and the leakage it removes.
+
 ## Files
 
 | File | Purpose |
 |---|---|
-| `detect.py` | Loads data, subject-level vs record-level CV across 4 models, shows the leakage gap |
+| `detect.py` | Dataset 1: subject-level vs record-level CV across 4 models, the leakage gap |
 | `panel_search.py` | mentat's propose→verify→keep loop searches the size-vs-AUC feature frontier |
 | `final_model.py` | Trains + saves the deployable panel model; `predict(recording_dict)` |
-| `test_detect.py` | Smoke tests (data integrity, leakage gap, panel helps, predict works) |
-| `data/parkinsons.data` | The real UCI dataset (committed, runs offline) |
+| `detect_sakar.py` | Dataset 2 (252 people, 752 feats): independent replication of the methodology |
+| `download.py` | Fetches both real datasets into `data/` (Sakar via bsdtar; no extra deps) |
+| `test_detect.py` | Smoke tests (data integrity, leakage gap, panel, predict, Sakar replication) |
+| `data/parkinsons.data` | Dataset 1, the real UCI CSV (committed, 40 KB, runs offline) |
 
 ## Run
 
 ```bash
 cd ~/mentat
-PYTHONPATH=. ~/swechats/.venv/bin/python reference/parkinsons/detect.py            # the honest report
+PYTHONPATH=. ~/swechats/.venv/bin/python -m reference.parkinsons.download          # fetch both datasets
+PYTHONPATH=. ~/swechats/.venv/bin/python reference/parkinsons/detect.py            # dataset 1 honest report
 PYTHONPATH=. ~/swechats/.venv/bin/python -m reference.parkinsons.panel_search      # mentat feature search
 PYTHONPATH=. ~/swechats/.venv/bin/python -m reference.parkinsons.final_model       # train+save+predict
+PYTHONPATH=. ~/swechats/.venv/bin/python -m reference.parkinsons.detect_sakar      # dataset 2 replication
 PYTHONPATH=. ~/swechats/.venv/bin/python -m reference.parkinsons.test_detect       # smoke tests
 ```
 Needs `numpy`, `scikit-learn`, `pandas` (in `~/swechats/.venv`) and mentat on the path (`PYTHONPATH=.`).

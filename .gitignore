@@ -22,3 +22,6 @@ mentat/finetune/adapters/
 
 # parkinsons reference: keep the public data, ignore the regenerable model
 reference/parkinsons/model.joblib
+reference/parkinsons/data/pd_speech_features.csv
+reference/parkinsons/data/_sakar.zip
+reference/parkinsons/data/*.rar
