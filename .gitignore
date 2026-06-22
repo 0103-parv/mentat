@@ -19,3 +19,6 @@ research_journal.json
 realm_knowledge.json
 mentat/finetune/data/
 mentat/finetune/adapters/
+
+# parkinsons reference: keep the public data, ignore the regenerable model
+reference/parkinsons/model.joblib

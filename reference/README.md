@@ -10,11 +10,24 @@ LieQ quantization + STTP token pruning) is the author's own work and stays their
 for studying the *methods* and seeing mentat's role, on synthetic stand-ins you can replace with
 real features.
 
-## What's here
+## ⭐ The complete working model: `parkinsons/` (REAL data)
+
+**[`parkinsons/`](parkinsons/README.md)** is a complete, genuinely working Parkinson's detector on
+**real public clinical data** (UCI voice dataset, 195 recordings / 32 people) — not synthetic.
+Honest subject-level validation (AUC ~0.78, vs the leaky record-level ~0.95), mentat-gated feature
+selection (a 3-feature panel reaches **AUC 0.91**, beating all 22 features), and a saved, callable
+model (`predict(recording_dict)`). 4 smoke tests pass. This is the real deliverable; the two files
+below are the earlier **synthetic-gait** illustrations of the same ideas.
+
+```bash
+cd ~/mentat && PYTHONPATH=. ~/swechats/.venv/bin/python reference/parkinsons/detect.py
+```
+
+## Synthetic-gait illustrations
 
 | File | What it does | Verified result |
 |------|--------------|-----------------|
-| `parkinsons_detect.py` | Logistic-regression gait detector + mentat searching the minimal feature panel | full panel **85% acc / AUC 0.918**; mentat finds a **2-feature panel at AUC 0.889** |
+| `parkinsons_detect.py` | Logistic-regression *synthetic-gait* detector + mentat minimal-panel search | full panel **85% acc / AUC 0.918**; mentat finds a **2-feature panel at AUC 0.889** |
 | `gait_quant_policy.py` | mentat searches a mixed-precision bit-width policy (the LieQ idea) under a hard memory+accuracy gate | **verified** policy: 30% of FP16 memory, 90.3% acc, attention/head→8-bit, MLP→2-4bit |
 
 Everything is judged on **held-out folds** (detector) or a **hard constraint verifier** (quant) —
