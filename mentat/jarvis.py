@@ -368,6 +368,24 @@ def tool_creative_think(rounds: int = 5) -> str:
     return " ".join(parts)
 
 
+def tool_design_part() -> str:
+    """Design a VERIFIED parametric part (a mounting bracket) as code — analytic checks, zero GPU —
+    and emit printable OpenSCAD. The honest 'design a prototype with me' on current hardware."""
+    try:
+        from .cad import BracketDesign, design_bracket, to_openscad
+    except Exception as e:
+        return f"(CAD engine unavailable: {type(e).__name__})"
+    mem = design_bracket()
+    best = mem.best_candidate
+    if best is None or BracketDesign().verify(best).score < -999:
+        return "I couldn't find a design meeting every constraint in budget — said honestly."
+    v = BracketDesign().verify(best)
+    _log_action("cad", v.detail)
+    return (f"I designed a verified part: {v.detail}. Every constraint is provably met — fit, hole "
+            "clearance, strength floor, and mass budget — and I emitted printable OpenSCAD. It's "
+            "code, verified analytically, so it needed no GPU.\n\n" + to_openscad(best))
+
+
 def tool_work_on(minutes: float = 0) -> str:
     """Work on self-improvement within a buffered budget: a VERIFIED curriculum, memory carried
     forward (compounding/transfer), honest dry-stop. This is 'go improve yourself for a while'."""
@@ -724,6 +742,12 @@ TOOLS = [
                     "verify, discover something, or 'improve yourself' — creativity with a "
                     "verifier between every idea and belief. `rounds` = how long to think.",
      "input_schema": {"type": "object", "properties": {"rounds": {"type": "integer"}}}},
+    {"name": "design_part",
+     "description": "Design a VERIFIED parametric part (a mounting bracket) as code — checked "
+                    "analytically for fit, hole clearance, strength, and mass — and emit printable "
+                    "OpenSCAD. Use for 'design a part/prototype/bracket', 'model something', 'CAD'. "
+                    "No GPU: the design is code, verified, not rendered.",
+     "input_schema": {"type": "object", "properties": {}}},
     {"name": "work_on",
      "description": "Work on self-improvement within a buffered time budget: run a VERIFIED "
                     "curriculum, carry proven knowledge forward (compounding/transfer), and stop "
@@ -798,6 +822,7 @@ _DISPATCH = {
     "run_research": lambda a: tool_run_research(a.get("minutes", 0), a.get("rounds", 1)),
     "creative_think": lambda a: tool_creative_think(a.get("rounds", 5)),
     "work_on": lambda a: tool_work_on(a.get("minutes", 0)),
+    "design_part": lambda a: tool_design_part(),
     "capabilities": lambda a: tool_capabilities(),
     "estimate_effort": lambda a: tool_estimate_effort(a.get("task", "")),
     "finance_qa": lambda a: tool_finance_qa(a.get("question", "")),
@@ -855,6 +880,9 @@ class Jarvis:
             return note + call("get_datetime", {})
         if "weather" in t:
             return note + call("get_weather", {"location": ""})
+        if any(w in t for w in ("design a part", "design a bracket", "design a prototype",
+                                "model a part", "cad", "openscad", "3d model")):
+            return note + call("design_part", {})
         if any(w in t for w in ("self-improve", "self improve", "improve the model", "get better",
                                 "work on yourself", "keep improving", "keep working")):
             return note + call("work_on", {})

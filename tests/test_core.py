@@ -698,6 +698,19 @@ def test_cognition_loop_compounds_and_gates():
     assert got_sharper(m)                                  # warm solves more / faster here
 
 
+def test_cad_designs_a_verified_bracket():
+    """CAD-as-code finds a parametric bracket that provably meets every geometric + mass
+    constraint, and emits valid OpenSCAD — zero-dep, no GPU, verified analytically."""
+    from mentat.cad import BracketDesign, design_bracket, to_openscad
+    mem = design_bracket(generations=50, k=24)
+    best = mem.best_candidate
+    assert best is not None
+    v = BracketDesign().verify(best)
+    assert "VALID" in v.detail                       # a fully-constraint-satisfying design
+    scad = to_openscad(best)
+    assert "difference()" in scad and "cylinder" in scad and "cube" in scad
+
+
 def test_work_curriculum_compounds_via_transfer():
     """The budgeted self-improvement engine masters a curriculum carrying memory forward, and the
     transfer is real: carried memory cracks a task that a cold start cannot (compounding)."""

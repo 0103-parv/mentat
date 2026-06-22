@@ -68,3 +68,13 @@ Stop when genuinely dry or at the evening cutoff — don't pad.
   LLM-found 0.7800. So the creative loop now genuinely improves real CODE offline. +1 fast
   grammar test (zero-dep, 70 green); the beat-the-baseline run is exercised via the venv. ruff
   clean. This closes "code & algorithms" as a working offline self-improvement domain.
+- **block 6 (13:25) — CAD-AS-CODE: design a verified parametric part, zero GPU (user's #3 domain
+  + the "design prototypes" wish).** Built `mentat/cad.py`: a `BracketDesign` Problem where a
+  mounting bracket is parametric CODE and the verifier checks it ANALYTICALLY — fits the envelope,
+  holes fit with edge clearance + spacing, min wall thickness (strength), under the mass budget —
+  no rendering, no VRAM. The creative loop searches the design space and optimises mass; the
+  winner is emitted as printable OpenSCAD. Result: a verified 100x25x3mm 5-hole bracket at 19.5g,
+  every constraint provably met, with a .scad you can render/print. Wired as `python3 -m mentat
+  cad`, Jarvis tool `design_part`, offline-router branch ("design a part/prototype/CAD"). +1 test
+  (71 green), ruff clean. Routes around the hardware wall the driftworks transcript admits:
+  "design prototypes WITH me", verified, on the hardware the user has.
