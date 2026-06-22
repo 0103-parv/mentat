@@ -12,6 +12,7 @@ Run:  python3 -m mentat.improve     (needs a reasoning core; alpha-evolver + num
 from __future__ import annotations
 
 import json
+import random
 import re
 import sys
 from dataclasses import dataclass, field
@@ -206,3 +207,82 @@ class HeuristicProposer:
             out.append(self.fallback[i % len(self.fallback)])
             i += 1
         return out
+
+
+# --- OFFLINE creative search over the Max Cut program DSL (no API) --------------------------- #
+_MOVE_FIELDS = ["flip_gain", "same_weight", "cross_weight", "side", "flip_age", "step_progress"]
+_INIT_FIELDS = ["degree", "weighted_degree", "neighbor_degree", "triangle_score"]
+_CONSTS = ["c_neg1", "c_neg05", "c_0", "c_05", "c_1", "c_2"]
+_UNARY = ["neg", "abs", "sign", "square", "rank", "zscore"]
+_BINARY = ["add", "sub", "mul", "safe_div", "min", "max"]
+
+
+@dataclass
+class CreativeHeuristicProposer:
+    """OFFLINE creative search over the Max Cut program DSL — no reasoning core needed. It breeds
+    from verified elites by mutating the `move` expression; the winning pattern (per the benchmark)
+    is flip_gain + a small smart tie-break at LOW step counts, so it biases toward that. This lets
+    the creative loop genuinely improve real CODE (a heuristic) with the verifier as the only gate."""
+    rng: random.Random
+    baseline: dict
+    last: list = field(default_factory=list)
+    note: str = ""
+
+    def _leaf(self):
+        return self.rng.choice(_MOVE_FIELDS + _CONSTS)
+
+    def _expr(self, depth=0):
+        if depth >= 2 or (depth > 0 and self.rng.random() < 0.5):
+            return self._leaf()
+        if self.rng.random() < 0.4:
+            return [self.rng.choice(_UNARY), self._expr(depth + 1)]
+        return [self.rng.choice(_BINARY), self._expr(depth + 1), self._expr(depth + 1)]
+
+    def _tie_break(self):
+        term = [self.rng.choice(["zscore", "rank", "sign", "abs", "neg"]), self.rng.choice(_MOVE_FIELDS)]
+        if self.rng.random() < 0.5:
+            term = ["mul", self.rng.choice(["c_05", "c_neg05", "c_1", "c_neg1"]), term]
+        return ["add", "flip_gain", term]                       # flip_gain + a small tie-break
+
+    def _mutate(self, prog):
+        p = dict(prog)
+        r = self.rng.random()
+        if r < 0.5:
+            p["move"] = self._tie_break()
+        elif r < 0.75 and isinstance(p.get("move"), (list, str)):
+            p["move"] = [self.rng.choice(_BINARY), p["move"], self._expr(1)]
+        else:
+            p["move"] = self._expr(0)
+        if self.rng.random() < 0.4:
+            p["steps_per_node"] = self.rng.choice([1, 2, 4])     # low steps usually win (step cost penalty)
+        if self.rng.random() < 0.25:
+            p["tabu_window"] = self.rng.choice([0, 1, 3, 5])
+        if self.rng.random() < 0.2:
+            p["restarts"] = self.rng.choice([1, 2])
+        if self.rng.random() < 0.15:
+            p["init"] = [self.rng.choice(_UNARY), self.rng.choice(_INIT_FIELDS)]
+        return p
+
+    def propose(self, problem, memory: Memory, mind: Mind, k: int):
+        ex = mind.explore_rate()
+        pool = [c for _, c in memory.elites] or [self.baseline]
+        out = []
+        for _ in range(k):
+            if self.rng.random() < ex * 0.4:
+                out.append({"init": "degree", "move": self._tie_break(),
+                            "steps_per_node": 2, "restarts": 1, "tabu_window": 1})
+            else:
+                out.append(self._mutate(self.rng.choice(pool)))
+        self.note = ""
+        self.last = [str(out[0].get("move"))[:40]] if out else []
+        return out
+
+
+def discover_maxcut_offline(*, seed: int = 0, generations: int = 40, k: int = 24):
+    """Improve the Max Cut heuristic with NO API — offline creative search, verified by
+    alpha-evolver's real benchmark. Returns the solve Result (needs numpy + alpha-evolver)."""
+    from .core import BrainConfig, solve
+    prob = MaxCutHeuristic()
+    proposer = CreativeHeuristicProposer(random.Random(seed), prob.baseline)
+    return solve(prob, proposer, Memory(), generations=generations, k=k,
+                 log=lambda *_: None, brain=BrainConfig())

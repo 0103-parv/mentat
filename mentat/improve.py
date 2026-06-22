@@ -5,12 +5,15 @@ Run:  python3 -m mentat.improve
 """
 from __future__ import annotations
 
+import random
 import sys
 from pathlib import Path
 
 from .core import Memory, solve
 from .reasoning import AnthropicCore, core_available
-from .self_research import HeuristicProposer, MaxCutHeuristic, _normalize
+from .self_research import (
+    CreativeHeuristicProposer, HeuristicProposer, MaxCutHeuristic, _normalize,
+)
 
 
 class _Broken:
@@ -38,17 +41,20 @@ def main() -> int:
               "  (or source ~/swechats/.env and use ~/swechats/.venv/bin/python, which has numpy)")
         return 1
     core = AnthropicCore() if core_available() else None
-    proposer = HeuristicProposer(core=core or _Broken())
+    if core:                                   # live reasoning core proposes programs
+        proposer, gens, k = HeuristicProposer(core=core), 10, 6
+    else:                                      # NO API: offline CREATIVE search over the program DSL
+        proposer, gens, k = CreativeHeuristicProposer(random.Random(0), problem.baseline), 40, 24
 
     print("PROJECT          alpha-evolver — Max Cut heuristics (your own repo)")
     print("VERIFIER         maxcut_lab.evaluate_program on the train suite (offline, ~0.1s)")
     print(f"BASELINE         fitness {problem.baseline_fitness:.4f}  (alpha-evolver's baseline heuristic)")
-    print(f"REASONING CORE   {core.model if core else 'offline baseline variants only'}")
+    print(f"REASONING CORE   {core.model if core else 'offline creative search (no API)'}")
     print("GOAL             propose a heuristic that beats the baseline\n")
 
     mem_path = Path(__file__).parent / "maxcut_memory.json"   # warm-start across runs
     memory = Memory() if "--fresh" in sys.argv else Memory.load(mem_path)
-    result = solve(problem, proposer, memory, generations=10, k=6, log=_logger(proposer, problem))
+    result = solve(problem, proposer, memory, generations=gens, k=k, log=_logger(proposer, problem))
     memory.save(mem_path)
 
     best = result.best_score

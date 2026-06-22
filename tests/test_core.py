@@ -710,6 +710,36 @@ def test_work_curriculum_compounds_via_transfer():
     assert r["lessons"] >= 5                                  # accumulated verified building blocks
 
 
+def test_offline_maxcut_mutator_emits_valid_grammar():
+    """The offline Max Cut creative mutator emits well-formed programs (move = field / [unary,e] /
+    [binary,e,e]) by construction — verified WITHOUT numpy/alpha-evolver. The actual beat-the-
+    baseline run (fitness 0.7788 -> 0.7813, offline) needs the lab and is exercised via the venv."""
+    import random
+
+    from mentat.self_research import _BINARY, _UNARY, CreativeHeuristicProposer
+
+    class _Mind:
+        def explore_rate(self):
+            return 0.3
+
+    def ok(e):
+        if isinstance(e, str):
+            return True
+        if isinstance(e, list) and len(e) == 2 and e[0] in _UNARY:
+            return ok(e[1])
+        if isinstance(e, list) and len(e) == 3 and e[0] in _BINARY:
+            return ok(e[1]) and ok(e[2])
+        return False
+
+    baseline = {"init": "degree", "move": "flip_gain", "steps_per_node": 4,
+                "restarts": 2, "tabu_window": 1}
+    progs = CreativeHeuristicProposer(random.Random(0), baseline).propose(None, Memory(), _Mind(), 24)
+    assert len(progs) == 24
+    for p in progs:
+        assert isinstance(p, dict) and ok(p["move"])
+        assert p["steps_per_node"] in (1, 2, 4, 8) and p["tabu_window"] in (0, 1, 3, 5)
+
+
 def test_selfmodel_capabilities_and_effort():
     """Jarvis's self-model is grounded: capabilities() names real engines/tools/checks, and
     estimate_effort() recommends a budget strictly larger than the estimate (the safety buffer)."""

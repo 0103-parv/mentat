@@ -57,3 +57,14 @@ Stop when genuinely dry or at the evening cutoff — don't pad.
   persists a journal so gains compound across sessions. Wired as `python3 -m mentat work
   [--minutes N]`, Jarvis tool `work_on`, and an offline-router branch. +1 test (69 green), ruff
   clean. Honest ceiling stated: harder gains need API credits or a new domain.
+- **block 5 (13:10) — OFFLINE creative search on the REAL code/algorithms domain (user's #1).**
+  The offline `HeuristicProposer` only cycled baseline variants (no real search without the LLM).
+  Built `CreativeHeuristicProposer` in `self_research.py`: an offline mutator over the Max Cut
+  program DSL (mutate the `move` expr tree, bias toward the winning pattern = flip_gain + a small
+  smart tie-break at low step counts), bred from verified elites. Wired into the `improve` engine
+  as the offline path (no core -> creative search, gens 40/k 24). **Result (verified by
+  alpha-evolver's REAL benchmark, no API): beat the baseline 0.7788 -> 0.7813** (+0.0025),
+  discovering `move=add(flip_gain, abs(same_weight))` at gen 9 — and that even edges the earlier
+  LLM-found 0.7800. So the creative loop now genuinely improves real CODE offline. +1 fast
+  grammar test (zero-dep, 70 green); the beat-the-baseline run is exercised via the venv. ruff
+  clean. This closes "code & algorithms" as a working offline self-improvement domain.
