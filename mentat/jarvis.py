@@ -344,6 +344,30 @@ def tool_run_research(minutes: float = 0, rounds: int = 1) -> str:
     return research.report(journal)
 
 
+def tool_creative_think(rounds: int = 5) -> str:
+    """Run the CREATIVE COGNITION loop: propose ideas creatively, VERIFY each, remember only
+    what's proven, sleep to consolidate, and measure whether it got sharper. This is mentat
+    thinking creatively AND improving itself — with a verifier between every idea and belief."""
+    try:
+        from .cognition import _demo_domain, got_sharper, measure, run_loop
+    except Exception as e:
+        return f"(creative cognition loop unavailable: {type(e).__name__})"
+    n = max(1, int(rounds or 4))
+    _log_action("engine", f"creative_think rounds={n}")
+    mk_p, mk_pr = _demo_domain()
+    mem, traj = run_loop(mk_p, mk_pr, rounds=n, generations=60, k=32)
+    m = measure(mk_p, mk_pr, mem, generations=60, k=32, seeds=(1, 2, 3))
+    solved_round = next((rr.round for rr in traj if rr.solved), None)
+    parts = [f"Creative cognition loop — {n} rounds, verifier-gated."]
+    parts.append(f"It discovered and verified the law in round {solved_round}."
+                 if solved_round else "No candidate cleared the gate this run — nothing faked.")
+    parts.append(f"Cold start solved {m['cold']['solved']} of {m['n']}; warm, carrying its own "
+                 f"verified memory, solved {m['warm']['solved']} of {m['n']} — "
+                 + ("sharper, the memory compounded." if got_sharper(m) else "no measurable gain this run."))
+    parts.append("Every idea was re-verified before being believed.")
+    return " ".join(parts)
+
+
 def tool_finance_qa(question: str) -> str:
     """Answer a finance question GROUNDED in the local corpus, with citations — and
     REFUSE (rather than guess) when the corpus has no relevant source. The cure for
@@ -653,6 +677,13 @@ TOOLS = [
                     "verified'.",
      "input_schema": {"type": "object", "properties": {
          "minutes": {"type": "number"}, "rounds": {"type": "integer"}}}},
+    {"name": "creative_think",
+     "description": "Run the CREATIVE COGNITION loop: mentat proposes ideas creatively, VERIFIES "
+                    "each, remembers only what's proven, sleeps to consolidate, and measures "
+                    "whether it got sharper. Use when asked to think creatively, brainstorm and "
+                    "verify, discover something, or 'improve yourself' — creativity with a "
+                    "verifier between every idea and belief. `rounds` = how long to think.",
+     "input_schema": {"type": "object", "properties": {"rounds": {"type": "integer"}}}},
     {"name": "shell",
      "description": "Run any shell command on the user's Mac and return its output. Full "
                     "terminal access. Use for files, apps, searches, status, automation.",
@@ -708,6 +739,7 @@ _DISPATCH = {
     "discover_sidon": lambda a: tool_discover_sidon(a.get("n", 100), a.get("target", 10),
                                                     a.get("generations", 4)),
     "run_research": lambda a: tool_run_research(a.get("minutes", 0), a.get("rounds", 1)),
+    "creative_think": lambda a: tool_creative_think(a.get("rounds", 5)),
     "finance_qa": lambda a: tool_finance_qa(a.get("question", "")),
     "shell": lambda a: tool_shell(a.get("command", ""), int(a.get("timeout", 60) or 60)),
     "applescript": lambda a: tool_applescript(a.get("script", "")),
