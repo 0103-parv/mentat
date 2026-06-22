@@ -26,7 +26,7 @@ from datetime import datetime
 from pathlib import Path
 
 from .core import Lesson as _Lesson, Memory as _Memory
-from .reasoning import DEFAULT_MODEL, _load_key
+from .reasoning import DEFAULT_MODEL, _load_key, core_available
 from .secrets import get_secret
 import os
 
@@ -759,14 +759,57 @@ _DISPATCH = {
 # --------------------------------------------------------------------------- #
 class Jarvis:
     def __init__(self, model: str = MODEL, max_turns: int = 8):
-        import anthropic
-        key = _load_key()
-        self.client = anthropic.Anthropic(api_key=key) if key else anthropic.Anthropic()
+        # Graceful: a missing SDK or key must NOT crash Jarvis — it drops to offline mode
+        # (tools still work). The Claude SDK lives in the swechats venv; system python has none.
+        self.client = None
+        try:
+            import anthropic
+            key = _load_key()
+            self.client = anthropic.Anthropic(api_key=key) if key else anthropic.Anthropic()
+        except Exception:
+            self.client = None
+        self.online = self.client is not None and core_available()   # key present (credits checked at call)
         self.model = model
         self.max_turns = max_turns
         self.history: list[dict] = []
         self._lock = threading.Lock()   # serialize concurrent /ask threads
-        self.max_history = 40           # cap message dicts retained
+        self.max_history = 40
+
+    def _offline_reply(self, text: str, note: str = "") -> str:
+        """No reasoning core (no SDK / no key / no credits): route obvious intents straight to
+        tools so Jarvis still DOES things, honestly flagging that full conversation is offline."""
+        t = text.lower().strip()
+
+        def call(name, args):
+            try:
+                return str(_DISPATCH[name](args))
+            except Exception as e:
+                return f"(tool {name} unavailable: {type(e).__name__})"
+
+        if any(w in t for w in ("what can you do", "your capab", "your abilit", "capabilit",
+                                "diagnostic", "self model", "self-model", "what are you")):
+            return note + call("capabilities", {})
+        if any(w in t for w in ("how long", "how much time", "estimate", "time frame", "timeframe")):
+            return note + call("estimate_effort", {"task": text})
+        if any(w in t for w in ("time", "what day", "the date", "clock")):
+            return note + call("get_datetime", {})
+        if "weather" in t:
+            return note + call("get_weather", {"location": ""})
+        if any(w in t for w in ("think creat", "be creative", "improve yourself", "improve itself",
+                                "discover", "brainstorm and verif", "novel idea")):
+            return note + call("creative_think", {})
+        if any(w in t for w in ("research all night", "work all night", "work overnight", "run research")):
+            return note + call("run_research", {})
+        if t.startswith(("remember", "note that")):
+            return note + call("remember", {"note": text})
+        if any(w in t for w in ("recall", "what do you know", "what did i tell")):
+            return note + call("recall", {"query": text})
+        if any(w in t for w in ("search the web", "look up", "google ", "find online", "search for")):
+            return note + call("web_search", {"query": text})
+        return (note + "My deep reasoning is offline right now (no API credits or SDK), so I can't "
+                "hold a full conversation — but my tools still work. Try: 'what can you do', 'what "
+                "time is it', 'the weather', 'search the web for X', 'think creatively', 'how long "
+                "will X take', or 'remember that ...'. Add API credits or a local model for full chat.")           # cap message dicts retained
 
     def _trim_history(self) -> None:
         # Drop oldest whole exchanges, always cutting at a real user turn (string
@@ -783,6 +826,11 @@ class Jarvis:
             del self.history[:starts[-1]]
 
     def ask(self, text: str, model: str | None = None) -> str:
+        if not self.online:                        # no reasoning core -> offline tool router
+            reply = self._offline_reply(text)
+            _log_convo("user", text)
+            _log_convo("jarvis", reply)
+            return reply
         use_model = model if model in ALLOWED_MODELS else self.model
         if not self._lock.acquire(timeout=1.0):   # don't stall a worker thread for minutes
             return "I'm still finishing the previous request — give me a moment, then ask again."
@@ -815,9 +863,10 @@ class Jarvis:
                     self.history.append({"role": "user", "content": results})
                 else:
                     final = final or "Sorry, I got stuck in a loop there."
-            except Exception as e:               # discard the partial, poisoning turn
+            except Exception as e:               # API/credits/network: degrade to offline tools
                 del self.history[snapshot:]
-                reply = f"Sorry — I hit an error ({type(e).__name__}). Try again."
+                reply = self._offline_reply(
+                    text, note=f"(reasoning core error: {type(e).__name__}; offline tools only) ")
                 _log_convo("user", text)
                 _log_convo("jarvis", reply)
                 return reply
