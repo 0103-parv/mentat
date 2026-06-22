@@ -111,7 +111,10 @@ SYSTEM = (
     "is building AI systems (the repos swechats, alpha-evolver, and mentat). "
     "Your replies are read ALOUD by a speech synthesizer, so: keep them to 1-3 short "
     "sentences, plain conversational English, NO markdown, NO bullet lists, no emoji. "
-    "Be warm, direct, and proactive. Use your tools when they'd help rather than "
+    "Be warm, direct, and proactive. You are genuinely SMART: reason carefully through hard "
+    "problems before answering, plan multi-step tasks and chain your tools until the job is "
+    "actually DONE (don't stop half-way or just describe what you'd do — do it), and anticipate "
+    "what the user really needs, not only the literal words. Prefer checking with a tool over "
     "guessing. Be honest about confidence: your conversational answers are live reasoning, "
     "NOT verified, and can be wrong — flag uncertainty instead of asserting, and if a tool's "
     "result looks off (wrong location, stale or implausible data) SAY SO rather than repeating "
@@ -869,7 +872,7 @@ _DISPATCH = {
 # the agent                                                                   #
 # --------------------------------------------------------------------------- #
 class Jarvis:
-    def __init__(self, model: str = MODEL, max_turns: int = 8):
+    def __init__(self, model: str = MODEL, max_turns: int = 12):
         # Graceful: a missing SDK or key must NOT crash Jarvis — it drops to offline mode
         # (tools still work). The Claude SDK lives in the swechats venv; system python has none.
         self.client = None
@@ -946,6 +949,19 @@ class Jarvis:
         if starts and starts[-1] > 0:
             del self.history[:starts[-1]]
 
+    def _create(self, **kw):
+        """messages.create with adaptive DEEP thinking + high effort, degrading gracefully for
+        any model/SDK that doesn't support those params (so a model switch never breaks the turn)."""
+        try:
+            return self.client.messages.create(
+                thinking={"type": "adaptive"},
+                extra_body={"output_config": {"effort": "high"}}, **kw)
+        except Exception as e:
+            s = str(e).lower()
+            if "thinking" in s or "output_config" in s or "effort" in s:
+                return self.client.messages.create(**kw)
+            raise
+
     def ask(self, text: str, model: str | None = None) -> str:
         if not self.online:                        # no reasoning core -> offline tool router
             reply = self._offline_reply(text)
@@ -959,13 +975,16 @@ class Jarvis:
             snapshot = len(self.history)        # roll-back point if the turn fails
             self.history.append({"role": "user", "content": text})
             lessons = jarvis_lessons_context()  # grounded rules learned from past corrections
+            recalled = tool_recall(text)        # auto-recall what it knows about the user, every turn
+            mem = (f"\n\nWhat you already know about the user (use it naturally, don't recite it):"
+                   f"\n{recalled}" if recalled and "haven't been told" not in recalled else "")
             sys_prompt = SYSTEM + (f"\n\nWhat you have LEARNED (follow these):\n{lessons}"
-                                   if lessons else "")
+                                   if lessons else "") + mem
             final = ""
             try:
                 for _ in range(self.max_turns):
-                    resp = self.client.messages.create(
-                        model=use_model, max_tokens=1024, system=sys_prompt,
+                    resp = self._create(
+                        model=use_model, max_tokens=4096, system=sys_prompt,
                         tools=TOOLS, messages=self.history)
                     self.history.append({"role": "assistant", "content": resp.content})
                     text_now = "".join(b.text for b in resp.content if b.type == "text")
@@ -1013,8 +1032,8 @@ class Jarvis:
         _log_action("mandate", goal)
         final = ""
         for step in range(max_steps):
-            resp = self.client.messages.create(
-                model=use_model, max_tokens=2048, system=sys_prompt,
+            resp = self._create(
+                model=use_model, max_tokens=4096, system=sys_prompt,
                 tools=TOOLS, messages=history)
             history.append({"role": "assistant", "content": resp.content})
             text_now = "".join(b.text for b in resp.content if b.type == "text")
