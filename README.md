@@ -113,7 +113,21 @@ offline benchmark (`maxcut_lab.evaluate_program`). It beat the baseline —
 `move = add(flip_gain, zscore(flip_gain))`, fitness **0.7800 vs 0.7788** — keeping
 `steps_per_node` low because it inferred the cost structure, and only claimed the
 win after the real eval confirmed it. The discovery engine improving your research,
-scored by your research.
+scored by your research. And now **offline**: a creative mutator over the same DSL
+(`CreativeHeuristicProposer`) beats the baseline with **no API** — fitness **0.7813**,
+`move = add(flip_gain, abs(same_weight))` — so the loop sharpens your code even with credits out.
+
+### Self-aware, self-improving, and designing — all offline
+
+The system now **knows its own capabilities** (`mentat.selfmodel` — engines, tools, verification
+checks, integrations) and **budgets its own work** ("~9h → 12h with a safety buffer", grounded in
+*measured* timings). `mentat.work` runs a **verified curriculum that carries proven building blocks
+forward** (transfer) across formula synthesis *and* real code, stopping honestly when dry. The
+creative loop (`mentat.cognition`) proposes → verifies → remembers → sleeps → gets sharper. And
+`mentat.cad` designs a **verified parametric part** — checked analytically for fit, clearance,
+strength, and mass — then emits printable OpenSCAD, so it prototypes with **no GPU**. Every one of
+these runs with **no API credits**, and Jarvis degrades gracefully to an offline tool router when
+the reasoning core is unavailable. See `CREATIVE_JARVIS.md`.
 
 ## Roadmap
 
