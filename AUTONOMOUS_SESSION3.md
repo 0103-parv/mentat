@@ -91,3 +91,10 @@ Stop when genuinely dry or at the evening cutoff — don't pad.
   offline, and the honest limits). Probed the new modules for edge cases (empty/None effort task,
   zero-round loop, malformed CAD candidate) — all degrade gracefully — and locked it in with a
   robustness test. 72 tests green, ruff clean.
+- **block 9 (13:48) — README surfaces the new offline capabilities** (self-research offline win
+  0.7813; a new subsection on selfmodel/work/cognition/cad). Pushed 00125ad.
+- **block 10 (13:55) — CAD-as-code GENERALISES to a 2nd part (proves it's a tool, not a one-off).**
+  Added `SpacerDesign` (cylindrical standoff: M3-clearance bore, min wall, height/mass constraints)
+  + a `PARTS` registry + `design(part)`; the `cad` engine now takes `bracket|spacer`, and
+  `design_part` + the offline router handle "standoff"/"spacer". Verified standoff OD6.9/bore3.9/
+  h8mm @ 0.6g, all constraints met, printable OpenSCAD. 72 tests green, ruff clean.

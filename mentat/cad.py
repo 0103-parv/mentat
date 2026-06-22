@@ -127,21 +127,113 @@ def design_bracket(*, seed: int = 0, generations: int = 60, k: int = 24):
     return mem
 
 
-def main() -> int:
-    print("CAD-AS-CODE — design a VERIFIED mounting bracket (analytic checks, zero GPU)")
-    print(f"  envelope <= {MAX_W:.0f}x{MAX_H:.0f}mm | thickness {MIN_T:.0f}-{MAX_T:.0f}mm | "
-          f">=2 holes (d{HOLE_D:.0f}, {EDGE_MARGIN:.0f}mm clearance) | mass <= {MASS_BUDGET:.0f}g\n")
-    mem = design_bracket()
-    best = mem.best_candidate
-    prob = BracketDesign()
+# --- a SECOND verified part: a cylindrical standoff/spacer (proves CAD-as-code generalises) -- #
+SCREW_CLEAR = 3.4       # M3 clearance hole (mm)
+MIN_WALL = 1.5          # min wall around the hole
+SP_MAX_OD = 20.0
+SP_H_MIN, SP_H_MAX = 8.0, 40.0
+SP_MASS_BUDGET = 30.0
+
+
+class SpacerDesign(Problem):
+    name = "cad-spacer"
+    statement = "design a cylindrical standoff that satisfies every constraint"
+
+    def _params(self, c):
+        if not isinstance(c, dict):
+            return None
+        try:
+            return float(c["od"]), float(c["id"]), float(c["h"])
+        except (KeyError, TypeError, ValueError):
+            return None
+
+    def verify(self, candidate) -> Verdict:
+        p = self._params(candidate)
+        if p is None:
+            return Verdict(False, -1e9, "malformed spacer", suspicious=True)
+        od, idia, h = p
+        fails = []
+        if not (SCREW_CLEAR <= idia <= od - 2 * MIN_WALL):
+            fails.append(f"bore {idia:.1f} must be >= {SCREW_CLEAR} and leave >={MIN_WALL}mm wall")
+        if od > SP_MAX_OD:
+            fails.append(f"OD {od:.1f} > {SP_MAX_OD:.0f}")
+        if not (SP_H_MIN <= h <= SP_H_MAX):
+            fails.append(f"height {h:.1f} outside [{SP_H_MIN:.0f},{SP_H_MAX:.0f}]")
+        mass = math.pi * ((od / 2) ** 2 - (idia / 2) ** 2) * h * DENSITY
+        if mass > SP_MASS_BUDGET:
+            fails.append(f"mass {mass:.0f}g > {SP_MASS_BUDGET:.0f}g")
+        if fails:
+            return Verdict(False, -1000 - len(fails), "; ".join(fails))
+        return Verdict(False, -mass, f"VALID standoff OD{od:.1f}/bore{idia:.1f}/h{h:.0f}mm, mass {mass:.1f}g")
+
+    def solved(self, v: Verdict) -> bool:
+        return False
+
+
+class SpacerProposer:
+    def __init__(self, rng: random.Random):
+        self.rng = rng
+
+    def _rand(self):
+        return {"od": self.rng.uniform(6, SP_MAX_OD), "id": self.rng.uniform(SCREW_CLEAR, 8),
+                "h": self.rng.uniform(SP_H_MIN, SP_H_MAX)}
+
+    def _mutate(self, c):
+        d = dict(c)
+        key = self.rng.choice(["od", "id", "h"])
+        d[key] = float(c.get(key, SCREW_CLEAR)) * self.rng.uniform(0.85, 1.15)
+        return d
+
+    def propose(self, problem, memory: Memory, mind, k: int):
+        ex = mind.explore_rate()
+        pool = [c for _, c in memory.elites]
+        return [self._rand() if not pool or self.rng.random() < ex
+                else self._mutate(self.rng.choice(pool)) for _ in range(k)]
+
+
+def to_openscad_spacer(c: dict) -> str:
+    od, idia, h = c["od"], c["id"], c["h"]
+    return (f"// cylindrical standoff — verified by mentat (mass-optimised, all constraints met)\n"
+            f"difference() {{\n"
+            f"  cylinder(h={h:.1f}, d={od:.1f}, $fn=48);\n"
+            f"  translate([0,0,-1]) cylinder(h={h+2:.1f}, d={idia:.1f}, $fn=48);\n}}\n")
+
+
+def design_spacer(*, seed: int = 0, generations: int = 60, k: int = 24):
+    mem = Memory()
+    solve(SpacerDesign(), SpacerProposer(random.Random(seed)), mem,
+          generations=generations, k=k, log=lambda *_: None, brain=BrainConfig())
+    return mem
+
+
+PARTS = {
+    "bracket": (BracketDesign, design_bracket, to_openscad),
+    "spacer": (SpacerDesign, design_spacer, to_openscad_spacer),
+}
+
+
+def design(part: str = "bracket", *, seed: int = 0, generations: int = 60, k: int = 24):
+    """Design any registered part; returns (problem, best_candidate_or_None, openscad_or_None)."""
+    Prob, designer, emit = PARTS.get(part, PARTS["bracket"])
+    mem = designer(seed=seed, generations=generations, k=k)
+    prob, best = Prob(), mem.best_candidate
     if best is None or prob.verify(best).score < -999:
+        return prob, None, None
+    return prob, best, emit(best)
+
+
+def main() -> int:
+    import sys
+    part = next((a for a in sys.argv[1:] if a in PARTS), "bracket")
+    print(f"CAD-AS-CODE — design a VERIFIED {part} (analytic checks, zero GPU)\n")
+    prob, best, scad = design(part)
+    if best is None:
         print("  no fully-valid design found in budget (honest).")
         return 0
-    v = prob.verify(best)
-    print(f"  best verified design: {v.detail}")
-    print("  every constraint provably met — fit, hole clearance, strength floor, mass budget.\n")
-    print("  printable OpenSCAD (save as bracket.scad, render in OpenSCAD / slice & print):\n")
-    print(to_openscad(best))
+    print(f"  best verified design: {prob.verify(best).detail}")
+    print("  every constraint provably met — verified analytically, not rendered.\n")
+    print(f"  printable OpenSCAD (save as {part}.scad, render in OpenSCAD / slice & print):\n")
+    print(scad)
     print("=> A real prototype, designed and VERIFIED on the hardware you have — no GPU, no vibes.")
     return 0
 
