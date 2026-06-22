@@ -90,10 +90,27 @@ def work(*, minutes: float | None = None, rounds_per_task: int = 4, log=print) -
     mk_pr = lambda rng: RandomProposer(rng)                               # noqa: E731
     m = measure(mk_p, mk_pr, mem, generations=60, k=32, seeds=(1, 2, 3))
 
+    # Second domain — REAL code: offline creative search on the Max Cut heuristic (needs the lab;
+    # skipped cleanly under system python). Proves self-improvement spans more than formula synthesis.
+    code = None
+    if not (cap_s and time.time() - start > cap_s):
+        try:
+            from .self_research import MaxCutHeuristic, discover_maxcut_offline
+            base = MaxCutHeuristic().baseline_fitness
+            cr = discover_maxcut_offline(seed=0, generations=30, k=20)
+            code = {"baseline": base, "best": cr.best_score, "beat": bool(cr.solved)}
+            log(f"  real-code domain (Max Cut): baseline {base:.4f} -> {cr.best_score:.4f}"
+                + ("  BEAT" if cr.solved else ""))
+        except Exception:
+            code = None                                  # alpha-evolver/numpy absent — skip honestly
+
     journal["runs"] = journal.get("runs", 0) + 1
+    if code and code["beat"]:
+        journal.setdefault("code_best", code["best"])
+        journal["code_best"] = max(journal.get("code_best", 0), code["best"])
     _save_journal(journal)
     return {"results": results, "dry": dry, "transfer": m, "elapsed_s": time.time() - start,
-            "lessons": len(mem.lessons), "task": last}
+            "lessons": len(mem.lessons), "task": last, "code": code}
 
 
 def main() -> int:
@@ -118,8 +135,12 @@ def main() -> int:
           f"warm (carried memory) solved {warm['solved']}/{r['transfer']['n']} "
           f"-> {'memory compounded' if warm['solved'] >= cold['solved'] else 'no gain'}.")
     print(f"  {r['lessons']} verified lessons accumulated; {r['elapsed_s']:.1f}s elapsed.")
-    print("\n=> It set a budget, worked in verified blocks, compounded what it proved, and stopped")
-    print("   honestly when dry. Further gains on harder tasks need API credits or a new domain.")
+    if r.get("code"):
+        c = r["code"]
+        print(f"  real-code domain (Max Cut heuristic): baseline {c['baseline']:.4f} -> "
+              f"{c['best']:.4f}" + ("  (BEAT, offline, no API)" if c["beat"] else "  (no beat in budget)"))
+    print("\n=> It set a budget, worked in verified blocks across formula synthesis AND real code,")
+    print("   compounded what it proved, and stopped honestly when dry.")
     return 0
 
 

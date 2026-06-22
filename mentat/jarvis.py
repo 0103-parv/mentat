@@ -404,6 +404,10 @@ def tool_work_on(minutes: float = 0) -> str:
                  f"{r['transfer']['n']}, but carrying what I'd proven I solved {warm['solved']} of "
                  f"{r['transfer']['n']} — the memory compounded.")
     parts.append(f"{r['lessons']} verified lessons accumulated; every step was re-verified.")
+    if r.get("code"):
+        c = r["code"]
+        parts.append(f"I also improved real code — the Max Cut heuristic — from {c['baseline']:.4f} "
+                     f"to {c['best']:.4f}" + (" offline, beating the baseline." if c["beat"] else "."))
     return " ".join(parts)
 
 

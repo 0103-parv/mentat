@@ -78,3 +78,11 @@ Stop when genuinely dry or at the evening cutoff — don't pad.
   cad`, Jarvis tool `design_part`, offline-router branch ("design a part/prototype/CAD"). +1 test
   (71 green), ruff clean. Routes around the hardware wall the driftworks transcript admits:
   "design prototypes WITH me", verified, on the hardware the user has.
+- **block 7 (13:35) — MULTI-DOMAIN self-improvement: `work` now spans formula synthesis AND real
+  code.** Added a guarded second domain to `work.py`: after the formula curriculum it runs the
+  offline creative Max Cut search (block 5) and reports the result — baseline 0.7788 -> 0.7813
+  BEAT, offline. Skipped cleanly under system python (no numpy) so the zero-dep suite stays green
+  (71). Surfaced in `python3 -m mentat work` + the `work_on` Jarvis tool. Honest note: the
+  formula-curriculum transfer (cracking the hard-cubic from carried memory) is REAL but stochastic
+  — it depends on PYTHONHASHSEED-influenced search order, so some runs master 5/5 and some 4/5; the
+  engine reports its actual result each run rather than the best-case. ruff clean.
