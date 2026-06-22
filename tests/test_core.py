@@ -681,6 +681,23 @@ def test_warm_memory_recalls_verified_solution():
     assert r.solved and r.generations == 1               # recall + re-verify, instant
 
 
+def test_cognition_loop_compounds_and_gates():
+    """The creative cognition loop runs autonomous rounds (propose->verify->remember->sleep),
+    accumulates verified memory, and the warm (post-loop) memory is never WORSE than cold on a
+    fresh attempt — compounding, with the verifier gating every round."""
+    from mentat.cognition import got_sharper, measure, run_loop
+    from mentat.demo import RandomProposer, SymbolicRegression
+    xs = [round(i * 0.2, 2) for i in range(-10, 11)]
+    mk_p = lambda: SymbolicRegression(lambda x: x ** 3 - x, xs, tol=0.10)   # noqa: E731
+    mk_pr = lambda rng: RandomProposer(rng)                                 # noqa: E731
+    mem, traj = run_loop(mk_p, mk_pr, rounds=5, generations=60, k=32)
+    assert len(traj) == 5 and mem.best_candidate is not None
+    assert any(rr.solved for rr in traj)                  # the loop discovered + verified the law
+    m = measure(mk_p, mk_pr, mem, generations=60, k=32, seeds=(1, 2, 3))
+    assert m["warm"]["best"] >= m["cold"]["best"] - 1e-9  # memory never hurts
+    assert got_sharper(m)                                  # warm solves more / faster here
+
+
 def test_consolidation_abstracts_and_exports():
     """The brain's sleep (CLS): replay clusters verified lessons into a principle and
     exports a consolidation dataset for the slow LoRA step. Only verified memory enters."""
