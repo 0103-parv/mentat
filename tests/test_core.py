@@ -698,6 +698,20 @@ def test_cognition_loop_compounds_and_gates():
     assert got_sharper(m)                                  # warm solves more / faster here
 
 
+def test_new_capabilities_handle_edge_cases():
+    """The new self-aware / self-improving / CAD modules degrade gracefully on bad input."""
+    from mentat.cad import BracketDesign
+    from mentat.cognition import _demo_domain, run_loop
+    from mentat.selfmodel import estimate_effort
+    assert "estimate" in estimate_effort("").lower()          # empty task -> heuristic, no crash
+    assert "estimate" in estimate_effort(None).lower()        # None task -> no crash
+    mp, mpr = _demo_domain()
+    _, traj = run_loop(mp, mpr, rounds=0)                     # zero rounds -> empty trajectory
+    assert traj == []
+    assert BracketDesign().verify("not-a-dict").suspicious    # malformed design rejected, flagged
+    assert BracketDesign().verify({"bad": 1}).score < -1e8
+
+
 def test_cad_designs_a_verified_bracket():
     """CAD-as-code finds a parametric bracket that provably meets every geometric + mass
     constraint, and emits valid OpenSCAD — zero-dep, no GPU, verified analytically."""

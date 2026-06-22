@@ -86,3 +86,8 @@ Stop when genuinely dry or at the evening cutoff — don't pad.
   formula-curriculum transfer (cracking the hard-cubic from carried memory) is REAL but stochastic
   — it depends on PYTHONHASHSEED-influenced search order, so some runs master 5/5 and some 4/5; the
   engine reports its actual result each run rather than the best-case. ruff clean.
+- **block 8 (13:42) — DOCS capstone + robustness.** Wrote `CREATIVE_JARVIS.md` (the new
+  self-aware/self-improving/CAD architecture, the driftworks comparison, how to run each engine
+  offline, and the honest limits). Probed the new modules for edge cases (empty/None effort task,
+  zero-round loop, malformed CAD candidate) — all degrade gracefully — and locked it in with a
+  robustness test. 72 tests green, ruff clean.
