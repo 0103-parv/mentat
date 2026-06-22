@@ -27,3 +27,6 @@ reference/parkinsons/data/_sakar.zip
 reference/parkinsons/data/*.rar
 mentat/work_journal.json
 mentat/cognition_journal.json
+
+# isolated mlx venv (local brain — not the shared swechats venv)
+.venv-mlx/

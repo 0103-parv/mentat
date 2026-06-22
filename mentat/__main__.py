@@ -30,6 +30,7 @@ ENGINES = {
     "cognition": "creative cognition loop — propose, verify, remember, sleep, get sharper",
     "selfmodel": "self-awareness — capabilities + grounded effort/time estimation",
     "work": "budgeted self-improvement — a verified curriculum, compounding, honest dry-stop",
+    "local_brain": "a local on-device LLM (mlx) proposing in the gated loop — no API (.venv-mlx)",
     "cad": "CAD-as-code — design a verified parametric part, emit OpenSCAD (zero GPU)",
     "consolidate": "fast+slow memory consolidation (the brain's sleep)",
     "rag": "grounded finance QA — cites sources or refuses",

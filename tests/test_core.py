@@ -698,6 +698,16 @@ def test_cognition_loop_compounds_and_gates():
     assert got_sharper(m)                                  # warm solves more / faster here
 
 
+def test_local_brain_cleans_model_output():
+    """The local-LLM proposer cleans a small model's output into parseable DSL (drop 'y=', ^->**) —
+    tested zero-dep (no mlx needed); the live model run lives in the isolated .venv-mlx."""
+    from mentat.demo import parse_infix
+    from mentat.local_brain import _clean
+    assert _clean("y = x^2 - 1") == "x**2 - 1"
+    assert _clean("f(x)=x**3 - 2*x") == "x**3 - 2*x"
+    parse_infix(_clean("y=x^3 - x"))                 # cleans into something the verifier can parse
+
+
 def test_new_capabilities_handle_edge_cases():
     """The new self-aware / self-improving / CAD modules degrade gracefully on bad input."""
     from mentat.cad import BracketDesign

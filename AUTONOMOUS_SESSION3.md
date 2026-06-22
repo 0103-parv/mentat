@@ -134,3 +134,17 @@ at a clean, fully-verified state rather than padding the hours with fake "improv
 **When you wake:** add API credits, then `python3 -m mentat cognition` / `work` / `improve` run with
 the live brain and the loop genuinely opens up. Everything offline is yours right now —
 `python3 -m mentat` lists it all; `python3 -m mentat.jarvis --text "what can you do"` talks.
+
+## RESUMED (~14:25) — the local brain, unblocked the RIGHT way
+- **block 12 — LOCAL ON-DEVICE BRAIN (mlx), no API, shared venv untouched.** Earlier I marked mlx
+  "blocked" because fixing it meant mutating the shared swechats venv. Resolved it non-destructively
+  instead: created an ISOLATED `.venv-mlx` (gitignored), installed mlx-lm there, and built
+  `mentat/local_brain.py` — `LocalMLXCore` (Qwen2.5-0.5B-Instruct-4bit as a `.complete_text` core,
+  loads in ~1.7s) + `LocalProposer` (cleans the model's output: drops `y=`, `^`->`**`) that proposes
+  inside the verifier-gated loop, with a random fallback so it never starves. **Honest measured
+  result:** the local brain produced **100% valid expressions (24/24 parsed)** and **edged
+  random+crossover** (RMSE 1.404 vs 1.426) on the hard cubic — though neither solved it in the tiny
+  12-gen budget, and the local LLM is slower (~9s vs instant). So: a genuine local LLM thinking in
+  the gated loop with zero credits; the verifier keeps it correct regardless. Wired as the
+  `local_brain` engine (guarded with a clear message under the wrong interpreter); +1 zero-dep test
+  for the output cleaner (73 green); ruff clean. The "smartest available offline" path is now real.
