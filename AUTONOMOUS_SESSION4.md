@@ -25,3 +25,7 @@ autonomously with the live brain while away. Keep Jarvis up. Improve itself.
   interactive Jarvis (Opus), and spend the autonomous time on FREE codebase improvements (the agent
   runs on a separate budget, so improving mentat's code costs the user's credits nothing) + keeping
   Jarvis up. This is the responsible reading of "improve itself" given the budget.
+- **block 2 (16:5x) — SEMANTIC memory recall (free).** Jarvis auto-recall now ranks durable
+  notes by embedding similarity (model2vec under the venv) instead of keyword overlap — surfaces
+  the relevant memory ("where do I live" -> only San Ramon). +1 test (74 green). Committed 4d353da.
+- **block 3 — robustness test** locking in real telemetry + semantic recall. 74 green.

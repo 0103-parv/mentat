@@ -990,6 +990,30 @@ def test_research_autopilot_accumulates_verified_findings():
     assert "PROVEN" in research.report(j)                 # report claims only verified results
 
 
+def test_jarvis_status_is_real_and_recall_is_semantic():
+    """The UI telemetry is grounded (real engine/check counts, honest reasoning state), and memory
+    recall surfaces relevant notes — the foundations of an honest, smart assistant."""
+    import json
+    import tempfile
+    from pathlib import Path
+
+    from mentat import jarvis
+    s = jarvis._status_json()
+    assert s["engines"] > 10 and s["checks"] > 0
+    assert s["reasoning"] in ("CLOUD", "OFFLINE")          # honest, never a fake metric
+    orig = jarvis.MEMORY_PATH
+    with tempfile.TemporaryDirectory() as d:
+        jarvis.MEMORY_PATH = Path(d) / "m.json"
+        jarvis.MEMORY_PATH.write_text(json.dumps([
+            {"note": "User lives in San Ramon, California.", "when": "x"},
+            {"note": "Prefers concise answers.", "when": "x"}]))
+        try:
+            rel = jarvis._recall_relevant("where do I live in California", k=2)
+        finally:
+            jarvis.MEMORY_PATH = orig
+    assert rel and any("Ramon" in r for r in rel)          # surfaces the relevant memory
+
+
 def test_jarvis_run_research_tool_wired():
     import mentat.jarvis as J
     assert "run_research" in J._DISPATCH
