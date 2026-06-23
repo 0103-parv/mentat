@@ -29,3 +29,7 @@ autonomously with the live brain while away. Keep Jarvis up. Improve itself.
   notes by embedding similarity (model2vec under the venv) instead of keyword overlap — surfaces
   the relevant memory ("where do I live" -> only San Ramon). +1 test (74 green). Committed 4d353da.
 - **block 3 — robustness test** locking in real telemetry + semantic recall. 74 green.
+- **block 4 (18:31) — tool-routing transparency.** /ask now returns the tools the live brain
+  actually called; the UI shows "↳ get_datetime, web_search ..." in the meta line, so you SEE what
+  Jarvis did (honest, driftworks-console style). Verified: "what time is it" -> ↳ get_datetime.
+  74 tests green, ruff clean.

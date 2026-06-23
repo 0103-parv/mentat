@@ -904,6 +904,7 @@ class Jarvis:
         self.history: list[dict] = []
         self._lock = threading.Lock()   # serialize concurrent /ask threads
         self.max_history = 40
+        self._last_tools: list[str] = []   # tools used in the last turn (UI transparency)
 
     def _offline_reply(self, text: str, note: str = "") -> str:
         """No reasoning core (no SDK / no key / no credits): route obvious intents straight to
@@ -997,6 +998,7 @@ class Jarvis:
             sys_prompt = SYSTEM + (f"\n\nWhat you have LEARNED (follow these):\n{lessons}"
                                    if lessons else "") + mem
             final = ""
+            tools_used: list[str] = []
             try:
                 for _ in range(self.max_turns):
                     resp = self._create(
@@ -1010,6 +1012,7 @@ class Jarvis:
                     results = []
                     for block in resp.content:
                         if block.type == "tool_use":
+                            tools_used.append(block.name)
                             try:
                                 out = _DISPATCH[block.name](dict(block.input or {}))
                             except Exception as e:
@@ -1028,6 +1031,7 @@ class Jarvis:
                 return reply
             self._trim_history()
             reply = final.strip() or "(no reply)"
+            self._last_tools = tools_used          # what it actually did this turn (for transparency)
         finally:
             self._lock.release()
         _log_convo("user", text)
@@ -1164,9 +1168,10 @@ def serve(port: int = 8765):
             try:
                 data = json.loads(raw)
                 reply = jarvis.ask(str(data.get("text", "")), model=data.get("model"))
+                tools = list(getattr(jarvis, "_last_tools", []))
             except Exception as e:
-                reply = f"(server error: {type(e).__name__})"
-            _json(self, {"reply": reply})
+                reply, tools = f"(server error: {type(e).__name__})", []
+            _json(self, {"reply": reply, "tools": tools})
 
     server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
     print(f"Jarvis is listening at  http://localhost:{port}   (model: {jarvis.model})")

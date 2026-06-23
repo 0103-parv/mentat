@@ -175,7 +175,9 @@ async function speak(t){setState('speaking');
     speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){if(convo)listen();}}
 async function ask(t){add('you',t);try{rec&&rec.stop();}catch(e){}setState('thinking');const t0=performance.now();
   try{const r=await fetch('/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t,model:modelSel.value})});
-    const j=await r.json();add('jarvis',j.reply,((performance.now()-t0)/1000).toFixed(1)+'s · '+modelSel.value.replace('claude-','')+' · live, NOT verified');speak(j.reply);}
+    const j=await r.json();
+    const used=(j.tools&&j.tools.length)?' · ↳ '+[...new Set(j.tools)].join(', '):'';
+    add('jarvis',j.reply,((performance.now()-t0)/1000).toFixed(1)+'s · '+modelSel.value.replace('claude-','')+used+' · live, NOT verified');speak(j.reply);}
   catch(e){add('jarvis','(could not reach the server)');convo?listen():setState('idle');}}
 
 /* ---- capability deck → real verifier-gated engines ---- */
