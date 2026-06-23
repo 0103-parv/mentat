@@ -33,3 +33,8 @@ autonomously with the live brain while away. Keep Jarvis up. Improve itself.
   actually called; the UI shows "↳ get_datetime, web_search ..." in the meta line, so you SEE what
   Jarvis did (honest, driftworks-console style). Verified: "what time is it" -> ↳ get_datetime.
   74 tests green, ruff clean.
+- **block 5 (18:59) — ambient context grounding.** Each turn now injects the precise current
+  date/time into the system prompt (so "tomorrow"/"this week" are exact) and nudges Jarvis to pass
+  the user's KNOWN location to weather-type tools instead of auto-detecting (the fix for the wrong
+  "46 degrees in San Ramon" earlier). Low-risk prompt addition; did NOT spend a live call to verify
+  (budget discipline). 74 tests green, ruff clean.

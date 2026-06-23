@@ -995,8 +995,11 @@ class Jarvis:
             recalled = tool_recall(text)        # auto-recall what it knows about the user, every turn
             mem = (f"\n\nWhat you already know about the user (use it naturally, don't recite it):"
                    f"\n{recalled}" if recalled and "haven't been told" not in recalled else "")
+            now_ctx = ("\n\nRight now it is " + datetime.now().strftime("%A, %B %d %Y, %-I:%M %p")
+                       + ". Use this for any time-relative question. For location-based tools like "
+                       "weather, pass the user's known location rather than relying on auto-detection.")
             sys_prompt = SYSTEM + (f"\n\nWhat you have LEARNED (follow these):\n{lessons}"
-                                   if lessons else "") + mem
+                                   if lessons else "") + mem + now_ctx
             final = ""
             tools_used: list[str] = []
             try:
