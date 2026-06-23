@@ -49,6 +49,7 @@ main{display:grid;grid-template-columns:1.35fr .95fr;gap:0;min-height:0}
 .jarvis.sys{border-color:rgba(255,178,89,.3)}
 .jarvis .rt{font-size:11px;color:var(--amber);letter-spacing:.06em;margin-bottom:4px;font-family:ui-monospace,monospace}
 .jarvis .rt.ok{color:var(--teal)} .jarvis .rt.warn{color:var(--dim)}
+.msg.mono span{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre;display:block;overflow-x:auto;font-size:12px;line-height:1.5}
 /* capability deck */
 .deck{padding:16px 16px 8px;overflow:auto;display:flex;flex-direction:column;gap:10px}
 .deckhdr{font-size:10px;letter-spacing:.28em;color:var(--dim);text-transform:uppercase;padding:2px 4px 4px}
@@ -161,7 +162,9 @@ loadVoices();if(window.speechSynthesis)speechSynthesis.onvoiceschanged=loadVoice
 voiceSel.onchange=()=>{localStorage.setItem('jarvisVoice',voiceSel.value);speak("Okay, this is the new voice.");};
 
 /* ---- conversation ---- */
-function add(who,t,rt){const d=document.createElement('div');d.className='msg '+who;
+function add(who,t,rt){const d=document.createElement('div');
+  const code=/\n/.test(t)&&/cylinder\(|difference\(|[{};]|=>|move=/.test(t);
+  d.className='msg '+who+(code?' mono':'');
   if(rt){const r=document.createElement('div');r.className='rt'+(/NOT verified/.test(rt)?' warn':(/verified/.test(rt)?' ok':''));r.textContent=rt;d.appendChild(r);}
   const s=document.createElement('span');s.textContent=t;d.appendChild(s);log.appendChild(d);log.scrollTop=log.scrollHeight;}
 function setState(s){state=s;const m={listening:'listening',thinking:'thinking',speaking:'speaking',working:'working',idle:'standby'};

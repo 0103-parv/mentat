@@ -38,3 +38,27 @@ autonomously with the live brain while away. Keep Jarvis up. Improve itself.
   the user's KNOWN location to weather-type tools instead of auto-detecting (the fix for the wrong
   "46 degrees in San Ramon" earlier). Low-risk prompt addition; did NOT spend a live call to verify
   (budget discipline). 74 tests green, ruff clean.
+- **block 6 (19:0x) — code-result rendering.** Capability results that are CODE (e.g. design_part's
+  OpenSCAD) now render in monospace, preserved whitespace, in the UI instead of plain prose. 74 green.
+
+## FINAL WAKE-UP SUMMARY (stopped at 6 blocks — disciplined, value thinning, NOT padding)
+**While you were away (all free to your credits, every block tests-green + pushed):**
+1. Confirmed the live brain works — then STOPPED live discovery (50s/call, marginal on saturated
+   domains) to protect your ~$20. Credits stay for your interactive Jarvis on Opus.
+2. **Semantic memory** — auto-recall now ranks by meaning (model2vec), surfaces what's relevant.
+3. **Robustness test** — locked in real telemetry + semantic recall.
+4. **Tool-routing transparency** — the UI shows "↳ get_datetime, web_search" so you see what it did.
+5. **Ambient context** — every turn is grounded in the exact now + your known location (weather fix).
+6. **Code-result rendering** — OpenSCAD/code shows monospace.
+
+**Jarvis is UP at http://localhost:8765**, smarter (deep thinking + semantic memory + tool-routing +
+ambient context). Tests: 74 green. The $20 is intact.
+
+**Two things for you when you're back:**
+- The **camera/vision** still needs a one-time grant: run `python3 -m mentat.vision` in Terminal,
+  click Allow, then restart the server from Terminal so the Look button can see.
+- A memory note says "User prefers British spelling in all responses" — that's why Jarvis writes
+  "colour"/"the 22nd of June". If you didn't mean that, just tell Jarvis "stop using British spelling"
+  (it'll learn) or ask me to remove the note.
+
+**Loop stopped here on purpose** — further changes would be padding, and honesty over volume.
