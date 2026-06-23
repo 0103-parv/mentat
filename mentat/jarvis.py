@@ -244,17 +244,33 @@ def _tokens(text: str) -> set[str]:
     return set(re.findall(r"[a-z0-9']+", text.lower()))
 
 
-def tool_recall(query: str = "") -> str:
+def _recall_relevant(query: str, k: int = 5) -> list[str]:
+    """Rank durable notes by SEMANTIC similarity to the query (embeddings), so Jarvis surfaces the
+    relevant memories — not just keyword hits. Falls back to keyword, then to recent notes."""
     mem = _load_memory()
-    if not mem:
+    notes = [m["note"] for m in mem]
+    if not notes or not query.strip():
+        return notes[-k:]
+    try:
+        from .embed import cosine, embed
+        vecs = embed(notes + [query])
+        qv = vecs[-1]
+        ranked = sorted(((cosine(v, qv), n) for v, n in zip(vecs[:-1], notes)),
+                        key=lambda t: t[0], reverse=True)
+        top = [n for s, n in ranked[:k] if s > 0.20]
+        if top:
+            return top
+    except Exception:
+        pass
+    terms = {w for w in _tokens(query) if len(w) > 2}
+    hits = [n for n in notes if terms & _tokens(n)]
+    return hits[-k:] or notes[-k:]
+
+
+def tool_recall(query: str = "") -> str:
+    if not _load_memory():
         return "I haven't been told anything to remember yet."
-    if query:
-        terms = {w for w in _tokens(query) if len(w) > 2}
-        hits = [m["note"] for m in mem if terms & _tokens(m["note"])]
-        if hits:
-            return " | ".join(hits[-5:])
-        # No keyword hit — return recent notes rather than wrongly claiming nothing.
-    return " | ".join(m["note"] for m in mem[-5:])
+    return " | ".join(_recall_relevant(query, k=5))
 
 
 def jarvis_lessons_context(k: int = 6) -> str:
