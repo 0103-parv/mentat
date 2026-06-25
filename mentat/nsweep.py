@@ -42,6 +42,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from .imagine import blend, invert, reshape, specialize, transfer
+from .panel_lab import Panel, panel_backtest_raw, panel_oos_returns
 from .trade_lab import (
     BASELINE_ALPHAS,
     CONSTANTS,
@@ -162,6 +163,8 @@ def backtest_raw(expr, bars: Bars, cost: float = COST) -> dict | None:
 
     Deflation is applied afterward, per N, from `worst_per_bar` + `worst_n`, so each
     alpha is backtested only once."""
+    if isinstance(bars, Panel):                            # cross-sectional market -> same gate
+        return panel_backtest_raw(expr, bars, cost)
     if not valid_alpha(expr):
         return None
     feats = compute_features(bars)
@@ -256,6 +259,8 @@ def effective_n(best_ann: float, n_obs: int) -> float:
 def oos_strat_returns(expr, bars: Bars, cost: float = COST) -> list[float]:
     """Per-bar OOS strategy return series for one alpha (next-bar, after cost), used to
     measure how CORRELATED the search is."""
+    if isinstance(bars, Panel):
+        return panel_oos_returns(expr, bars, cost)
     feats = compute_features(bars)
     pos = _positions(eval_alpha(expr, feats))
     oos = [r for r in bars.regimes if not r[0].startswith("is")]
@@ -328,38 +333,52 @@ def _draw_pool_llm(market: str, m: int, *, batch: int = 16, log=print) -> list:
     if market.startswith("small_planted"):
         return []                                          # control-only market; no LLM draw
     cache = _LLM_CACHE_DIR / f"llm_cache_{market.replace(':', '_')}.json"
+    cached: list = []
     if cache.exists():
         try:
-            pool = json.loads(cache.read_text())
-            if isinstance(pool, list) and len(pool) >= m:
-                log(f"  [llm] cache hit: {market} ({len(pool)} alphas, no API call)")
-                return pool[:m]                            # stored in canonical DSL form
+            v = json.loads(cache.read_text())
+            if isinstance(v, list):
+                cached = v
         except Exception:
             pass
+    if len(cached) >= m:
+        log(f"  [llm] cache hit: {market} ({len(cached)} cached, returning {m}, no API call)")
+        return cached[:m]
     try:
         from .reasoning import AnthropicCore, core_available
-    except Exception as e:                                 # SDK not installed
-        log(f"  [llm] unavailable ({type(e).__name__}); skipping the live-LLM arm")
+        have_core = core_available()
+    except Exception:
+        have_core = False
+    if not have_core:                                      # offline: use whatever is cached
+        if cached:
+            log(f"  [llm] cache has {len(cached)}<{m} and no core; using {len(cached)} cached")
+            return cached[:m]
+        log("  [llm] no cache + no core; skipping the live-LLM arm (offline arms still run)")
         return []
-    if not core_available():
-        log("  [llm] no cache + no ANTHROPIC_API_KEY / core; skipping the live-LLM arm "
-            "(offline arms still run)")
-        return []
+    # core available: extend the cached pool up to m (re-uses cached prefix -> deterministic)
     from .core import Memory, Mind
     from .imagine import CreativeProposer, LLMImaginer
-    bars = _MARKET_BARS.get(market)
-    problem = AlphaProblem(bars=bars)
+    from .reasoning import AnthropicCore
+    problem = AlphaProblem(bars=_MARKET_BARS.get(market))
     imaginer = LLMImaginer(core=AnthropicCore(),
                            fallback=CreativeProposer(random.Random(0), risk=0.9))
-    out: list = []
-    calls = 0
-    while len(out) < m and calls < (m // batch) + 4:
+    out, fb_calls, calls = list(cached), 0, 0
+    while len(out) < m and calls < (m // batch) + 8:
         calls += 1
         mind = Mind()                                     # default 'dream' bias for novelty
+        before = len(out)
         for cand in imaginer.propose(problem, Memory(), mind, batch):
             if valid_alpha(cand):
                 out.append(cand)
-        log(f"  [llm] batch {calls}: {len(out)}/{m} alphas")
+        if imaginer.note:                                 # the imaginer fell back this batch
+            fb_calls += 1
+        if calls % 5 == 0 or len(out) >= m:
+            log(f"  [llm] {market}: {len(out)}/{m} alphas ({fb_calls} fallback batches)")
+        if len(out) == before:                            # no progress -> avoid infinite loop
+            break
+    if calls and fb_calls / calls > 0.20:
+        log(f"  [llm] WARNING {market}: {fb_calls}/{calls} batches fell back to offline "
+            "creative (>20%) — LLM-share of this pool is reduced")
     try:                                                   # persist so re-runs are free
         cache.parent.mkdir(parents=True, exist_ok=True)
         cache.write_text(json.dumps(out, indent=0))
@@ -416,7 +435,7 @@ def sweep_market(market: str, bars: Bars, *, pool: int, sweep=None,
     generators = generators or list(GENERATORS)
     _MARKET_BARS[market] = bars                           # expose to the live-LLM drawer
     rows: list[SweepRow] = []
-    compute_features(bars)                               # warm the per-bars cache once
+    (bars.features() if isinstance(bars, Panel) else compute_features(bars))  # warm cache
     for gen in generators:
         m = min(pool, _LLM_POOL_CAP) if gen == "llm" else pool
         alphas = _draw_pool(gen, market, m, log=log)
