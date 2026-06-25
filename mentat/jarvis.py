@@ -905,6 +905,7 @@ class Jarvis:
         self._lock = threading.Lock()   # serialize concurrent /ask threads
         self.max_history = 40
         self._last_tools: list[str] = []   # tools used in the last turn (UI transparency)
+        self._turn = 0                     # turn counter; a newer turn supersedes an in-flight one
 
     def _offline_reply(self, text: str, note: str = "") -> str:
         """No reasoning core (no SDK / no key / no credits): route obvious intents straight to
@@ -986,8 +987,9 @@ class Jarvis:
             _log_convo("jarvis", reply)
             return reply
         use_model = model if model in ALLOWED_MODELS else self.model
-        if not self._lock.acquire(timeout=1.0):   # don't stall a worker thread for minutes
-            return "I'm still finishing the previous request — give me a moment, then ask again."
+        self._turn += 1                            # a newer message supersedes the one in flight
+        my_turn = self._turn
+        self._lock.acquire()                        # the running turn yields between steps when superseded
         try:                                       # one turn at a time; history stays valid
             snapshot = len(self.history)        # roll-back point if the turn fails
             self.history.append({"role": "user", "content": text})
@@ -1004,6 +1006,9 @@ class Jarvis:
             tools_used: list[str] = []
             try:
                 for _ in range(self.max_turns):
+                    if self._turn != my_turn:        # a newer message arrived -> hand off cleanly
+                        del self.history[snapshot:]   # discard the superseded (possibly partial) turn
+                        return "(superseded)"
                     resp = self._create(
                         model=use_model, max_tokens=4096, system=sys_prompt,
                         tools=TOOLS, messages=self.history)

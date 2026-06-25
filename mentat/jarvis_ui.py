@@ -116,7 +116,7 @@ const MODEL_DEFAULT="{{MODEL}}", TTS_MODE="{{TTS}}";
 const $=id=>document.getElementById(id);
 const log=$('log'),talk=$('talk'),talkTxt=$('talkTxt'),form=$('form'),input=$('text'),
   voiceSel=$('voice'),modelSel=$('model'),modelLabel=$('modelLabel'),stateLbl=$('stateLbl');
-let voices=[],convo=false,state='idle',pending='',timer=null;const SILENCE_MS=1400;
+let voices=[],convo=false,state='idle',pending='',timer=null,reqSeq=0,curAudio=null,speakingText='';const SILENCE_MS=1400;
 
 /* ---- live telemetry (REAL) ---- */
 async function refreshStatus(){try{const s=await(await fetch('/status')).json();
@@ -169,19 +169,21 @@ function add(who,t,rt){const d=document.createElement('div');
   const s=document.createElement('span');s.textContent=t;d.appendChild(s);log.appendChild(d);log.scrollTop=log.scrollHeight;}
 function setState(s){state=s;const m={listening:'listening',thinking:'thinking',speaking:'speaking',working:'working',idle:'standby'};
   stateLbl.textContent=m[s]||'standby';stateLbl.classList.toggle('active',s!=='idle');}
-async function speak(t){setState('speaking');
+function stopSpeaking(){try{if(curAudio){curAudio.pause();curAudio=null;}}catch(e){}try{speechSynthesis.cancel();}catch(e){}speakingText='';}
+async function speak(t){setState('speaking');speakingText=(t||'').toLowerCase();
   if(TTS_MODE==='elevenlabs'){try{const r=await fetch('/speak',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t})});
-    if(r.ok){const blob=await r.blob();if(blob.size>0){const url=URL.createObjectURL(blob);const a=new Audio(url);a.playbackRate=1.7;
-      a.onended=()=>{URL.revokeObjectURL(url);convo?listen():setState('idle');};a.onerror=()=>{convo?listen():setState('idle');};a.play();return;}}}catch(e){}}
+    if(r.ok){const blob=await r.blob();if(blob.size>0){const url=URL.createObjectURL(blob);const a=new Audio(url);a.playbackRate=1.7;curAudio=a;
+      a.onended=()=>{URL.revokeObjectURL(url);curAudio=null;speakingText='';convo?listen():setState('idle');};a.onerror=()=>{curAudio=null;speakingText='';convo?listen():setState('idle');};a.play();return;}}}catch(e){}}
   try{const u=new SpeechSynthesisUtterance(t);u.rate=1.7;const v=voices.find(x=>x.name===voiceSel.value);if(v)u.voice=v;
-    u.onend=()=>{convo?listen():setState('idle');};u.onerror=()=>{convo?listen():setState('idle');};
+    u.onend=()=>{speakingText='';convo?listen():setState('idle');};u.onerror=()=>{speakingText='';convo?listen():setState('idle');};
     speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){if(convo)listen();}}
-async function ask(t){add('you',t);try{rec&&rec.stop();}catch(e){}setState('thinking');const t0=performance.now();
+async function ask(t){add('you',t);const seq=++reqSeq;setState('thinking');const t0=performance.now();
   try{const r=await fetch('/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t,model:modelSel.value})});
     const j=await r.json();
+    if(seq!==reqSeq)return;                 // user barged in / sent a newer message — drop this stale reply
     const used=(j.tools&&j.tools.length)?' · ↳ '+[...new Set(j.tools)].join(', '):'';
     add('jarvis',j.reply,((performance.now()-t0)/1000).toFixed(1)+'s · '+modelSel.value.replace('claude-','')+used+' · live, NOT verified');speak(j.reply);}
-  catch(e){add('jarvis','(could not reach the server)');convo?listen():setState('idle');}}
+  catch(e){if(seq!==reqSeq)return;add('jarvis','(could not reach the server)');convo?listen():setState('idle');}}
 
 /* ---- capability deck → real verifier-gated engines ---- */
 document.querySelectorAll('.cap').forEach(b=>b.onclick=async()=>{
@@ -194,13 +196,20 @@ document.querySelectorAll('.cap').forEach(b=>b.onclick=async()=>{
 
 /* ---- voice loop ---- */
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;let rec=null;
+function notEcho(s){return !(state==='speaking'&&speakingText&&speakingText.replace(/[^a-z ]/g,'').includes(s.slice(0,14)));}
 if(SR){rec=new SR();rec.lang='en-US';rec.continuous=true;rec.interimResults=true;
-  rec.onresult=e=>{if(state!=='listening')return;let interim='';
+  rec.onresult=e=>{if(!convo)return;let interim='';
     for(let i=e.resultIndex;i<e.results.length;i++){const r=e.results[i];if(r.isFinal)pending+=r[0].transcript+' ';else interim+=r[0].transcript;}
-    stateLbl.textContent='listening · '+(pending+interim).trim().slice(-42);clearTimeout(timer);timer=setTimeout(finalize,SILENCE_MS);};
-  rec.onend=()=>{if(convo&&state==='listening'){try{rec.start();}catch(e){}}};}
-function finalize(){const t=pending.trim();pending='';if(!t)return;setState('thinking');try{rec.stop();}catch(e){}ask(t);}
-function listen(){if(!convo)return;setState('listening');try{rec.start();}catch(e){}}
+    const live=(pending+interim).trim().toLowerCase();
+    if(state!=='listening'){                        // BARGE-IN: talking while Jarvis works/speaks
+      const words=live.split(/\s+/).filter(Boolean).length;
+      if(live&&words>=(state==='speaking'?2:1)&&notEcho(live)){reqSeq++;stopSpeaking();setState('listening');}
+      else{if(state==='speaking'&&!notEcho(live))pending='';return;}   // ignore Jarvis's own echo
+    }
+    stateLbl.textContent='listening · '+live.slice(-42);clearTimeout(timer);timer=setTimeout(finalize,SILENCE_MS);};
+  rec.onend=()=>{if(convo){try{rec.start();}catch(e){}}};}             // mic stays ALWAYS on during a convo
+function finalize(){const t=pending.trim();pending='';if(!t||!convo)return;ask(t);}    // mic keeps running for barge-in
+function listen(){if(!convo)return;pending='';setState('listening');try{rec.start();}catch(e){}}
 function startConvo(){if(!SR){add('jarvis','This browser has no speech recognition — use Chrome, or type below.');return;}
   convo=true;talk.classList.add('live');talkTxt.textContent='Stop';speechSynthesis.cancel();listen();}
 function stopConvo(){convo=false;talk.classList.remove('live');talkTxt.textContent='Start conversation';
