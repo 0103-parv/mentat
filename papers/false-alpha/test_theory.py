@@ -104,6 +104,8 @@ def main() -> int:
           "Lo diag: strategy autocorrelation is negligible (eta^2~1)")
     check(all(lo[g]["var_z_iid"] > 2.0 for g in lo),
           "Lo diag: Var(z) >> 1 from structural heterogeneity, not autocorrelation")
+    check(all(lo[g]["structural_fraction"] > 0.6 for g in lo),
+          "Lo diag: majority (~78%) of cross-sectional Sharpe variance is structural")
 
     # (C) participation-ratio effective-N
     check(abs(effective_n_participation(0.0, 1000) - 1000) < 1e-6, "M_eff(0)=N")

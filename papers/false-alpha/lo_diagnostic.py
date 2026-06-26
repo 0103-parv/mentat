@@ -78,6 +78,12 @@ def main() -> int:
         msr = statistics.mean(srs)
         sdsr = statistics.pstdev(srs)
         z_emp = [(s - msr) / sdsr for s in srs] if sdsr > 0 else srs
+        # variance decomposition: total cross-sectional Var(SR) = within (estimation) +
+        # between (STRUCTURAL). within_i = SE_iid_i^2 = (1+0.5 SR^2)/T.
+        T0 = len(is_returns(alphas[0], bars))
+        total = statistics.pvariance(srs)
+        within = statistics.mean((1.0 + 0.5 * s * s) / max(T0, 2) for s in srs)
+        struct_frac = max(0.0, 1.0 - within / total) if total > 0 else 0.0
         rec = {
             "n": len(srs),
             "eta2_median": round(statistics.median(etas), 3),
@@ -85,12 +91,16 @@ def main() -> int:
             "var_z_iid": round(statistics.pvariance(z_iid), 3),
             "var_z_lo": round(statistics.pvariance(z_lo), 3),
             "var_z_emp": round(statistics.pvariance(z_emp), 3),
+            "structural_fraction": round(struct_frac, 3),
         }
         out[gen] = rec
         print(f"  [{gen}] n={rec['n']}  eta^2 median={rec['eta2_median']} "
               f"(p90={rec['eta2_p90']})")
         print(f"        Var(z_iid)={rec['var_z_iid']}  Var(z_lo)={rec['var_z_lo']}  "
               f"Var(z_emp)={rec['var_z_emp']}   (target ~1.0)")
+        print(f"        variance decomposition: {rec['structural_fraction']*100:.0f}% of "
+              f"cross-sectional Var(Sharpe) is STRUCTURAL (between-strategy), "
+              f"{(1-rec['structural_fraction'])*100:.0f}% estimation noise")
 
     print("\n=> Verdict:")
     worst_lo = max(out[g]["var_z_lo"] for g in out)
