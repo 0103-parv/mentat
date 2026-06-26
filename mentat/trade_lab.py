@@ -442,6 +442,26 @@ def expected_max_sharpe_under_null(n_trials: int, n_obs: int, sharpe: float) -> 
     return math.sqrt(max(var_sr, 0.0)) * ((1.0 - EULER) * z1 + EULER * z2)
 
 
+def expected_max_worst_of_k(n_trials: int, k_regimes: int, n_obs: int, sharpe: float) -> float:
+    """Per-bar haircut for the WORST-of-k-regimes best-of-N statistic — the deflation this
+    gate ACTUALLY needs, since it scores the MIN over k OOS regimes, not a single Sharpe.
+
+    expected_max_sharpe_under_null above is the k=1 special case and, applied to the
+    min-over-regimes statistic, OVER-deflates by ~2.4x at N=1000, k=3 (derived + Monte-Carlo
+    validated in papers/false-alpha/theory.py). The min of k (independent) standard normals
+    has a thin upper tail, so its best-of-N null sits near the (1 - N^{-1/k}) quantile:
+        sqrt(var_sr) * Phi^{-1}(1 - N^{-1/k}).
+    Subtracting THIS (instead of the single-Sharpe haircut) is the correct, far-less-harsh
+    deflation; on real markets it tightens the survivor margin from ~-1.5 to ~-0.3 yet still
+    leaves zero survivors. k=1 recovers (the quantile form of) the standard haircut."""
+    n = max(int(n_trials), 2)
+    k = max(int(k_regimes), 1)
+    t = max(int(n_obs), 2)
+    var_sr = (1.0 + 0.5 * sharpe * sharpe) / t
+    p = min(max(1.0 - n ** (-1.0 / k), 1e-9), 1.0 - 1e-12)
+    return math.sqrt(max(var_sr, 0.0)) * _NORM.inv_cdf(p)
+
+
 def walk_forward_backtest(
     expr, bars: Bars, *, cost: float = 0.0010, n_trials: int = 60
 ) -> dict[str, float]:

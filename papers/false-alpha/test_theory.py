@@ -60,6 +60,14 @@ def main() -> int:
     check(np3 < 30, f"worst-of-3 at N=1000 ~ single-Sharpe at N'<30 (N'={np3:.0f})")
     check(np3 < np2, "more regimes -> smaller deflation-equivalent N' (more protection)")
 
+    # (B3) the engine-level corrected haircut matches the theory direction
+    from mentat.trade_lab import expected_max_sharpe_under_null, expected_max_worst_of_k
+    h1 = expected_max_sharpe_under_null(1000, 500, 0.0)
+    hk = expected_max_worst_of_k(1000, 3, 500, 0.0)
+    check(hk < h1, "engine: worst-of-3 haircut < single-Sharpe haircut")
+    check(1.8 < h1 / hk < 4.0, f"engine: over-deflation ratio in [1.8,4] ({h1/hk:.2f})")
+    check(expected_max_worst_of_k(1000, 1, 500, 0.0) > 0, "engine: k=1 worst-of-k is positive")
+
     # (C) participation-ratio effective-N
     check(abs(effective_n_participation(0.0, 1000) - 1000) < 1e-6, "M_eff(0)=N")
     check(effective_n_participation(0.05, 1000) < effective_n_participation(0.005, 1000),
