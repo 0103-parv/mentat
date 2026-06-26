@@ -3,6 +3,15 @@
 Companion to `PAPER.md`. How to (re)produce every number, run the pre-registered live-LLM
 arm with the creativity engine, and extend the study. All commands run from `~/mentat`.
 
+> **Canonical reproduction is now `PAPER.md` §8** (use `python3.14`). v0.4 added the math
+> layer: `theory.py` (worst-of-regimes deflation + robustness dividend, MC-validated),
+> `corrected_deflation.py` (zero survives the corrected bar; effective-N plug-in fails),
+> `seed_variance.py` (real 0±0 over 8 seeds), `envelope_departure.py` (2nd failed
+> effective-N shortcut), `test_theory.py` (21 checks), `plot_svg.py` (dependency-free
+> figures → `figs/*.svg`), `bootstrap_independent.json` (distribution-free across FX/gold/
+> crypto). Each writes a committed `*_results.json`. The Stages below are the original
+> five-task brief and remain valid.
+
 > **Jarvis is always-on via launchd — do not restart it.** Everything here runs as a
 > separate, short-lived `python3 -m mentat.*` process. None of it touches `run-jarvis.sh`,
 > the launchd agent, or any Jarvis state. No `launchctl`, no kill, no restart.
