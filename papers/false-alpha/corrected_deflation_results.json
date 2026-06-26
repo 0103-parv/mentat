@@ -1,0 +1,452 @@
+{
+  "config": {
+    "NS": [
+      100,
+      300,
+      1000
+    ],
+    "pool": 1500,
+    "k": 3,
+    "target": 0.5
+  },
+  "verdict": {
+    "worstk_at_N_real_survivors": 0,
+    "effectiveN_plugin_real_survivors": 494,
+    "bootstrap_real_survivors": 0,
+    "conclusion": "worst-of-k correction is valid and keeps the zero with a thinner (~-0.3) margin; the effective-N participation-ratio plug-in is anti-conservative (contradicts the bootstrap) and must NOT be used as a deflation for the max statistic."
+  },
+  "rows": [
+    {
+      "market": "real:fred_SP500",
+      "generator": "random",
+      "N": 100,
+      "rho2_bar": 0.2212,
+      "m_eff": 4.4,
+      "env_N": 0.907,
+      "env_Meff": -0.089,
+      "best_worst_ann": 0.784,
+      "best_deflated_dsr_N": -1.01,
+      "best_deflated_worstk_N": 0.141,
+      "best_deflated_worstk_Meff": 0.847,
+      "survivors": {
+        "dsr_N": 0,
+        "worstk_N": 0,
+        "worstk_Meff": 13
+      }
+    },
+    {
+      "market": "real:fred_SP500",
+      "generator": "random",
+      "N": 300,
+      "rho2_bar": 0.2212,
+      "m_eff": 4.5,
+      "env_N": 1.152,
+      "env_Meff": -0.089,
+      "best_worst_ann": 0.794,
+      "best_deflated_dsr_N": -1.259,
+      "best_deflated_worstk_N": -0.023,
+      "best_deflated_worstk_Meff": 0.857,
+      "survivors": {
+        "dsr_N": 0,
+        "worstk_N": 0,
+        "worstk_Meff": 29
+      }
+    },
+    {
+      "market": "real:fred_SP500",
+      "generator": "random",
+      "N": 1000,
+      "rho2_bar": 0.2212,
+      "m_eff": 4.5,
+      "env_N": 1.382,
+      "env_Meff": 0.001,
+      "best_worst_ann": 0.794,
+      "best_deflated_dsr_N": -1.514,
+      "best_deflated_worstk_N": -0.186,
+      "best_deflated_worstk_Meff": 0.793,
+      "survivors": {
+        "dsr_N": 0,
+        "worstk_N": 0,
+        "worstk_Meff": 113
+      }
+    },
+    {
+      "market": "real:fred_SP500",
+      "generator": "creative",
+      "N": 100,
+      "rho2_bar": 0.218,
+      "m_eff": 4.4,
+      "env_N": 0.907,
+      "env_Meff": -0.089,
+      "best_worst_ann": 0.643,
+      "best_deflated_dsr_N": -1.151,
+      "best_deflated_worstk_N": 0.0,
+      "best_deflated_worstk_Meff": 0.706,
+      "survivors": {
+        "dsr_N": 0,
+        "worstk_N": 0,
+        "worstk_Meff": 9
+      }
+    },
+    {
+      "market": "real:fred_SP500",
+      "generator": "creative",
+      "N": 300,
+      "rho2_bar": 0.218,
+      "m_eff": 4.5,
+      "env_N": 1.152,
+      "env_Meff": 0.001,
+      "best_worst_ann": 0.643,
+      "best_deflated_dsr_N": -1.41,
+      "best_deflated_worstk_N": -0.174,
+      "best_deflated_worstk_Meff": 0.642,
+      "survivors": {
+        "dsr_N": 0,
+        "worstk_N": 0,
+        "worstk_Meff": 21
+      }
+    },
+    {
+      "market": "real:fred_SP500",
+      "generator": "creative",
+      "N": 1000,
+      "rho2_bar": 0.218,
+      "m_eff": 4.6,
+      "env_N": 1.382,
+      "env_Meff": 0.001,
+      "best_worst_ann": 0.643,
+      "best_deflated_dsr_N": -1.664,
+      "best_deflated_worstk_N": -0.337,
+      "best_deflated_worstk_Meff": 0.642,
+      "survivors": {
+        "dsr_N": 0,
+        "worstk_N": 0,
+        "worstk_Meff": 57
+      }
+    },
+    {
+      "market": "real:fred_DJIA",
+      "generator": "random",
+      "N": 100,
+      "rho2_bar": 0.1838,
+      "m_eff": 5.2,
+      "env_N": 0.907,
+      "env_Meff": 0.001,
+      "best_worst_ann": 0.746,
+      "best_deflated_dsr_N": -1.048,
+      "best_deflated_worstk_N": 0.104,
+      "best_deflated_worstk_Meff": 0.745,
+      "survivors": {
+        "dsr_N": 0,
+        "worstk_N": 0,
+        "worstk_Meff": 13
+      }
+    },
+    {
+      "market": "real:fred_DJIA",
+      "generator": "random",
+      "N": 300,
+      "rho2_bar": 0.1838,
+      "m_eff": 5.4,
+      "env_N": 1.152,
+      "env_Meff": 0.001,
+      "best_worst_ann": 0.746,
+      "best_deflated_dsr_N": -1.307,
+      "best_deflated_worstk_N": -0.07,
+      "best_deflated_worstk_Meff": 0.745,
+      "survivors": {
+        "dsr_N": 0,
+        "worstk_N": 0,
+        "worstk_Meff": 31
+      }
+    },
+    {
+      "market": "real:fred_DJIA",
+      "generator": "random",
+      "N": 1000,
+      "rho2_bar": 0.1838,
+      "m_eff": 5.4,
+      "env_N": 1.382,
+      "env_Meff": 0.001,
+      "best_worst_ann": 0.746,
+      "best_deflated_dsr_N": -1.562,
+      "best_deflated_worstk_N": -0.232,
+      "best_deflated_worstk_Meff": 0.745,
+      "survivors": {
+        "dsr_N": 0,
+        "worstk_N": 0,
+        "worstk_Meff": 113
+      }
+    },
+    {
+      "market": "real:fred_DJIA",
+      "generator": "creative",
+      "N": 100,
+      "rho2_bar": 0.2204,
+      "m_eff": 4.4,
+      "env_N": 0.907,
+      "env_Meff": -0.089,
+      "best_worst_ann": 0.746,
+      "best_deflated_dsr_N": -1.048,
+      "best_deflated_worstk_N": 0.103,
+      "best_deflated_worstk_Meff": 0.809,
+      "survivors": {
+        "dsr_N": 0,
+        "worstk_N": 0,
+        "worstk_Meff": 7
+      }
+    },
+    {
+      "market": "real:fred_DJIA",
+      "generator": "creative",
+      "N": 300,
+      "rho2_bar": 0.2204,
+      "m_eff": 4.5,
+      "env_N": 1.152,
+      "env_Meff": -0.089,
+      "best_worst_ann": 0.746,
+      "best_deflated_dsr_N": -1.307,
+      "best_deflated_worstk_N": -0.071,
+      "best_deflated_worstk_Meff": 0.809,
+      "survivors": {
+        "dsr_N": 0,
+        "worstk_N": 0,
+        "worstk_Meff": 19
+      }
+    },
+    {
+      "market": "real:fred_DJIA",
+      "generator": "creative",
+      "N": 1000,
+      "rho2_bar": 0.2204,
+      "m_eff": 4.5,
+      "env_N": 1.382,
+      "env_Meff": 0.001,
+      "best_worst_ann": 0.746,
+      "best_deflated_dsr_N": -1.562,
+      "best_deflated_worstk_N": -0.234,
+      "best_deflated_worstk_Meff": 0.745,
+      "survivors": {
+        "dsr_N": 0,
+        "worstk_N": 0,
+        "worstk_Meff": 60
+      }
+    },
+    {
+      "market": "crypto:BTCUSD",
+      "generator": "random",
+      "N": 100,
+      "rho2_bar": 0.1545,
+      "m_eff": 6.1,
+      "env_N": 0.907,
+      "env_Meff": 0.065,
+      "best_worst_ann": 0.568,
+      "best_deflated_dsr_N": -0.917,
+      "best_deflated_worstk_N": 0.035,
+      "best_deflated_worstk_Meff": 0.53,
+      "survivors": {
+        "dsr_N": 0,
+        "worstk_N": 0,
+        "worstk_Meff": 1
+      }
+    },
+    {
+      "market": "crypto:BTCUSD",
+      "generator": "random",
+      "N": 300,
+      "rho2_bar": 0.1545,
+      "m_eff": 6.4,
+      "env_N": 1.152,
+      "env_Meff": 0.065,
+      "best_worst_ann": 0.568,
+      "best_deflated_dsr_N": -1.132,
+      "best_deflated_worstk_N": -0.109,
+      "best_deflated_worstk_Meff": 0.53,
+      "survivors": {
+        "dsr_N": 0,
+        "worstk_N": 0,
+        "worstk_Meff": 1
+      }
+    },
+    {
+      "market": "crypto:BTCUSD",
+      "generator": "random",
+      "N": 1000,
+      "rho2_bar": 0.1545,
+      "m_eff": 6.4,
+      "env_N": 1.382,
+      "env_Meff": 0.065,
+      "best_worst_ann": 0.568,
+      "best_deflated_dsr_N": -1.343,
+      "best_deflated_worstk_N": -0.244,
+      "best_deflated_worstk_Meff": 0.53,
+      "survivors": {
+        "dsr_N": 0,
+        "worstk_N": 0,
+        "worstk_Meff": 2
+      }
+    },
+    {
+      "market": "crypto:BTCUSD",
+      "generator": "creative",
+      "N": 100,
+      "rho2_bar": 0.202,
+      "m_eff": 4.8,
+      "env_N": 0.907,
+      "env_Meff": 0.001,
+      "best_worst_ann": 0.599,
+      "best_deflated_dsr_N": -0.886,
+      "best_deflated_worstk_N": 0.066,
+      "best_deflated_worstk_Meff": 0.599,
+      "survivors": {
+        "dsr_N": 0,
+        "worstk_N": 0,
+        "worstk_Meff": 1
+      }
+    },
+    {
+      "market": "crypto:BTCUSD",
+      "generator": "creative",
+      "N": 300,
+      "rho2_bar": 0.202,
+      "m_eff": 4.9,
+      "env_N": 1.152,
+      "env_Meff": 0.001,
+      "best_worst_ann": 0.599,
+      "best_deflated_dsr_N": -1.1,
+      "best_deflated_worstk_N": -0.078,
+      "best_deflated_worstk_Meff": 0.599,
+      "survivors": {
+        "dsr_N": 0,
+        "worstk_N": 0,
+        "worstk_Meff": 1
+      }
+    },
+    {
+      "market": "crypto:BTCUSD",
+      "generator": "creative",
+      "N": 1000,
+      "rho2_bar": 0.202,
+      "m_eff": 4.9,
+      "env_N": 1.382,
+      "env_Meff": 0.001,
+      "best_worst_ann": 0.599,
+      "best_deflated_dsr_N": -1.311,
+      "best_deflated_worstk_N": -0.213,
+      "best_deflated_worstk_Meff": 0.599,
+      "survivors": {
+        "dsr_N": 0,
+        "worstk_N": 0,
+        "worstk_Meff": 3
+      }
+    },
+    {
+      "market": "planted",
+      "generator": "random",
+      "N": 100,
+      "rho2_bar": 0.1642,
+      "m_eff": 5.8,
+      "env_N": 0.907,
+      "env_Meff": 0.065,
+      "best_worst_ann": 0.663,
+      "best_deflated_dsr_N": -1.134,
+      "best_deflated_worstk_N": 0.019,
+      "best_deflated_worstk_Meff": 0.617,
+      "survivors": {
+        "dsr_N": 0,
+        "worstk_N": 0,
+        "worstk_Meff": 1
+      }
+    },
+    {
+      "market": "planted",
+      "generator": "random",
+      "N": 300,
+      "rho2_bar": 0.1642,
+      "m_eff": 6.0,
+      "env_N": 1.152,
+      "env_Meff": 0.065,
+      "best_worst_ann": 3.393,
+      "best_deflated_dsr_N": 1.314,
+      "best_deflated_worstk_N": 2.565,
+      "best_deflated_worstk_Meff": 3.346,
+      "survivors": {
+        "dsr_N": 3,
+        "worstk_N": 4,
+        "worstk_Meff": 11
+      }
+    },
+    {
+      "market": "planted",
+      "generator": "random",
+      "N": 1000,
+      "rho2_bar": 0.1642,
+      "m_eff": 6.1,
+      "env_N": 1.382,
+      "env_Meff": 0.065,
+      "best_worst_ann": 3.393,
+      "best_deflated_dsr_N": 1.055,
+      "best_deflated_worstk_N": 2.401,
+      "best_deflated_worstk_Meff": 3.346,
+      "survivors": {
+        "dsr_N": 9,
+        "worstk_N": 14,
+        "worstk_Meff": 57
+      }
+    },
+    {
+      "market": "planted",
+      "generator": "creative",
+      "N": 100,
+      "rho2_bar": 0.1776,
+      "m_eff": 5.4,
+      "env_N": 0.907,
+      "env_Meff": 0.001,
+      "best_worst_ann": 3.393,
+      "best_deflated_dsr_N": 1.576,
+      "best_deflated_worstk_N": 2.742,
+      "best_deflated_worstk_Meff": 3.392,
+      "survivors": {
+        "dsr_N": 4,
+        "worstk_N": 8,
+        "worstk_Meff": 17
+      }
+    },
+    {
+      "market": "planted",
+      "generator": "creative",
+      "N": 300,
+      "rho2_bar": 0.1776,
+      "m_eff": 5.5,
+      "env_N": 1.152,
+      "env_Meff": 0.065,
+      "best_worst_ann": 3.393,
+      "best_deflated_dsr_N": 1.314,
+      "best_deflated_worstk_N": 2.565,
+      "best_deflated_worstk_Meff": 3.346,
+      "survivors": {
+        "dsr_N": 14,
+        "worstk_N": 17,
+        "worstk_Meff": 41
+      }
+    },
+    {
+      "market": "planted",
+      "generator": "creative",
+      "N": 1000,
+      "rho2_bar": 0.1776,
+      "m_eff": 5.6,
+      "env_N": 1.382,
+      "env_Meff": 0.065,
+      "best_worst_ann": 3.393,
+      "best_deflated_dsr_N": 1.055,
+      "best_deflated_worstk_N": 2.401,
+      "best_deflated_worstk_Meff": 3.346,
+      "survivors": {
+        "dsr_N": 51,
+        "worstk_N": 70,
+        "worstk_Meff": 155
+      }
+    }
+  ]
+}
