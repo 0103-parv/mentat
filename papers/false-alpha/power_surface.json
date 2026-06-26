@@ -1,0 +1,316 @@
+{
+  "config": {
+    "strengths": [
+      0.0,
+      0.02,
+      0.04,
+      0.06,
+      0.1,
+      0.15,
+      0.25,
+      0.4
+    ],
+    "Ns": [
+      10,
+      30,
+      100,
+      300,
+      1000,
+      3000
+    ],
+    "pool": 3000,
+    "target": 0.5,
+    "generator": "creative",
+    "market": "planted_universe(strength)"
+  },
+  "grid": [
+    {
+      "strength": 0.0,
+      "tradeable": 2762,
+      "cells": [
+        {
+          "N": 10,
+          "survivors": 0,
+          "best_worst_sharpe": -0.181
+        },
+        {
+          "N": 30,
+          "survivors": 0,
+          "best_worst_sharpe": -0.181
+        },
+        {
+          "N": 100,
+          "survivors": 0,
+          "best_worst_sharpe": -0.128
+        },
+        {
+          "N": 300,
+          "survivors": 0,
+          "best_worst_sharpe": -0.128
+        },
+        {
+          "N": 1000,
+          "survivors": 0,
+          "best_worst_sharpe": -0.074
+        },
+        {
+          "N": 3000,
+          "survivors": 0,
+          "best_worst_sharpe": -0.071
+        }
+      ]
+    },
+    {
+      "strength": 0.02,
+      "tradeable": 2724,
+      "cells": [
+        {
+          "N": 10,
+          "survivors": 0,
+          "best_worst_sharpe": -0.199
+        },
+        {
+          "N": 30,
+          "survivors": 0,
+          "best_worst_sharpe": -0.172
+        },
+        {
+          "N": 100,
+          "survivors": 0,
+          "best_worst_sharpe": 0.167
+        },
+        {
+          "N": 300,
+          "survivors": 0,
+          "best_worst_sharpe": 0.167
+        },
+        {
+          "N": 1000,
+          "survivors": 0,
+          "best_worst_sharpe": 0.167
+        },
+        {
+          "N": 3000,
+          "survivors": 0,
+          "best_worst_sharpe": 0.167
+        }
+      ]
+    },
+    {
+      "strength": 0.04,
+      "tradeable": 2778,
+      "cells": [
+        {
+          "N": 10,
+          "survivors": 0,
+          "best_worst_sharpe": -0.195
+        },
+        {
+          "N": 30,
+          "survivors": 0,
+          "best_worst_sharpe": -0.195
+        },
+        {
+          "N": 100,
+          "survivors": 0,
+          "best_worst_sharpe": -0.124
+        },
+        {
+          "N": 300,
+          "survivors": 0,
+          "best_worst_sharpe": 0.205
+        },
+        {
+          "N": 1000,
+          "survivors": 0,
+          "best_worst_sharpe": 0.205
+        },
+        {
+          "N": 3000,
+          "survivors": 0,
+          "best_worst_sharpe": 0.205
+        }
+      ]
+    },
+    {
+      "strength": 0.06,
+      "tradeable": 2762,
+      "cells": [
+        {
+          "N": 10,
+          "survivors": 0,
+          "best_worst_sharpe": -0.478
+        },
+        {
+          "N": 30,
+          "survivors": 0,
+          "best_worst_sharpe": -0.191
+        },
+        {
+          "N": 100,
+          "survivors": 0,
+          "best_worst_sharpe": -0.121
+        },
+        {
+          "N": 300,
+          "survivors": 0,
+          "best_worst_sharpe": -0.094
+        },
+        {
+          "N": 1000,
+          "survivors": 0,
+          "best_worst_sharpe": 0.169
+        },
+        {
+          "N": 3000,
+          "survivors": 0,
+          "best_worst_sharpe": 0.184
+        }
+      ]
+    },
+    {
+      "strength": 0.1,
+      "tradeable": 2781,
+      "cells": [
+        {
+          "N": 10,
+          "survivors": 0,
+          "best_worst_sharpe": -0.311
+        },
+        {
+          "N": 30,
+          "survivors": 0,
+          "best_worst_sharpe": -0.162
+        },
+        {
+          "N": 100,
+          "survivors": 0,
+          "best_worst_sharpe": -0.162
+        },
+        {
+          "N": 300,
+          "survivors": 0,
+          "best_worst_sharpe": -0.04
+        },
+        {
+          "N": 1000,
+          "survivors": 0,
+          "best_worst_sharpe": 0.237
+        },
+        {
+          "N": 3000,
+          "survivors": 0,
+          "best_worst_sharpe": 0.288
+        }
+      ]
+    },
+    {
+      "strength": 0.15,
+      "tradeable": 2754,
+      "cells": [
+        {
+          "N": 10,
+          "survivors": 0,
+          "best_worst_sharpe": -0.105
+        },
+        {
+          "N": 30,
+          "survivors": 0,
+          "best_worst_sharpe": 0.076
+        },
+        {
+          "N": 100,
+          "survivors": 0,
+          "best_worst_sharpe": 0.422
+        },
+        {
+          "N": 300,
+          "survivors": 0,
+          "best_worst_sharpe": 0.422
+        },
+        {
+          "N": 1000,
+          "survivors": 0,
+          "best_worst_sharpe": 0.478
+        },
+        {
+          "N": 3000,
+          "survivors": 0,
+          "best_worst_sharpe": 0.558
+        }
+      ]
+    },
+    {
+      "strength": 0.25,
+      "tradeable": 2745,
+      "cells": [
+        {
+          "N": 10,
+          "survivors": 1,
+          "best_worst_sharpe": 1.852
+        },
+        {
+          "N": 30,
+          "survivors": 0,
+          "best_worst_sharpe": 1.852
+        },
+        {
+          "N": 100,
+          "survivors": 0,
+          "best_worst_sharpe": 1.852
+        },
+        {
+          "N": 300,
+          "survivors": 0,
+          "best_worst_sharpe": 1.938
+        },
+        {
+          "N": 1000,
+          "survivors": 0,
+          "best_worst_sharpe": 1.938
+        },
+        {
+          "N": 3000,
+          "survivors": 0,
+          "best_worst_sharpe": 1.938
+        }
+      ]
+    },
+    {
+      "strength": 0.4,
+      "tradeable": 2742,
+      "cells": [
+        {
+          "N": 10,
+          "survivors": 2,
+          "best_worst_sharpe": 4.465
+        },
+        {
+          "N": 30,
+          "survivors": 2,
+          "best_worst_sharpe": 4.465
+        },
+        {
+          "N": 100,
+          "survivors": 8,
+          "best_worst_sharpe": 4.465
+        },
+        {
+          "N": 300,
+          "survivors": 20,
+          "best_worst_sharpe": 4.465
+        },
+        {
+          "N": 1000,
+          "survivors": 61,
+          "best_worst_sharpe": 4.465
+        },
+        {
+          "N": 3000,
+          "survivors": 168,
+          "best_worst_sharpe": 4.492
+        }
+      ]
+    }
+  ]
+}

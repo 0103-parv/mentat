@@ -163,19 +163,17 @@ So a *real LLM* reproduces the headline exactly: it manufactures plausible candi
 
 ### 4.5 The gate's power curve — and why "zero" does not mean "efficient"
 
-The sharpest objection (raised independently by an adversarial statistics reviewer and by the system's own reasoning core acting as critic): a gate that returns 0 on real data is only interesting if it *would* have returned >0 for a realistic edge. §4.2 shows it passes a *strong* planted edge — but how strong must an edge be? We sweep the planted edge magnitude and, at N=1,000, record the best realized worst-regime Sharpe the search finds and whether the gate admits anything (`power.py`):
+The sharpest objection (raised independently by an adversarial statistics reviewer and by the system's own reasoning core acting as critic): a gate that returns 0 on real data is only interesting if it *would* have returned >0 for a realistic edge. §4.2 shows it passes a *strong* planted edge — but how strong must an edge be, and how does that threshold move with N? We sweep the planted edge magnitude **× the search scale N** into a 2-D power surface (`power.py` → `power_surface.json`; rendered by `plot.py`). Survivors (gate admits) per cell:
 
-| planted edge strength | best worst-regime Sharpe | best naive OOS | gate survivors |
-|---:|---:|---:|---:|
-| 0.00 (noise) | −0.07 | +0.22 | 0 |
-| 0.06 (≈ a realistic small edge) | +0.17 | +0.41 | 0 |
-| 0.15 | +0.48 | +1.34 | 0 |
-| 0.25 | **+1.94** | +2.49 | **0** |
-| 0.40 (strong) | +4.47 | +4.67 | 61 |
+| edge \ N | 10 | 30 | 100 | 300 | 1000 | 3000 |
+|---:|---:|---:|---:|---:|---:|---:|
+| 0.00–0.15 | 0 | 0 | 0 | 0 | 0 | 0 |
+| **0.25** | **1** | **0** | **0** | **0** | **0** | **0** |
+| 0.40 (strong) | 2 | 2 | 8 | 20 | 61 | 168 |
 
-The gate admits nothing until the true worst-regime Sharpe is **between +1.94 and +4.47** — an edge with a genuine worst-regime Sharpe of **+1.94 (a strategy any fund would covet) still yields zero survivors.** This is not a flaw; it is the multiple-testing floor made visible. After searching N=1,000 strategies, the expected best-of-N under the null is a Sharpe of ~2.3, so to *claim* a discovery you must clear ~2.3+target — a moderate real edge simply cannot be distinguished from the best of 1,000 lucky draws. The `small_planted` control (a realistic small edge, naive OOS ≈ +0.5) is invisible to the gate at every N — exactly like the real S&P.
+The surface *is* the thesis. Read the **0.25 row**: a genuine edge that the gate admits at N=10 (1 survivor) becomes **undetectable at N≥30** — the same true edge, now rejected, because searching more raised the bar above it. Only the very strong 0.40 edge stays detectable, and even it needs ever-more instances as N climbs. The detectable-edge threshold **rises monotonically with N** (≈√(2 ln N)): at N=10 an edge of strength 0.25 is provable; by N=30 you need ≥0.40. A realistically small edge (`small_planted`, naive OOS ≈ +0.5) is invisible at every N — exactly like the real S&P.
 
-**This is the paper's deepest and most honest result.** The deflation bar grows like √(2 ln N): **scaling the search raises the threshold for proving any edge faster than the search discovers one.** Consequences:
+**This is the paper's deepest and most honest result.** **Scaling the search raises the threshold for proving any edge faster than the search discovers one.** Consequences:
 1. We **cannot and do not** claim the S&P 500 has no exploitable edge. We claim only that **no edge large enough to survive a search of this scale exists in this DSL/data** — a high-precision statement with a known, large Type-II region.
 2. The contribution is therefore a **precision/recall characterization of anti-overfit gating**: this gate has (empirically) ~zero false-discovery rate across noise, small-edge, real, DJIA, and NASDAQ controls, at the cost of failing to detect edges below a worst-regime Sharpe of ≈2–3 at N=1,000. That tradeoff *itself* tightens as N grows — the engine of the whole phenomenon.
 3. For practice: LLM-scale alpha search is **self-defeating for moderate edges.** The more strategies you generate, the higher the Sharpe you would need to prove any of them real, so beyond a point additional search manufactures only mirages and unprovable maybes.
@@ -192,6 +190,23 @@ The deflated Sharpe haircut is *parametric* and was derived for a single in-samp
 | planted (strong) | creative | 1→14 with N | **3→17 with N** | 0.000 |
 
 The distribution-free survivor count is **0 at every N for all three generators on real S&P 500**, with no significant best p-value — and it *grows with N on the strong planted market*, exactly tracking the DSR. The result is **stable across mean block lengths {10, 25, 50}** (real-S&P bootstrap survivors are 0 at every block length). So the zero is not an artifact of the parametric haircut: a fully nonparametric multiple-testing test, run on the gate's own worst-regime statistic, reaches the identical conclusion. (Full grid in `bootstrap_results.json`.)
+
+### 4.7 Generalization 1 — a cross-sectional equity panel (the DSL turned on)
+
+A single index series only supports time-series momentum/reversion and (on close-only data) darkens the range/volume features. We add a **cross-sectional panel**: each DSL alpha is scored per asset, the scores are cross-sectionally demeaned and gross-normalized into a dollar-neutral, unit-gross weight vector (the cross-sectional "rank"), and the resulting long-short portfolio return series is fed to the **identical** worst-regime + cost + deflation gate (`panel_lab.py`, `panel_sweep.py`). Four controls, range/volume features **active**:
+
+| panel market | gen | survivors vs N (10→1000) |
+|---|---|---|
+| **real: 15 large-caps** (Yahoo OHLCV, 2016–2026) | random / creative | **0 at every N** |
+| cs_planted (strong cross-sectional reversal) | creative | 0.7 → 64 (grows with N) |
+| cs_small (moderate cross-sectional edge, naive OOS +1.4) | creative | **0 at every N** |
+| cs_noise (cross-sectional null) | both | 0 at every N |
+
+The headline **holds on a real cross-sectional equity panel**: across 15 liquid large-caps with live volume and range features, **0 survivors at every N** for both generators (best naive cross-sectional Sharpe plateaus ~+0.5). The gate still *passes a strong cross-sectional edge* (survivors grow with N on cs_planted) and still *rejects a moderate one* (cs_small, naive OOS +1.4 → 0 survivors) — the precision/recall picture of §4.5 reproduces in the cross-section. This directly answers the "your data is too thin to have edge" objection: with the DSL fully active on real multi-asset data, the result is unchanged.
+
+### 4.8 Generalization 2 — truly independent real markets
+
+S&P/DJIA/NASDAQ are ~0.9 correlated and are not independent evidence. We add markets with different microstructure — **FX, a commodity, and crypto** (real data; `fetch_markets.py`) — and run the same single-index sweep + gate. [Results folded in from `independent_markets.json`; survivor counts per market in Appendix A.]
 
 ---
 
