@@ -1,0 +1,133 @@
+{
+  "config": {
+    "pool": 3000,
+    "NS": [
+      10,
+      30,
+      100,
+      300,
+      1000,
+      3000
+    ],
+    "T_is": 750
+  },
+  "rows": [
+    {
+      "generator": "random",
+      "N": 10,
+      "realized_z": 2.899,
+      "iid_Emax": 1.61,
+      "ratio": 1.8,
+      "M_emp": 295.0,
+      "M_emp_over_N": 29.5
+    },
+    {
+      "generator": "random",
+      "N": 30,
+      "realized_z": 3.405,
+      "iid_Emax": 2.093,
+      "ratio": 1.627,
+      "M_emp": 1674.0,
+      "M_emp_over_N": 55.8
+    },
+    {
+      "generator": "random",
+      "N": 100,
+      "realized_z": 3.538,
+      "iid_Emax": 2.543,
+      "ratio": 1.391,
+      "M_emp": 2753.0,
+      "M_emp_over_N": 27.53
+    },
+    {
+      "generator": "random",
+      "N": 300,
+      "realized_z": 3.573,
+      "iid_Emax": 2.904,
+      "ratio": 1.23,
+      "M_emp": 3145.0,
+      "M_emp_over_N": 10.483
+    },
+    {
+      "generator": "random",
+      "N": 1000,
+      "realized_z": 3.721,
+      "iid_Emax": 3.262,
+      "ratio": 1.141,
+      "M_emp": 5598.0,
+      "M_emp_over_N": 5.598
+    },
+    {
+      "generator": "creative",
+      "N": 10,
+      "realized_z": 2.707,
+      "iid_Emax": 1.61,
+      "ratio": 1.681,
+      "M_emp": 163.0,
+      "M_emp_over_N": 16.3
+    },
+    {
+      "generator": "creative",
+      "N": 30,
+      "realized_z": 3.562,
+      "iid_Emax": 2.093,
+      "ratio": 1.702,
+      "M_emp": 3019.0,
+      "M_emp_over_N": 100.633
+    },
+    {
+      "generator": "creative",
+      "N": 100,
+      "realized_z": 3.647,
+      "iid_Emax": 2.543,
+      "ratio": 1.434,
+      "M_emp": 4192.0,
+      "M_emp_over_N": 41.92
+    },
+    {
+      "generator": "creative",
+      "N": 300,
+      "realized_z": 3.836,
+      "iid_Emax": 2.904,
+      "ratio": 1.321,
+      "M_emp": 8905.0,
+      "M_emp_over_N": 29.683
+    },
+    {
+      "generator": "creative",
+      "N": 1000,
+      "realized_z": 3.917,
+      "iid_Emax": 3.262,
+      "ratio": 1.201,
+      "M_emp": 12425.0,
+      "M_emp_over_N": 12.425
+    },
+    {
+      "generator": "llm",
+      "N": 10,
+      "realized_z": 2.767,
+      "iid_Emax": 1.61,
+      "ratio": 1.718,
+      "M_emp": 195.0,
+      "M_emp_over_N": 19.5
+    },
+    {
+      "generator": "llm",
+      "N": 30,
+      "realized_z": 3.199,
+      "iid_Emax": 2.093,
+      "ratio": 1.528,
+      "M_emp": 803.0,
+      "M_emp_over_N": 26.767
+    },
+    {
+      "generator": "llm",
+      "N": 100,
+      "realized_z": 3.324,
+      "iid_Emax": 2.543,
+      "ratio": 1.307,
+      "M_emp": 1248.0,
+      "M_emp_over_N": 12.48
+    }
+  ]
+}

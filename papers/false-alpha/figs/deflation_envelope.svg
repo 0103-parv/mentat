@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360" font-family="sans-serif">
+<text x="70" y="24" font-size="13" font-weight="bold">Deflation envelope: DSR is ~2.4× too large for the worst-of-regimes statistic</text>
+<line x1="70" y1="310.0" x2="610" y2="310.0" stroke="#ccc"/>
+<text x="70.0" y="328" font-size="10" text-anchor="middle">10</text>
+<text x="287.9949806156898" y="328" font-size="10" text-anchor="middle">100</text>
+<text x="505.9899612313796" y="328" font-size="10" text-anchor="middle">1000</text>
+<text x="609.9999999053259" y="328" font-size="10" text-anchor="middle">3000</text>
+<text x="62" y="314.0" font-size="10" text-anchor="end">0.0</text>
+<text x="62" y="179.0" font-size="10" text-anchor="end">1.8</text>
+<text x="62" y="44.0" font-size="10" text-anchor="end">3.6</text>
+<path d="M 70.0 187.9 L 288.0 117.2 L 506.0 62.7 L 610.0 40.0" fill="none" stroke="#1b7a6e" stroke-width="2"/>
+<circle cx="70.0" cy="187.9" r="3" fill="#1b7a6e"/>
+<circle cx="288.0" cy="117.2" r="3" fill="#1b7a6e"/>
+<circle cx="506.0" cy="62.7" r="3" fill="#1b7a6e"/>
+<circle cx="610.0" cy="40.0" r="3" fill="#1b7a6e"/>
+<text x="440" y="44" font-size="11" fill="#1b7a6e">● single-Sharpe (standard DSR)</text>
+<path d="M 70.0 290.8 L 288.0 241.9 L 506.0 205.4 L 610.0 191.2" fill="none" stroke="#c0612a" stroke-width="2"/>
+<circle cx="70.0" cy="290.8" r="3" fill="#c0612a"/>
+<circle cx="288.0" cy="241.9" r="3" fill="#c0612a"/>
+<circle cx="506.0" cy="205.4" r="3" fill="#c0612a"/>
+<circle cx="610.0" cy="191.2" r="3" fill="#c0612a"/>
+<text x="440" y="60" font-size="11" fill="#c0612a">● worst-of-3 regimes (correct)</text>
+<text x="320.0" y="348" font-size="11" text-anchor="middle">N (log)</text>
+<text x="18" y="180.0" font-size="11" text-anchor="middle" transform="rotate(-90 18 180.0)">expected best-of-N (std-normal units)</text>
+</svg>
