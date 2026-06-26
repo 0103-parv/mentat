@@ -1,0 +1,298 @@
+%% More Strategies, Same Zero — IEEE conference format (IEEEtran).
+%% Compile on Overleaf: New Project -> Upload -> this file -> Recompile (menu: pdfLaTeX).
+%% Or locally: pdflatex false_alpha_ieee.tex (x2).  Class IEEEtran ships with Overleaf/TeXLive.
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{url}
+\usepackage[hidelinks]{hyperref}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\begin{document}
+
+\title{More Strategies, Same Zero: Does LLM-Scale Alpha Search\\
+Discover Edge or Manufacture False Discoveries?}
+
+\author{\IEEEauthorblockN{Parv Mehndiratta}
+\IEEEauthorblockA{Independent Researcher\\
+whizkid783@gmail.com}}
+
+\maketitle
+
+\begin{abstract}
+Large language models (LLMs) can propose and backtest trading strategies at effectively
+unbounded scale, reviving backtest overfitting in a regime where the number of trials $N$ is
+enormous and cheap. We ask whether scaling generative strategy search accumulates genuine
+edge or only false discoveries that vanish under proper multiple-testing correction. Using a
+dependency-free alpha engine with a strict verifier (causal next-bar execution, transaction
+costs, worst-of-regimes out-of-sample Sharpe, and a deflated-Sharpe haircut), we sweep $N$
+from 10 to 3{,}000 across three generators---uniform-random, evolutionary ``creative''
+synthesis, and a live LLM (Claude Opus~4.8)---on four controls (strong/small planted edge,
+pure noise, real data). The naive best-of-$N$ Sharpe rises with $N$ on every market including
+pure noise; the gate holds survivors at exactly \textbf{zero} on the real S\&P~500 at all $N$
+and all generators, while recovering a strong planted edge. A \emph{power surface} shows the
+detectable-edge threshold rising $\sim\!\sqrt{2\ln N}$, so moderate real edges become
+unprovable at scale. The zero generalizes under a distribution-free block bootstrap, on a
+real cross-sectional equity panel, and across FX, gold, and crypto---seven real markets, zero
+survivors. We derive the \textbf{worst-of-regimes deflation} the gate actually needs (the
+standard single-Sharpe deflated Sharpe over-deflates the min-over-regimes statistic by
+$\sim\!2.4\times$) and a \textbf{robustness-dividend identity}: requiring worst-of-$k$
+independent regimes is equivalent to a single-Sharpe search over only $N'\!\approx\!7$
+strategies, an implicit multiple-testing correction that collapses as regimes correlate
+(measured: $\rho_\mathrm{reg}\!=\!0.67$ on real S\&P, $N'\!\approx\!84$). We report four
+refutations, including two analytic effective-trial-count shortcuts that manufacture false
+discoveries and are corrected by the bootstrap. All results are reproducible from committed
+scripts; a verification suite of 20 adversarial checks and 38 unit tests is green.
+\end{abstract}
+
+\begin{IEEEkeywords}
+multiple testing, backtest overfitting, deflated Sharpe ratio, large language models,
+data snooping, quantitative finance, false discovery, extreme value theory
+\end{IEEEkeywords}
+
+\section{Introduction}
+A backtest certifies the past, not the future, and the more strategies one tests the more
+certain it is that the best is lucky rather than skilled. Bailey and L\'opez de Prado~\cite{dsr}
+formalize this as the false-strategy theorem: under the null of no skill, the expected maximum
+Sharpe ratio over $N$ independent trials grows like $\sqrt{2\ln N}$, so any sufficiently large
+search ``discovers'' an impressive-looking strategy. The classical remedy is to \emph{deflate}
+the observed Sharpe by exactly this expected best-of-$N$ (the Deflated Sharpe Ratio, DSR).
+
+Large language models change the operative regime of this theorem: they propose candidate
+strategies essentially without limit and with superficial novelty, so $N$---historically
+bounded by human and compute budgets---becomes large, cheap, and correlated. Recent systems
+explicitly mine alphas with LLMs~\cite{alphaagent} and report in-sample or single-holdout
+gains. This raises a direct, testable question:
+\emph{when a generative engine proposes and backtests more and more trading strategies, do
+genuinely profitable ones accumulate, or only statistically false ones that vanish under
+proper multiple-testing correction?}
+
+\textbf{Contributions.} The statistic is not new (the DSR is~\cite{dsr}, the Reality Check is
+White's~\cite{rc}, and the ``LLM edge evaporates'' conclusion is established by
+FINSABER~\cite{finsaber}). Our contributions are: (1) a \emph{derived worst-of-regimes
+deflation}---the gate scores the minimum over $k$ regimes, yet the DSR is the expected max of
+$N$ \emph{single} Sharpes; we derive the correct envelope $\mathbb{E}[\max_N \min_k Z]$ and
+show the DSR over-deflates it by ${\sim}2.4\times$ (Sec.~\ref{sec:deflation}); (2) a
+\emph{robustness-dividend identity} linking regime robustness to multiple testing, which
+collapses as regimes correlate; (3) a controlled, multi-generator (including a live LLM),
+seven-market, power-surface protocol with planted/noise calibration; and (4) four reported
+negatives, including two analytic effective-trial-count shortcuts that manufacture false
+discoveries and are corrected by the bootstrap.
+
+\section{The Gate and the N-Sweep}\label{sec:method}
+A strategy (``alpha'') is an expression in a small S-expression DSL over causal price/volume
+features, combined by unary/binary operators (depth $\le 5$); it evaluates causally to a
+per-bar signal squashed to a position in $[-1,1]$. The \textbf{verifier} (the gate) is
+adversarial: (i) no look-ahead, $\mathrm{strat}[t]=\mathrm{pos}[t{-}1]\,r[t]-c\,|\Delta
+\mathrm{pos}|$; (ii) transaction cost $c=10$\,bps per unit turnover; (iii) the timeline is
+split into an in-sample segment and $k$ contiguous out-of-sample (OOS) regimes, and a strategy
+is scored by its \emph{worst} regime; (iv) the score is the worst-regime Sharpe minus the
+expected best-of-$N$ under the null (the DSR haircut). A strategy is ``verified'' only if its
+annualized, after-cost, worst-regime, deflated OOS Sharpe clears a positive bar
+($0.5$).
+
+Three generators stand in for the search engine: \texttt{random} (uniform draws over the DSL,
+$\approx$ i.i.d.\ brute force), \texttt{creative} (Boden-style operators over a shared
+substrate~\cite{boden}), and a \texttt{live LLM} (Claude Opus~4.8). For each (market,
+generator) we draw a pool, backtest each alpha once, and apply the deflation analytically per
+$N$. We report, versus $N$: the best naive pooled-OOS Sharpe (the data-snoop curve);
+\texttt{robust}, the count clearing worst-regime$+$cost but \emph{not} deflation (the
+ablation); and \texttt{survivors}, the count clearing the full deflated gate. Four markets
+form the matrix: a strong planted edge (positive control), a realistically small planted edge,
+a pure random-walk null, and real data.
+
+\section{Results: The Zero, and Why It Is Not Trivial}
+\textbf{The naive metric is fooled, worse as $N$ grows.} The expected best-of-$N$ pooled-OOS
+Sharpe rises monotonically on \emph{every} market, including pure noise ($+0.04\!\to\!+0.34$)
+and real S\&P~500 ($+0.72\!\to\!+0.99$ annualized); a naive practitioner would accept the
+${\sim}1.0$ Sharpe ``winner.''
+
+\textbf{The deflated gate holds at zero on real data, and recovers a real edge.} On the real
+S\&P~500 the survivor count is \textbf{0 at every $N$}, for all three generators (Table~\ref
+{tab:surv}). This is not a degenerate ``reject everything'': on the strong-planted market the
+\emph{same} gate passes strategies, and passes more as $N$ grows (Table~\ref{tab:surv}),
+because the edge is genuinely there.
+
+\begin{table}[t]\centering
+\caption{Gate survivors vs.\ $N$ (creative generator).}
+\label{tab:surv}
+\begin{tabular}{lcccc}
+\toprule
+market & $N{=}10$ & $100$ & $1000$ & $3000$\\
+\midrule
+real S\&P 500 & 0.0 & 0.0 & 0.0 & \textbf{0.0}\\
+noise (null)  & 0.0 & 0.0 & 0.0 & 0.0\\
+planted (edge)& 0.7 & 7.1 & 58.3 & \textbf{154.4}\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Ablation: which tightener does the work.} On the adversarial noise market the
+worst-regime requirement \emph{alone} kills the snoop (\texttt{robust}$=0$). On real data it
+does not: because 2016--2024 sub-periods resemble each other, \texttt{robust} grows with $N$
+to 115--196 ``regime-robust'' mirages; the \emph{multiple-testing deflation} is what collapses
+these to zero. On real data the deflation is load-bearing.
+
+\textbf{The live-LLM arm.} Claude Opus~4.8 reaches $N{=}300$ on real S\&P: best-of-$N$ rises
+$+0.48\!\to\!+0.80$, survivors $=0$, mean return correlation $\bar\rho=+0.007$. Of four
+pre-registered hypotheses, three hold; the hypothesis that the LLM is \emph{more} correlated
+than random is \textbf{refuted} ($\bar\rho$ no higher than random's $+0.029$). A new finding
+cuts the other way: the LLM's structural diversity saturates---1{,}000 draws yield only 160
+distinct valid expressions (vs.\ ${\sim}280$ for random)---so scaling an LLM proposer buys
+less new search than scaling random generation.
+
+\textbf{The power surface (central result).} A gate that returns 0 on real data is only
+interesting if it \emph{would} return $>0$ for a realistic edge. Sweeping the planted edge
+magnitude $\times$ search scale $N$ (Table~\ref{tab:power}), a genuine edge admitted at
+$N{=}10$ becomes undetectable at $N\!\ge\!30$: the same true edge, now rejected, because
+searching more raised the bar above it. The detectable-edge threshold rises monotonically with
+$N$ ($\approx\sqrt{2\ln N}$, the empirical instantiation of~\cite{dsr}). Consequently we do
+\emph{not} claim market efficiency; we claim that \textbf{no edge large enough to survive a
+search of this scale exists in this DSL/data}---a high-precision statement with a known,
+large Type-II region. Inverting the gate gives the minimum detectable edge: under the
+corrected deflation the recall floor rises $0.69\,(N{=}10)\!\to\!1.48\,(1000)\!\to\!1.62\,
+(3000)$, while real markets offer a best worst-regime Sharpe of ${\approx}0.85$---below the
+floor. We measure the precision side directly by held-out replication: every survivor on one
+sample of the strong-planted market also survives an independent sample, so the
+false-discovery rate is ${\approx}0$ even at $N{=}1000$; the price is recall, not precision.
+
+\begin{table}[t]\centering
+\caption{Power surface: survivors over (edge strength $\times$ $N$).}
+\label{tab:power}
+\begin{tabular}{lcccccc}
+\toprule
+edge $\backslash$ $N$ & 10 & 30 & 100 & 300 & 1000 & 3000\\
+\midrule
+$0.00$--$0.15$ & 0 & 0 & 0 & 0 & 0 & 0\\
+$0.25$ & \textbf{1} & 0 & 0 & 0 & 0 & 0\\
+$0.40$ (strong) & 2 & 2 & 8 & 20 & 61 & 168\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Generalization.} The zero is not a parametric artifact: a stationary block
+bootstrap~\cite{politis} feeding White's Reality Check / Romano--Wolf~\cite{rc,romanowolf} and
+Hansen's SPA~\cite{spa}, with the worst-of-regimes operator preserved inside each resample,
+gives 0 survivors on real data at every $N$ and block length. The result also holds on a real
+15-stock cross-sectional equity panel (range/volume features active) and across FX, gold, and
+crypto---seven real markets, zero survivors at every $N$.
+
+\section{The Worst-of-Regimes Deflation and the Robustness Dividend}\label{sec:deflation}
+The DSR is the expected maximum of $N$ \emph{single} Sharpes, but our gate scores the
+\emph{minimum over $k$ regimes}, then the best of $N$. The correct null is therefore
+$\mathbb{E}\big[\max_{i\le N}\min_{g\le k} Z_{i,g}\big]$. Because the minimum of $k$ standard
+normals has a thin upper tail, its best-of-$N$ envelope sits near the
+$\big(1-N^{-1/k}\big)$ quantile, $\Phi^{-1}\!\big(1-N^{-1/k}\big)$. Monte-Carlo validation
+gives an envelope $2.3$--$2.8\times$ smaller than the single-Sharpe one at relevant $N$ (e.g.,
+$3.26\!\to\!1.38$ at $N{=}1000,k{=}3$): \textbf{the standard DSR over-deflates the
+worst-regime statistic by ${\sim}2.4\times$.} Re-running with the corrected, far weaker bar,
+the best deflated Sharpe on real markets rises from ${\approx}{-}1.5$ to ${\approx}{-}0.3$ but
+\emph{stays negative}---0 survivors. The zero is robust to the correct deflation, not an
+over-deflation artifact.
+
+This yields a unifying identity. Define the deflation-equivalent search size $N'$ such that a
+single-Sharpe search over $N'$ has the same null maximum as worst-of-$k$ at $N$. For
+\emph{independent} regimes, worst-of-3 at $N{=}1000$ gives $N'\!\approx\!7$: \textbf{requiring
+a strategy to survive several independent regimes is an implicit multiple-testing correction}
+as strong as shrinking a thousand-strategy search to a handful. Generalizing to equicorrelated
+regimes with correlation $\rho_\mathrm{reg}$, $N'$ climbs $7\!\to\!28\!\to\!62\!\to\!160\!\to\!
+426$ as $\rho_\mathrm{reg}\!:\,0\!\to\!0.95$. We then \emph{measure} $\rho_\mathrm{reg}$ as the
+mean cross-sectional correlation between strategies' per-regime Sharpes: the adversarial
+synthetic null sits at $\rho_\mathrm{reg}\!=\!0.24$ ($N'\!\approx\!16$, dividend intact),
+while real S\&P~500 sits at $\rho_\mathrm{reg}\!=\!0.67$ ($N'\!\approx\!84$, a ${\sim}12\times$
+collapse). This resolves the ablation: on the synthetic null the dividend protects (so
+worst-regime alone suffices), while on real data the dividend has collapsed (so the explicit
+deflation must do the work)---robustness and multiple testing trade off quantitatively along
+regime correlation.
+
+\section{Reported Negatives}
+In the project's ``report what does not work'' discipline, we record four refutations.
+(i)~The pre-registered hypothesis that the LLM searches more redundantly than random is
+refuted in return space ($\bar\rho$). (ii)--(iii)~Two analytic effective-trial-count
+shortcuts fail: importing the genomics effective-number-of-independent-tests
+machinery~\cite{nyholt,liji} via the participation ratio gives $M_\mathrm{eff}\!\approx\!5$,
+a near-zero haircut, and ${\sim}500$ false ``survivors'' on real markets that the bootstrap
+rejects; an envelope-inversion estimate is autocorrelation-confounded. Pursuing the cause with
+a serial-correlation-adjusted Sharpe standard error~\cite{lo} shows the Newey--West inflation
+is negligible ($\eta^2\!\approx\!1.07$), yet the cross-sectional variance of the standardized
+Sharpe is ${\approx}4.6$, not 1: the real cause is \textbf{structural heterogeneity}
+(${\sim}78\%$ of the cross-sectional Sharpe variance is between-strategy), so a generative
+search produces $N$ structurally different strategies, not $N$ i.i.d.\ draws of one null---the
+``$N$ i.i.d.\ trials'' premise fails on the \emph{identical} part. The block bootstrap, which
+resamples each strategy's own return path, is therefore the necessary arbiter, not a mere
+check. (iv)~A pre-registered prediction that the false-discovery rate rises with $N$ is
+refuted (it stays ${\approx}0$): family-wise control here yields ${\approx}$zero false
+discoveries for free.
+
+\section{Related Work}
+The closest direct precedent is FINSABER~\cite{finsaber}, which finds LLM trading agents
+generate no statistically significant alpha under broad, long-horizon evaluation and concludes
+LLM-derived alpha is largely a methodological artefact; it controls snooping by evaluation
+design, not by a formal multiple-testing gate, an $N$-sweep, a power surface, or planted
+controls. The statistical machinery is classical: White's Reality Check~\cite{rc}, the
+stationary bootstrap~\cite{politis}, Sullivan--Timmermann--White's data-snooping correction
+over a 7{,}846-rule universe (which already reported a zero on the S\&P)~\cite{stw}, Hansen's
+SPA~\cite{spa}, Romano--Wolf step-down~\cite{romanowolf}, and the deflated Sharpe~\cite{dsr}.
+The factor-zoo literature~\cite{harvey} studies multiple testing in cross-sectional asset
+pricing. Same-lineage LLM alpha-mining~\cite{alphaagent} targets discovery/decay, not
+multiple-testing correction. Our worst-of-regimes deflation and the effective-number-of-tests
+framing draw on the genomics correlated-testing literature~\cite{nyholt,liji}, where linkage
+disequilibrium between SNPs is the analogue of shared structure between strategies; we report
+(Sec.~V) that the naive import fails for the maximum statistic.
+
+\section{Limitations and Conclusion}
+The headline caveat is low recall: ``zero survivors'' means ``no edge provable at this search
+scale,'' never ``no edge exists.'' The DSL and data are modest (a small daily feature set);
+counts are finite-pool bootstrap means; the live LLM reaches $N{=}300$ and a single model.
+Within those bounds, the conclusion is robust across seven real markets, a distribution-free
+test, eight random seeds, and the corrected deflation. \emph{LLM-scale strategy search
+manufactures false discoveries, and the only correction that stops them simultaneously raises
+the bar for proving any genuine edge---so beyond a point, additional search yields only
+mirages and unprovable maybes.} Robustness across regimes and multiple-testing correction are
+two faces of the same coin; how much each contributes depends, quantitatively, on regime
+correlation.
+
+\section*{Reproducibility}
+Every reported number is produced by a committed script and written to a JSON artifact; runs
+are CRC-seeded and deterministic. Code, data-acquisition scripts, a 20-check adversarial
+verification suite, and 38 unit tests are available in the Mentat repository.
+
+\begin{thebibliography}{99}
+\bibitem{dsr} D.~H. Bailey and M.~L\'opez de Prado, ``The deflated Sharpe ratio: correcting
+for selection bias, backtest overfitting, and non-normality,'' \emph{J. Portfolio
+Management}, vol.~40, no.~5, pp.~94--107, 2014.
+\bibitem{rc} H.~White, ``A reality check for data snooping,'' \emph{Econometrica}, vol.~68,
+no.~5, pp.~1097--1126, 2000.
+\bibitem{stw} R.~Sullivan, A.~Timmermann, and H.~White, ``Data-snooping, technical trading
+rule performance, and the bootstrap,'' \emph{J. Finance}, vol.~54, no.~5, pp.~1647--1691, 1999.
+\bibitem{spa} P.~R. Hansen, ``A test for superior predictive ability,'' \emph{J. Business \&
+Economic Statistics}, vol.~23, no.~4, pp.~365--380, 2005.
+\bibitem{romanowolf} J.~P. Romano and M.~Wolf, ``Stepwise multiple testing as formalized data
+snooping,'' \emph{Econometrica}, vol.~73, no.~4, pp.~1237--1282, 2005.
+\bibitem{harvey} C.~R. Harvey, Y.~Liu, and H.~Zhu, ``$\ldots$ and the cross-section of expected
+returns,'' \emph{Rev. Financial Studies}, vol.~29, no.~1, pp.~5--68, 2016.
+\bibitem{politis} D.~N. Politis and J.~P. Romano, ``The stationary bootstrap,'' \emph{J.
+American Statistical Association}, vol.~89, no.~428, pp.~1303--1313, 1994.
+\bibitem{lo} A.~W. Lo, ``The statistics of Sharpe ratios,'' \emph{Financial Analysts Journal},
+vol.~58, no.~4, pp.~36--52, 2002.
+\bibitem{nyholt} D.~R. Nyholt, ``A simple correction for multiple testing for single-nucleotide
+polymorphisms in linkage disequilibrium with each other,'' \emph{American J. Human Genetics},
+vol.~74, no.~4, pp.~765--769, 2004.
+\bibitem{liji} J.~Li and L.~Ji, ``Adjusting multiple testing in multilocus analyses using the
+eigenvalues of a correlation matrix,'' \emph{Heredity}, vol.~95, no.~3, pp.~221--227, 2005.
+\bibitem{finsaber} % VERIFY exact authors/title before submission
+  Z.~Liang \emph{et al.}, ``FINSABER: rigorous backtesting reveals the fragility of
+  LLM-based trading strategies,'' arXiv:2505.07078, 2025.
+\bibitem{alphaagent} % VERIFY author list before submission
+  Z.~Tang \emph{et al.}, ``AlphaAgent: LLM-driven alpha mining with regularized exploration to
+  counteract alpha decay,'' arXiv:2502.16789, 2025 (KDD~2025).
+\bibitem{boden} M.~A. Boden, \emph{The Creative Mind: Myths and Mechanisms}, 2nd~ed. London,
+U.K.: Routledge, 2004.
+\bibitem{afml} M.~L\'opez de Prado, \emph{Advances in Financial Machine Learning}. Hoboken,
+NJ, USA: Wiley, 2018.
+\end{thebibliography}
+
+\end{document}
