@@ -2,8 +2,8 @@
 
 **A controlled N-sweep test of the false-strategy theorem with a live LLM proposer — and why scaling the search raises the discovery bar faster than it finds edge**
 
-*Parv Mehndiratta. Working paper, draft v0.2 (2026-06-24).*
-*Engine and experiment: `~/mentat/mentat/trade_lab.py`, `imagine.py`, `nsweep.py`; verification `papers/false-alpha/{verify,power}.py` (Mentat repo, github.com/0103-parv/mentat). Every number is produced by `python3 -m mentat.nsweep` and reproducible from the repo. This draft has been hardened against an adversarial multi-reviewer + power-curve audit (see §6, §10).*
+*Parv Mehndiratta. Working paper, draft v0.3 (2026-06-25).*
+*Engine: `~/mentat/mentat/{trade_lab,nsweep,panel_lab,imagine}.py`. Experiments + verification: `papers/false-alpha/{verify,power,bootstrap,panel_sweep,independent_markets,task5_llm,fetch_panel,fetch_markets,plot}.py` (Mentat repo, github.com/0103-parv/mentat). Every number is produced by a committed script and written to a JSON artifact; runs are CRC-seeded and deterministic (use `python3.14`). v0.3 adds, against a five-task reviewer brief: a distribution-free bootstrap test (§4.6), a cross-sectional equity panel (§4.7), three microstructurally-independent real markets (§4.8), a 2-D power surface (§4.5), and the live-LLM arm extended to N=300 (§4.4). See §10 for the audit trail.*
 
 ---
 
@@ -292,6 +292,8 @@ In keeping with the project's discipline (*prefer an honest negative to a confid
 - A genuine **bug** (an unimported symbol that crashed the live-LLM arm) was surfaced by the verification run and fixed.
 
 The reproducibility audit confirmed every number in §0/§4/Appendix A matches the artifact, two runs are byte-identical, and the authorship statement is clean. Residual honest gaps are listed in §6–§7. The point of this section is not to claim perfection but to show the result survived a serious attempt to break it.
+
+**v0.3 hardening (a five-task external reviewer brief).** After v0.2, an external reviewer pass flagged two real holes — the parametric gate and the single-index narrowness — and three strengtheners. All five were implemented, each as a committed script → JSON artifact, with `verify.py` (now 20 PASS / 0 FAIL) and the 74-test suite green after each: (1) the distribution-free White/Romano–Wolf/Hansen bootstrap (§4.6) — *confirmed* the DSR zero; (2) the cross-sectional equity panel (§4.7) — the zero holds with range/volume active on real large-caps; (3) the 2-D power surface (§4.5) — the detectable-edge threshold visibly rises with N; (4) FX/gold/crypto (§4.8) — the zero holds across independent microstructures; (5) the live LLM extended to N=300 (§4.4) — H1/H3 hold, H2 stays refuted, and a *new* diversity-ceiling finding emerged. No headline claim was refuted; the new finding (LLM structural-diversity saturation, §4.4) was added because the data showed it. Real market data is genuinely real (downloaded by `fetch_panel.py`/`fetch_markets.py`, traceable to source); no data was fabricated.
 
 ---
 
