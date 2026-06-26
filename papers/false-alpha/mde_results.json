@@ -1,0 +1,53 @@
+{
+  "config": {
+    "T": 500,
+    "k": 3,
+    "target": 0.5,
+    "NS": [
+      10,
+      30,
+      100,
+      300,
+      1000,
+      3000
+    ]
+  },
+  "rows": [
+    {
+      "N": 10,
+      "mde_standard": 1.621,
+      "mde_corrected": 0.686,
+      "ratio": 2.364
+    },
+    {
+      "N": 30,
+      "mde_standard": 1.978,
+      "mde_corrected": 0.928,
+      "ratio": 2.132
+    },
+    {
+      "N": 100,
+      "mde_standard": 2.306,
+      "mde_corrected": 1.146,
+      "ratio": 2.012
+    },
+    {
+      "N": 300,
+      "mde_standard": 2.569,
+      "mde_corrected": 1.316,
+      "ratio": 1.952
+    },
+    {
+      "N": 1000,
+      "mde_standard": 2.829,
+      "mde_corrected": 1.482,
+      "ratio": 1.909
+    },
+    {
+      "N": 3000,
+      "mde_standard": 3.047,
+      "mde_corrected": 1.623,
+      "ratio": 1.878
+    }
+  ]
+}

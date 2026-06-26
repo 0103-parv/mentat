@@ -107,6 +107,14 @@ def main() -> int:
     check(all(lo[g]["structural_fraction"] > 0.6 for g in lo),
           "Lo diag: majority (~78%) of cross-sectional Sharpe variance is structural")
 
+    # (B5) minimum detectable edge: rises with N; corrected floor below the DSR floor
+    mde = json.loads((Path(__file__).resolve().parent / "mde_results.json").read_text())["rows"]
+    mc = [r["mde_corrected"] for r in mde]
+    check(all(mc[i] < mc[i + 1] for i in range(len(mc) - 1)), "MDE rises monotonically with N")
+    check(all(r["mde_corrected"] < r["mde_standard"] for r in mde),
+          "corrected recall floor < standard-DSR floor at every N")
+    check(mc[-1] > 1.0, "at N=3000 the detectable worst-regime Sharpe floor is > 1.0")
+
     # (C) participation-ratio effective-N
     check(abs(effective_n_participation(0.0, 1000) - 1000) < 1e-6, "M_eff(0)=N")
     check(effective_n_participation(0.05, 1000) < effective_n_participation(0.005, 1000),
