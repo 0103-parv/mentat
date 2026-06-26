@@ -37,7 +37,7 @@ A subtle finding worth flagging even in plain English: on the *real* market, req
 
 ## Abstract
 
-Large language models can propose and backtest trading strategies at effectively unbounded scale, reviving an old hazard — backtest overfitting — in a new regime where the number of trials N is enormous and cheap. We ask whether scaling LLM-style strategy search accumulates genuine edge or only statistically false discoveries that vanish under proper multiple-testing correction. Using a pure-Python alpha engine with a deliberately brutal verifier (causal next-bar execution, transaction costs, worst-of-regimes out-of-sample scoring, and a deflated-Sharpe multiple-testing haircut; Bailey & López de Prado 2014), we sweep N from 10 to 3,000 across three generators — uniform-random, Boden-operator "creative" synthesis, and a **live LLM proposer (Claude Opus 4.8)** — on four markets: a strong planted edge (positive control), a *realistically small* planted edge (power control), a pure random-walk null, and real S&P 500 data (FRED, 2016–2024). We find: (1) the naive single-holdout best-of-N Sharpe rises monotonically with N on every market, including pure noise (+0.04→+0.34) and real S&P 500 (+0.72→+0.99 annualized), reproducing the false-strategy theorem with a generative search engine, the live LLM included; (2) the deflated worst-regime gate holds survivors at exactly **0** on the real market for all N and all three generators, while *recovering* the strong planted edge (survivors grow with N) — it discriminates, it is not a blanket reject; (3) a **gate power curve** is the central new result: the gate admits an edge only once its true worst-regime Sharpe clears the multiple-testing floor (~2.3 at N=1,000), so a *moderate* real edge (Sharpe ~1–2) is also rejected — scaling the search raises the discovery bar (≈√(2 ln N)) faster than search finds edge, making moderate edges *unprovable at scale*; (4) an ablation shows worst-regime robustness alone is insufficient on real data (it admits 115–196 "robust" mirages that grow with N) and the deflation is load-bearing; (5) we measure search redundancy directly by the mean pairwise return correlation ρ̄ of the strategies — on real data ρ̄≈0 (near-independent), so deflating at N is the *correct* multiple-testing count, not an over-penalty, and the zero is not an over-deflation artifact; (6) creative and LLM search manufacture more original-looking mirages than random but convert zero to survivors, amplifying a real edge ~5× only when one exists. We therefore do **not** claim market efficiency; we claim that LLM-scale search manufactures false discoveries while the only correction that stops them also renders moderate genuine edges unprovable. The contribution is the controlled multi-generator demonstration (live LLM included), the power-curve precision/recall characterization of the anti-overfit gate, and the ρ̄-based effective-trials accounting — all reproducible, with an adversarial verification suite that holds at 17/17.
+Large language models can propose and backtest trading strategies at effectively unbounded scale, reviving an old hazard — backtest overfitting — in a new regime where the number of trials N is enormous and cheap. We ask whether scaling LLM-style strategy search accumulates genuine edge or only statistically false discoveries that vanish under proper multiple-testing correction. Using a pure-Python alpha engine with a deliberately brutal verifier (causal next-bar execution, transaction costs, worst-of-regimes out-of-sample scoring, and a deflated-Sharpe multiple-testing haircut; Bailey & López de Prado 2014), we sweep N from 10 to 3,000 across three generators — uniform-random, Boden-operator "creative" synthesis, and a **live LLM proposer (Claude Opus 4.8)** — on four markets: a strong planted edge (positive control), a *realistically small* planted edge (power control), a pure random-walk null, and real S&P 500 data (FRED, 2016–2024). We find: (1) the naive single-holdout best-of-N Sharpe rises monotonically with N on every market, including pure noise (+0.04→+0.34) and real S&P 500 (+0.72→+0.99 annualized), reproducing the false-strategy theorem with a generative search engine, the live LLM included; (2) the deflated worst-regime gate holds survivors at exactly **0** on the real market for all N and all three generators, while *recovering* the strong planted edge (survivors grow with N) — it discriminates, it is not a blanket reject; (3) a **gate power curve** is the central new result: the gate admits an edge only once its true worst-regime Sharpe clears the multiple-testing floor (~2.3 at N=1,000), so a *moderate* real edge (Sharpe ~1–2) is also rejected — scaling the search raises the discovery bar (≈√(2 ln N)) faster than search finds edge, making moderate edges *unprovable at scale*; (4) an ablation shows worst-regime robustness alone is insufficient on real data (it admits 115–196 "robust" mirages that grow with N) and the deflation is load-bearing; (5) we measure search redundancy directly by the mean pairwise return correlation ρ̄ of the strategies — on real data ρ̄≈0 (near-independent), so deflating at N is the *correct* multiple-testing count, not an over-penalty, and the zero is not an over-deflation artifact; (6) creative and LLM search manufacture more original-looking mirages than random but convert zero to survivors, amplifying a real edge ~5× only when one exists. We therefore do **not** claim market efficiency; we claim that LLM-scale search manufactures false discoveries while the only correction that stops them also renders moderate genuine edges unprovable. The result generalizes: it holds under a distribution-free block-bootstrap test (White/Romano–Wolf/Hansen), on a real cross-sectional equity panel (range/volume features active), and across three microstructurally-independent real markets (FX, gold, crypto) — **seven real markets, zero survivors at every N** — and the live LLM, extended to N=300, reproduces it while exhibiting a structural-diversity ceiling. The contribution is the controlled multi-generator demonstration (live LLM included), the power-surface precision/recall characterization of the anti-overfit gate, the distribution-free confirmation, and the ρ̄-based effective-trials accounting — all reproducible, with an adversarial verification suite that holds at 20/20.
 
 ---
 
@@ -244,29 +244,34 @@ The positioning: prior LLM-alpha work asks *"can an LLM find alphas?"* and answe
 
 ## 7. Future work
 
-The live-LLM arm (§4.4) is done; what remains:
-- **Extend the LLM arm to N=3,000** (it currently reaches N≤100 at pool 300). The cached-pool mechanism makes this a cost question, not an engineering one.
-- **Distribution-free multiple testing — done (§4.6).** Remaining refinement: the Romano–Wolf step-*down* procedure (more powerful than the single-step we run), and extending the bootstrap to the panel and independent-market settings.
-- **Power curve vs N.** §4.5's power curve is at N=1,000; sweeping it across N would directly trace how the detectable-edge threshold rises with search scale — the paper's central mechanism, turned into a single figure.
-- **Richer DSL / data.** OHLCV with live volume and intraday bars, and a larger operator set, to test whether the zero is a property of the gate or of the impoverished signal space.
+Most of the v0.2 future-work list is now done (§4.4–§4.8). What remains:
+- **Extend the LLM arm from N=300 to N=3,000.** The diversity ceiling (§4.4) suggests diminishing returns, but confirming the full curve with a live model is the last gap between the offline scaling story and the LLM one. The cached-pool mechanism makes it a cost question (~10× the current API budget), not an engineering one. A multi-LLM comparison (GPT, Gemini, an open model) would also test whether the diversity ceiling is Claude-specific.
+- **Romano–Wolf step-*down*** (more powerful than the single-step we run) and extending the bootstrap to the panel and independent-market settings.
+- **Richer DSL / intraday data.** A larger operator set and live-volume intraday bars, to test whether the zero is a property of the gate or of the signal space — and a monthly-rebalanced cross-sectional factor variant (lower turnover than the daily panel).
+- **Position the finding as a general failure mode.** "Verified generative search under fixed effect size and growing N" also describes molecule screening, neural-architecture search, and LLM hypothesis generation; one discussion section would broaden the citation surface beyond finance.
 
 ---
 
 ## 8. Reproducibility
 
 ```
-cd ~/mentat
-python3 -m mentat.nsweep                                          # planted + small_planted + noise
-python3 -m mentat.nsweep --pool 4000 --data data/fred_SP500.csv \
-                         --out papers/false-alpha/nsweep_results.json
-python3 papers/false-alpha/verify.py                             # 17-check adversarial suite
-python3 papers/false-alpha/power.py                              # the gate power curve (§4.5)
-# live-LLM arm (needs anthropic + ANTHROPIC_API_KEY; pool capped at 300, cached after first run):
-python3 -m mentat.nsweep --pool 300 --llm --data data/fred_SP500.csv \
-                         --out papers/false-alpha/nsweep_results_llm.json
+cd ~/mentat                                                      # use python3.14
+python3.14 -m mentat.nsweep --pool 4000 --data data/fred_SP500.csv \
+                            --out papers/false-alpha/nsweep_results.json   # §4.1–4.3
+python3.14 papers/false-alpha/power.py                           # power surface §4.5 -> power_surface.json
+python3.14 papers/false-alpha/bootstrap.py                       # distribution-free test §4.6 -> bootstrap_results.json
+python3.14 papers/false-alpha/fetch_panel.py && \
+python3.14 papers/false-alpha/panel_sweep.py                     # cross-sectional panel §4.7 -> panel_results.json
+python3.14 papers/false-alpha/fetch_markets.py && \
+python3.14 papers/false-alpha/independent_markets.py             # FX/gold/crypto §4.8 -> independent_markets.json
+python3.14 papers/false-alpha/verify.py                          # 20-check adversarial suite (20 PASS / 0 FAIL)
+python3.14 papers/false-alpha/plot.py                            # render figures (needs matplotlib)
+# live-LLM arm (needs anthropic + key sourced from ~/swechats/.env; cached after first run):
+set -a && . ~/swechats/.env; set +a
+~/swechats/.venv/bin/python papers/false-alpha/task5_llm.py 1000  # §4.4 -> task5_llm_results.json
 ```
 
-Offline arms: no dependencies, no API key, deterministic (CRC-seeded; two runs byte-identical). The engine is covered by the repo test suite (`python3 -m tests.test_core`, 74 tests). The deflated-Sharpe term is `trade_lab.expected_max_sharpe_under_null`; the gate is `AlphaProblem.verify`; the creative operators are in `imagine.py`; effective-trials is `nsweep.effective_trials`. Raw results: `papers/false-alpha/nsweep_results.json` (+ `…_llm.json`). The LLM-proposed pools are cached at `papers/false-alpha/llm_cache_*.json` so the live arm reproduces without re-billing the API.
+Offline arms: no dependencies, no API key, deterministic (CRC-seeded; two runs byte-identical). The 74-test engine suite is `python3.14 -m tests.test_core`. Core symbols: deflated-Sharpe = `trade_lab.expected_max_sharpe_under_null`; gate = `AlphaProblem.verify`; cross-sectional portfolio = `panel_lab.panel_portfolio`; effective-trials = `nsweep.effective_trials`; bootstrap = `bootstrap.py`. Every reported number lives in a committed `*_results.json`. LLM pools are cached at `papers/false-alpha/llm_cache_*.json` so the live arm reproduces without re-billing the API.
 
 ---
 
