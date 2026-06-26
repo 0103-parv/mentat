@@ -7,6 +7,7 @@ markets give 0 survivors; the gate still passes the planted edge). Keeps the mat
 """
 from __future__ import annotations
 
+import json
 import math
 import sys
 from pathlib import Path
@@ -96,7 +97,6 @@ def main() -> int:
     check(effective_n_participation(0.2, 3000) < 10, "M_eff(0.2,3000)≈5 (the trap value)")
 
     # (D) experiment invariants from committed artifacts (no recompute drift)
-    import json
     base = Path(__file__).resolve().parent
     nsweep = json.loads((base / "nsweep_results.json").read_text())["rows"]
     real0 = [r for r in nsweep if r["market"].startswith("real") and r["survivors"] > 0]
