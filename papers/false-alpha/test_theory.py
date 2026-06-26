@@ -115,6 +115,11 @@ def main() -> int:
           "corrected recall floor < standard-DSR floor at every N")
     check(mc[-1] > 1.0, "at N=3000 the detectable worst-regime Sharpe floor is > 1.0")
 
+    # (B6) held-out FDR on the planted market is ~0 (survivors replicate)
+    fdr = json.loads((Path(__file__).resolve().parent / "fdr_results.json").read_text())["rows"]
+    check(all(r["fdr"] < 0.1 for r in fdr), "planted held-out FDR ~0 at every N (survivors replicate)")
+    check(any(r["survivors_A"] > 0 for r in fdr), "planted gate admits survivors (so FDR is meaningful)")
+
     # (C) participation-ratio effective-N
     check(abs(effective_n_participation(0.0, 1000) - 1000) < 1e-6, "M_eff(0)=N")
     check(effective_n_participation(0.05, 1000) < effective_n_participation(0.005, 1000),

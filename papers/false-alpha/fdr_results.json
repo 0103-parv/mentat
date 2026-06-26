@@ -1,0 +1,43 @@
+{
+  "config": {
+    "reversion": 0.4,
+    "pool": 2000,
+    "NS": [
+      30,
+      100,
+      300,
+      1000
+    ],
+    "target": 0.5
+  },
+  "rows": [
+    {
+      "N": 30,
+      "survivors_A": 3,
+      "true": 3,
+      "false": 0,
+      "fdr": 0.0
+    },
+    {
+      "N": 100,
+      "survivors_A": 8,
+      "true": 8,
+      "false": 0,
+      "fdr": 0.0
+    },
+    {
+      "N": 300,
+      "survivors_A": 16,
+      "true": 16,
+      "false": 0,
+      "fdr": 0.0
+    },
+    {
+      "N": 1000,
+      "survivors_A": 57,
+      "true": 57,
+      "false": 0,
+      "fdr": 0.0
+    }
+  ]
+}
