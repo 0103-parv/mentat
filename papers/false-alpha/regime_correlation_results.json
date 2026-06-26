@@ -1,0 +1,61 @@
+{
+  "N_ref": 1000,
+  "curve": [
+    {
+      "rho_reg": 0.0,
+      "Nprime": 7.0
+    },
+    {
+      "rho_reg": 0.2,
+      "Nprime": 13.0
+    },
+    {
+      "rho_reg": 0.4,
+      "Nprime": 28.0
+    },
+    {
+      "rho_reg": 0.6,
+      "Nprime": 62.0
+    },
+    {
+      "rho_reg": 0.8,
+      "Nprime": 160.0
+    },
+    {
+      "rho_reg": 0.95,
+      "Nprime": 426.0
+    }
+  ],
+  "measured": [
+    {
+      "market": "noise (adversarial synthetic)",
+      "rho_reg": 0.243,
+      "n": 672,
+      "implied_Nprime": 16.0
+    },
+    {
+      "market": "planted (synthetic)",
+      "rho_reg": 0.811,
+      "n": 702,
+      "implied_Nprime": 170.0
+    },
+    {
+      "market": "real:fred_SP500",
+      "rho_reg": 0.669,
+      "n": 558,
+      "implied_Nprime": 84.0
+    },
+    {
+      "market": "real:fred_DJIA",
+      "rho_reg": 0.553,
+      "n": 548,
+      "implied_Nprime": 51.0
+    },
+    {
+      "market": "crypto:BTCUSD",
+      "rho_reg": 0.459,
+      "n": 673,
+      "implied_Nprime": 35.0
+    }
+  ]
+}

@@ -61,6 +61,21 @@ def main() -> int:
     check(np3 < 30, f"worst-of-3 at N=1000 ~ single-Sharpe at N'<30 (N'={np3:.0f})")
     check(np3 < np2, "more regimes -> smaller deflation-equivalent N' (more protection)")
 
+    # (B2c) the dividend collapses as regimes correlate
+    from theory import deflation_equivalent_N_corr, mc_max_of_min_correlated
+    check(mc_max_of_min_correlated(1000, 3, 0.0, 1500)
+          < mc_max_of_min_correlated(1000, 3, 0.9, 1500),
+          "worst-of-k envelope rises with regime correlation rho")
+    check(deflation_equivalent_N_corr(1000, 3, 0.0, 1500)
+          < deflation_equivalent_N_corr(1000, 3, 0.8, 1500),
+          "deflation-equivalent N' rises with rho_reg (dividend collapses)")
+    rc = json.loads((Path(__file__).resolve().parent
+                     / "regime_correlation_results.json").read_text())
+    rho = {r["market"]: r["rho_reg"] for r in rc["measured"]}
+    noise_rho = next(v for k, v in rho.items() if k.startswith("noise"))
+    check(rho["real:fred_SP500"] > noise_rho,
+          "measured: real regimes more correlated than the adversarial synthetic null")
+
     # (B3) the engine-level corrected haircut matches the theory direction
     from mentat.trade_lab import expected_max_sharpe_under_null, expected_max_worst_of_k
     h1 = expected_max_sharpe_under_null(1000, 500, 0.0)

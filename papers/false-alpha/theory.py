@@ -72,6 +72,49 @@ def mc_expected_max(N: int, k: int = 1, reps: int = 4000, seed: int = 1) -> floa
 # --------------------------------------------------------------------------- #
 # (B) worst-of-k-regimes envelope                                             #
 # --------------------------------------------------------------------------- #
+def mc_max_of_min_correlated(N: int, k: int, rho: float, reps: int = 3000,
+                             seed: int = 9) -> float:
+    """E[ max_{i<N} min_{g<k} Z_{i,g} ] where the k regime statistics are EQUICORRELATED
+    with correlation rho (one-factor: Z_g = sqrt(rho) F + sqrt(1-rho) E_g). rho=0 is the
+    independent worst-of-k; rho->1 makes min_k -> the single Sharpe, so the worst-of-k
+    protection (and the robustness dividend) collapses to the k=1 case."""
+    rng = _LCG(seed)
+    a, b = math.sqrt(max(rho, 0.0)), math.sqrt(max(1.0 - rho, 0.0))
+    acc = 0.0
+    for _ in range(reps):
+        best = -1e9
+        for _ in range(N):
+            f = rng.gauss()
+            v = min(a * f + b * rng.gauss() for _ in range(k))
+            if v > best:
+                best = v
+        acc += best
+    return acc / reps
+
+
+def deflation_equivalent_N_corr(N: int, k: int, rho: float, reps: int = 3000) -> float:
+    """Deflation-equivalent N' for worst-of-k regimes with regime correlation rho: the
+    single-Sharpe search size with the same null max. rho=0 recovers the independent
+    dividend; as rho->1, N' -> N (the dividend collapses)."""
+    target = mc_max_of_min_correlated(N, k, rho, reps=reps, seed=9)
+    if target <= evt_expected_max_analytic(2):
+        return 2.0
+    lo, hi = 2, max(N, 4)
+    while evt_expected_max_analytic(hi) < target:
+        hi *= 2
+        if hi > 10 ** 9:
+            return float(hi)
+    for _ in range(60):
+        mid = (lo + hi) // 2
+        if evt_expected_max_analytic(max(mid, 2)) < target:
+            lo = mid + 1
+        else:
+            hi = mid
+        if lo >= hi:
+            break
+    return float(lo)
+
+
 def worst_of_k_quantile(N: int, k: int) -> float:
     """Leading-order E[max_N min_k]: solve (1-Phi(q))^k = 1/N -> q = Phi^{-1}(1-N^{-1/k}).
     For k=1 this is the standard Phi^{-1}(1-1/N)."""
