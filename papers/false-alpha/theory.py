@@ -108,6 +108,44 @@ def deflation_equivalent_N(N: int, k: int, reps: int = 4000) -> float:
 # --------------------------------------------------------------------------- #
 # (C) effective number of independent strategies (participation ratio)        #
 # --------------------------------------------------------------------------- #
+def hac_variance_ratio(returns, q: int | None = None) -> float:
+    """Newey-West HAC variance-inflation factor eta^2 = 1 + 2 sum_{k=1}^q (1-k/(q+1)) rho_k
+    for a return series — the factor by which serial correlation inflates Var(mean) over the
+    i.i.d. (sigma^2/T) value (the engine behind Lo 2002's serial-correlation-corrected Sharpe
+    standard error). q via Andrews/Newey-West automatic rule if None. eta^2>1 means positive
+    autocorrelation (the i.i.d. SE under-estimates); eta^2<1 means mean reversion."""
+    n = len(returns)
+    if n < 4:
+        return 1.0
+    m = sum(returns) / n
+    d = [x - m for x in returns]
+    g0 = sum(x * x for x in d) / n
+    if g0 < 1e-18:
+        return 1.0
+    if q is None:
+        q = max(1, int(4.0 * (n / 100.0) ** (2.0 / 9.0)))
+    s = 0.0
+    for k in range(1, min(q, n - 1) + 1):
+        gk = sum(d[t] * d[t - k] for t in range(k, n)) / n
+        s += (1.0 - k / (q + 1.0)) * (gk / g0)
+    return max(1e-6, 1.0 + 2.0 * s)
+
+
+def lo_sharpe_se(returns, q: int | None = None) -> float:
+    """Lo (2002) serial-correlation-adjusted standard error of the per-bar Sharpe ratio:
+    sqrt( eta^2 * (1 + 0.5 SR^2) / T ). Reduces to the i.i.d. Lo SE when eta^2 = 1."""
+    n = len(returns)
+    if n < 4:
+        return float("inf")
+    m = sum(returns) / n
+    var = sum((x - m) ** 2 for x in returns) / (n - 1)
+    if var < 1e-18:
+        return float("inf")
+    sr = m / math.sqrt(var)
+    eta2 = hac_variance_ratio(returns, q)
+    return math.sqrt(max(eta2 * (1.0 + 0.5 * sr * sr) / n, 0.0))
+
+
 def effective_n_participation(rho2_bar: float, N: int) -> float:
     """M_eff = N / (1 + (N-1) <rho^2>), the participation ratio of the correlation matrix,
     exact from trace identities. <rho^2> is the mean SQUARED off-diagonal correlation.

@@ -1,0 +1,18 @@
+{
+  "random": {
+    "n": 1281,
+    "eta2_median": 1.075,
+    "eta2_p90": 1.205,
+    "var_z_iid": 4.13,
+    "var_z_lo": 3.972,
+    "var_z_emp": 1.0
+  },
+  "creative": {
+    "n": 1365,
+    "eta2_median": 1.064,
+    "eta2_p90": 1.215,
+    "var_z_iid": 4.616,
+    "var_z_lo": 4.412,
+    "var_z_emp": 1.0
+  }
+}

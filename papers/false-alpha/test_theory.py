@@ -68,6 +68,27 @@ def main() -> int:
     check(1.8 < h1 / hk < 4.0, f"engine: over-deflation ratio in [1.8,4] ({h1/hk:.2f})")
     check(expected_max_worst_of_k(1000, 1, 500, 0.0) > 0, "engine: k=1 worst-of-k is positive")
 
+    # (B4) Lo (2002) HAC variance ratio on series with known autocorrelation
+    from theory import hac_variance_ratio
+    from mentat.trade_lab import _LCG
+    rng = _LCG(5)
+    iid = [rng.gauss() for _ in range(3000)]
+    check(abs(hac_variance_ratio(iid) - 1.0) < 0.3, "HAC eta^2 ~1 on i.i.d.")
+    rng = _LCG(6); ar = [0.0]
+    for _ in range(3000):
+        ar.append(0.6 * ar[-1] + rng.gauss())
+    check(hac_variance_ratio(ar[1:]) > 1.5, "HAC eta^2 >1 on AR(1) positive (persistence)")
+    rng = _LCG(7); mr = [0.0]
+    for _ in range(3000):
+        mr.append(-0.5 * mr[-1] + rng.gauss())
+    check(hac_variance_ratio(mr[1:]) < 1.0, "HAC eta^2 <1 on mean-reverting")
+    # the Lo diagnostic recorded: autocorrelation is NOT the cause (eta^2~1.07, Var(z)~4.6)
+    lo = json.loads((Path(__file__).resolve().parent / "lo_diagnostic_results.json").read_text())
+    check(all(0.9 < lo[g]["eta2_median"] < 1.3 for g in lo),
+          "Lo diag: strategy autocorrelation is negligible (eta^2~1)")
+    check(all(lo[g]["var_z_iid"] > 2.0 for g in lo),
+          "Lo diag: Var(z) >> 1 from structural heterogeneity, not autocorrelation")
+
     # (C) participation-ratio effective-N
     check(abs(effective_n_participation(0.0, 1000) - 1000) < 1e-6, "M_eff(0)=N")
     check(effective_n_participation(0.05, 1000) < effective_n_participation(0.005, 1000),
