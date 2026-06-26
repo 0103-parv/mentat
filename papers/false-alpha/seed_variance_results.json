@@ -1,0 +1,229 @@
+{
+  "config": {
+    "seeds": 8,
+    "pool": 1000,
+    "NS": [
+      100,
+      300,
+      1000
+    ]
+  },
+  "rows": [
+    {
+      "market": "planted",
+      "generator": "random",
+      "N": 100,
+      "best_mean": 3.503,
+      "best_sd": 0.776,
+      "surv_mean": 1.62,
+      "surv_sd": 1.22,
+      "surv_min": 0,
+      "surv_max": 3,
+      "seeds": 8
+    },
+    {
+      "market": "planted",
+      "generator": "random",
+      "N": 300,
+      "best_mean": 3.98,
+      "best_sd": 0.134,
+      "surv_mean": 4.38,
+      "surv_sd": 2.34,
+      "surv_min": 1,
+      "surv_max": 9,
+      "seeds": 8
+    },
+    {
+      "market": "planted",
+      "generator": "random",
+      "N": 1000,
+      "best_mean": 4.055,
+      "best_sd": 0.079,
+      "surv_mean": 8.88,
+      "surv_sd": 3.22,
+      "surv_min": 3,
+      "surv_max": 15,
+      "seeds": 8
+    },
+    {
+      "market": "planted",
+      "generator": "creative",
+      "N": 100,
+      "best_mean": 3.964,
+      "best_sd": 0.147,
+      "surv_mean": 8.62,
+      "surv_sd": 3.31,
+      "surv_min": 4,
+      "surv_max": 13,
+      "seeds": 8
+    },
+    {
+      "market": "planted",
+      "generator": "creative",
+      "N": 300,
+      "best_mean": 4.106,
+      "best_sd": 0.001,
+      "surv_mean": 21.25,
+      "surv_sd": 4.02,
+      "surv_min": 15,
+      "surv_max": 26,
+      "seeds": 8
+    },
+    {
+      "market": "planted",
+      "generator": "creative",
+      "N": 1000,
+      "best_mean": 4.113,
+      "best_sd": 0.006,
+      "surv_mean": 63.12,
+      "surv_sd": 7.1,
+      "surv_min": 54,
+      "surv_max": 77,
+      "seeds": 8
+    },
+    {
+      "market": "noise",
+      "generator": "random",
+      "N": 100,
+      "best_mean": 0.248,
+      "best_sd": 0.071,
+      "surv_mean": 0,
+      "surv_sd": 0.0,
+      "surv_min": 0,
+      "surv_max": 0,
+      "seeds": 8
+    },
+    {
+      "market": "noise",
+      "generator": "random",
+      "N": 300,
+      "best_mean": 0.269,
+      "best_sd": 0.065,
+      "surv_mean": 0,
+      "surv_sd": 0.0,
+      "surv_min": 0,
+      "surv_max": 0,
+      "seeds": 8
+    },
+    {
+      "market": "noise",
+      "generator": "random",
+      "N": 1000,
+      "best_mean": 0.343,
+      "best_sd": 0.048,
+      "surv_mean": 0,
+      "surv_sd": 0.0,
+      "surv_min": 0,
+      "surv_max": 0,
+      "seeds": 8
+    },
+    {
+      "market": "noise",
+      "generator": "creative",
+      "N": 100,
+      "best_mean": 0.117,
+      "best_sd": 0.063,
+      "surv_mean": 0,
+      "surv_sd": 0.0,
+      "surv_min": 0,
+      "surv_max": 0,
+      "seeds": 8
+    },
+    {
+      "market": "noise",
+      "generator": "creative",
+      "N": 300,
+      "best_mean": 0.217,
+      "best_sd": 0.13,
+      "surv_mean": 0,
+      "surv_sd": 0.0,
+      "surv_min": 0,
+      "surv_max": 0,
+      "seeds": 8
+    },
+    {
+      "market": "noise",
+      "generator": "creative",
+      "N": 1000,
+      "best_mean": 0.273,
+      "best_sd": 0.113,
+      "surv_mean": 0,
+      "surv_sd": 0.0,
+      "surv_min": 0,
+      "surv_max": 0,
+      "seeds": 8
+    },
+    {
+      "market": "real:fred_SP500",
+      "generator": "random",
+      "N": 100,
+      "best_mean": 0.975,
+      "best_sd": 0.002,
+      "surv_mean": 0,
+      "surv_sd": 0.0,
+      "surv_min": 0,
+      "surv_max": 0,
+      "seeds": 8
+    },
+    {
+      "market": "real:fred_SP500",
+      "generator": "random",
+      "N": 300,
+      "best_mean": 0.977,
+      "best_sd": 0.002,
+      "surv_mean": 0,
+      "surv_sd": 0.0,
+      "surv_min": 0,
+      "surv_max": 0,
+      "seeds": 8
+    },
+    {
+      "market": "real:fred_SP500",
+      "generator": "random",
+      "N": 1000,
+      "best_mean": 0.983,
+      "best_sd": 0.009,
+      "surv_mean": 0,
+      "surv_sd": 0.0,
+      "surv_min": 0,
+      "surv_max": 0,
+      "seeds": 8
+    },
+    {
+      "market": "real:fred_SP500",
+      "generator": "creative",
+      "N": 100,
+      "best_mean": 0.825,
+      "best_sd": 0.066,
+      "surv_mean": 0,
+      "surv_sd": 0.0,
+      "surv_min": 0,
+      "surv_max": 0,
+      "seeds": 8
+    },
+    {
+      "market": "real:fred_SP500",
+      "generator": "creative",
+      "N": 300,
+      "best_mean": 0.888,
+      "best_sd": 0.081,
+      "surv_mean": 0,
+      "surv_sd": 0.0,
+      "surv_min": 0,
+      "surv_max": 0,
+      "seeds": 8
+    },
+    {
+      "market": "real:fred_SP500",
+      "generator": "creative",
+      "N": 1000,
+      "best_mean": 0.925,
+      "best_sd": 0.073,
+      "surv_mean": 0,
+      "surv_sd": 0.0,
+      "surv_min": 0,
+      "surv_max": 0,
+      "seeds": 8
+    }
+  ]
+}
