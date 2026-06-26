@@ -135,8 +135,9 @@ def main() -> int:
         record("PASS" if s == 0 else "INFO", f"regime-count sensitivity @ {k} OOS regimes",
                f"survivors={s}")
 
-    # 9. Cross-market: DJIA, NASDAQ -> 0 survivors --------------------------- #
-    for fn in ("data/fred_DJIA.csv", "data/fred_NASDAQCOM.csv"):
+    # 9. Cross-market: correlated indices + truly INDEPENDENT markets -> 0 survivors #
+    for fn in ("data/fred_DJIA.csv", "data/fred_NASDAQCOM.csv",
+               "data/yh_EURUSD.csv", "data/yh_GOLD.csv", "data/yh_BTCUSD.csv"):
         if not Path(fn).exists():
             record("INFO", f"cross-market {Path(fn).stem}", "file missing; skipped")
             continue

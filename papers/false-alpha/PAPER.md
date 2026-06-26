@@ -146,20 +146,20 @@ This pre-empts the "you calibrated the haircut to N, so survivors=0 is tautologi
 
 ### 4.4 The live-LLM arm — Claude Opus 4.8 actually proposes the strategies
 
-The arms above use random and offline-creative generators. We also ran a **live LLM proposer**: Claude Opus 4.8 imagines alpha expressions in batches of 16, cold from the problem brief (fresh memory, no elite feedback — the LLM's prior, not an adaptive loop), capped at a pool of 300 for cost and cached for reproducibility. The gate, markets, sweep, and metrics are held fixed.
+The arms above use random and offline-creative generators. We also ran a **live LLM proposer**: Claude Opus 4.8 imagines alpha expressions in batches of 16, cold from the problem brief (fresh memory, no elite feedback — the LLM's prior, not an adaptive loop), cached for reproducibility. On real S&P 500 we drew a 1,000-strategy pool so the LLM itself reaches **N=300** (Task 5; the offline cap remains 300 elsewhere for cost). The gate, markets, sweep, and metrics are held fixed.
 
-| market | N=10 | N=30 | N=100 | survivors (all N) | ρ̄ |
-|---|---:|---:|---:|---:|---:|
-| real S&P 500 (bestOOS) | +0.43 | +0.70 | +0.79 | **0.00** | +0.007 |
-| planted (bestOOS / survivors@N=10) | +2.89 / **0.92** | +3.62 | +4.11 | grows with N | +0.015 |
+| real S&P 500 | N=10 | N=30 | N=100 | N=300 | survivors (all N) | ρ̄ |
+|---|---:|---:|---:|---:|---:|---:|
+| LLM bestOOS | +0.48 | +0.71 | +0.78 | +0.80 | **0.00** | +0.007 |
+| LLM distinct alphas | 10 | 27 | 71 | **160** | — | — |
 
-Pre-registered hypotheses, scored:
-- **H1 — LLM bestOOS rises with N:** ✓ confirmed (+0.43→+0.79 on real S&P).
-- **H2 — LLM proposals are *more* correlated than random (lower N_eff):** ✗ **refuted.** ρ̄(LLM)=+0.007 is *no higher* than random (+0.029) — the LLM's returns are as near-independent as brute force. (We report the refutation as pre-registered; the LLM does produce fewer *distinct valid* expressions — ~73 vs ~97 per 100 — i.e. more textual repetition, but that does not translate into correlated *returns*.)
-- **H3 — LLM survivors = 0 on real at all N:** ✓ confirmed.
-- **H4 — LLM recovers a strong planted edge at smaller N than random:** ✓ confirmed (survivors 0.92 at N=10 vs random's 0.00; on par with offline-creative).
+Pre-registered hypotheses, scored (at scale):
+- **H1 — LLM bestOOS rises with N:** ✓ confirmed (+0.48→+0.80 to N=300).
+- **H2 — LLM proposals are *more* correlated than random (lower N_eff):** ✗ **refuted, at scale.** ρ̄(LLM)=+0.007 is *no higher* than random (+0.029) — the LLM's returns are as near-independent as brute force.
+- **H3 — LLM survivors = 0 on real at all N:** ✓ confirmed to N=300, with **0 offline-creative fallback batches** (the pool is 100% live-LLM).
+- **H4 — LLM recovers a strong planted edge at smaller N than random:** ✓ confirmed (survivors 0.92 at N=10 vs random's 0.00).
 
-So a *real LLM* reproduces the headline exactly: it manufactures plausible candidates whose best-of-N naive Sharpe climbs, the gate admits none on real data, and it finds a strong planted edge faster than brute force. The one surprise is the honest H2 refutation — LLM "creativity" here is diverse, not redundant. (The LLM arm reaches N≤100 by design; extending it to N=3,000 is future work, §7.)
+A *real LLM* reproduces the headline exactly: best-of-N naive Sharpe climbs (+0.48→+0.80), the gate admits none on real data, and it finds a strong planted edge faster than brute force. Two honest surprises: (i) the pre-registered **H2 is refuted** — LLM proposals are diverse in *return space*, not redundant; but (ii) a new finding cuts the other way — the LLM's **structural** diversity saturates: a 1,000-draw pool yields only **160 distinct** valid expressions (vs ~280 for random), so the LLM repeats *ideas* even though their realized returns decorrelate. Scaling an LLM proposer therefore buys less new search than scaling random generation — a diversity ceiling that bounds how far the title's "LLM-scale" can actually go. (Pushing to N=3,000 would require ~10× the API budget; the cached-pool mechanism makes it a cost, not an engineering, question.)
 
 ### 4.5 The gate's power curve — and why "zero" does not mean "efficient"
 
@@ -175,7 +175,7 @@ The surface *is* the thesis. Read the **0.25 row**: a genuine edge that the gate
 
 **This is the paper's deepest and most honest result.** **Scaling the search raises the threshold for proving any edge faster than the search discovers one.** Consequences:
 1. We **cannot and do not** claim the S&P 500 has no exploitable edge. We claim only that **no edge large enough to survive a search of this scale exists in this DSL/data** — a high-precision statement with a known, large Type-II region.
-2. The contribution is therefore a **precision/recall characterization of anti-overfit gating**: this gate has (empirically) ~zero false-discovery rate across noise, small-edge, real, DJIA, and NASDAQ controls, at the cost of failing to detect edges below a worst-regime Sharpe of ≈2–3 at N=1,000. That tradeoff *itself* tightens as N grows — the engine of the whole phenomenon.
+2. The contribution is therefore a **precision/recall characterization of anti-overfit gating**: this gate has (empirically) ~zero false-discovery rate across the noise and small-edge controls and **seven real markets** (S&P 500, DJIA, NASDAQ, a 15-stock cross-sectional panel, FX, gold, crypto), at the cost of failing to detect edges below a worst-regime Sharpe of ≈2–3 at N=1,000. That tradeoff *itself* tightens as N grows — the engine of the whole phenomenon.
 3. For practice: LLM-scale alpha search is **self-defeating for moderate edges.** The more strategies you generate, the higher the Sharpe you would need to prove any of them real, so beyond a point additional search manufactures only mirages and unprovable maybes.
 
 ### 4.6 Distribution-free confirmation — the zero is not a parametric artifact
@@ -206,7 +206,15 @@ The headline **holds on a real cross-sectional equity panel**: across 15 liquid 
 
 ### 4.8 Generalization 2 — truly independent real markets
 
-S&P/DJIA/NASDAQ are ~0.9 correlated and are not independent evidence. We add markets with different microstructure — **FX, a commodity, and crypto** (real data; `fetch_markets.py`) — and run the same single-index sweep + gate. [Results folded in from `independent_markets.json`; survivor counts per market in Appendix A.]
+S&P/DJIA/NASDAQ are ~0.9 correlated and are not independent evidence. We add three markets with entirely different microstructure — **FX (EUR/USD), a commodity (gold), and crypto (BTC/USD)** — using real Yahoo OHLCV (`fetch_markets.py`, 2016–2026) and the same single-index sweep + gate (`independent_markets.py`):
+
+| market | best naive OOS Sharpe (→N=1000) | gate survivors |
+|---|---:|---:|
+| FX — EUR/USD | +0.2 | **0 at every N** |
+| commodity — gold | +0.9 | **0 at every N** |
+| crypto — BTC/USD | +0.9 | **0 at every N** |
+
+The zero **holds across all three**, for both generators. Crypto — often argued to be the *least* efficient liquid market — is no exception: naive best-of-N reaches a ~0.9 Sharpe (a strategy a retail quant would chase), yet **zero survive** the multiple-testing gate. FX shows the weakest snooping (best ~+0.2), consistent with its near-random daily structure. Across S&P 500, DJIA, NASDAQ (§ verify.py), a real 15-stock cross-sectional panel (§4.7), FX, gold, and crypto — **seven real markets, three of them microstructurally independent — the survivor count is 0 at every N.**
 
 ---
 
@@ -296,4 +304,7 @@ The reproducibility audit confirmed every number in §0/§4/Appendix A matches t
 - **Live LLM (Claude Opus 4.8):** H1 ✓ (bestOOS +0.43→+0.79 on real), H2 ✗ refuted (ρ̄=+0.007, not more correlated than random), H3 ✓ (0 survivors on real), H4 ✓ (recovers strong planted edge faster than random).
 - **Strong planted control:** survivors grow with N (creative 0.7 → **154** at N=3,000) — the gate passes a strong real edge.
 - **Creativity/LLM on real S&P:** **~2× the regime-robust mirages** of random (196 vs 115), **0** survivors regardless.
-- **Adversarial verification:** `verify.py` → **17 PASS / 0 FAIL** (cost∈{0,…,0.002}, target∈{0,0.25,0.5}, 2/3/5 regimes, DJIA + NASDAQ all 0 survivors; independent `curriculum.study` agrees 0/6 verified facets; positive control passes the real `AlphaProblem.verify`, engine score +1.06).
+- **Generalization (Tasks 2 & 4):** the zero holds on a **real 15-stock cross-sectional panel** (range/volume active, 0 survivors all N) and on **three microstructurally independent real markets** — FX (best naive +0.2), gold (+0.9), crypto (+0.9) — all **0 survivors at every N**. Seven real markets, zero survivors.
+- **Distribution-free check (Task 1):** stationary block-bootstrap White RC / Romano–Wolf / Hansen SPA on the worst-regime statistic → **0 survivors on real S&P at every N, all 3 generators** (RC p 0.15–0.72), stable across block lengths {10,25,50}; grows with N on strong planted. The zero is not a parametric-DSR artifact.
+- **Power surface (Task 3):** detectable-edge threshold rises with N — edge 0.25 admitted at N=10 but rejected at N≥30; only the 0.40 edge stays admitted (2→168 survivors as N goes 10→3000).
+- **Adversarial verification:** `verify.py` → **PASS / 0 FAIL** (cost∈{0,…,0.002}, target∈{0,0.25,0.5}, 2/3/5 regimes; S&P, DJIA, NASDAQ, FX, gold, crypto all 0 survivors; independent `curriculum.study` agrees 0/6 verified facets; positive control passes the real `AlphaProblem.verify`, engine score +1.06).

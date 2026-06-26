@@ -1,0 +1,72 @@
+{
+  "target_pool": 1000,
+  "sweep": [
+    10,
+    30,
+    100,
+    300,
+    1000
+  ],
+  "rows": [
+    {
+      "market": "real:fred_SP500",
+      "generator": "llm",
+      "N": 10,
+      "distinct": 10,
+      "naive_pos": 2,
+      "naive_bar": 0,
+      "best_naive": 0.485,
+      "robust_raw": 0.44,
+      "survivors": 0,
+      "survivors_neff": 0,
+      "novelty": 0.58,
+      "rho_bar": 0.007,
+      "n_eff": 9.4
+    },
+    {
+      "market": "real:fred_SP500",
+      "generator": "llm",
+      "N": 30,
+      "distinct": 27,
+      "naive_pos": 5,
+      "naive_bar": 0,
+      "best_naive": 0.708,
+      "robust_raw": 1.04,
+      "survivors": 0,
+      "survivors_neff": 0,
+      "novelty": 0.872,
+      "rho_bar": 0.007,
+      "n_eff": 24.8
+    },
+    {
+      "market": "real:fred_SP500",
+      "generator": "llm",
+      "N": 100,
+      "distinct": 71,
+      "naive_pos": 18,
+      "naive_bar": 0,
+      "best_naive": 0.776,
+      "robust_raw": 4.4,
+      "survivors": 0,
+      "survivors_neff": 0,
+      "novelty": 0.868,
+      "rho_bar": 0.007,
+      "n_eff": 58.4
+    },
+    {
+      "market": "real:fred_SP500",
+      "generator": "llm",
+      "N": 300,
+      "distinct": 160,
+      "naive_pos": 53,
+      "naive_bar": 0,
+      "best_naive": 0.797,
+      "robust_raw": 12.16,
+      "survivors": 0,
+      "survivors_neff": 0,
+      "novelty": 0.865,
+      "rho_bar": 0.007,
+      "n_eff": 95.1
+    }
+  ]
+}
