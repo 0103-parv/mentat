@@ -15,8 +15,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from theory import (  # noqa: E402
-    effective_n_participation, evt_expected_max_analytic, evt_quantile, mc_expected_max,
-    worst_of_k_quantile,
+    deflation_equivalent_N, effective_n_participation, evt_expected_max_analytic,
+    evt_quantile, mc_expected_max, worst_of_k_quantile,
 )
 
 _n = 0
@@ -53,6 +53,12 @@ def main() -> int:
           "worst-of-3 envelope increases with M")
     # the trap: small M -> near-zero envelope (why the M_eff plug-in fails)
     check(mc_expected_max(5, 3, 2000) < 0.1, "worst-of-3 envelope ~0 at M=5 (the M_eff trap)")
+
+    # (B2) robustness dividend: N' << N, and smaller for more regimes
+    np3 = deflation_equivalent_N(1000, 3, reps=3000)
+    np2 = deflation_equivalent_N(1000, 2, reps=3000)
+    check(np3 < 30, f"worst-of-3 at N=1000 ~ single-Sharpe at N'<30 (N'={np3:.0f})")
+    check(np3 < np2, "more regimes -> smaller deflation-equivalent N' (more protection)")
 
     # (C) participation-ratio effective-N
     check(abs(effective_n_participation(0.0, 1000) - 1000) < 1e-6, "M_eff(0)=N")

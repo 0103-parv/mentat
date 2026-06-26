@@ -80,6 +80,31 @@ def worst_of_k_quantile(N: int, k: int) -> float:
     return _NORM.inv_cdf(p)
 
 
+def deflation_equivalent_N(N: int, k: int, reps: int = 4000) -> float:
+    """The 'robustness dividend': the single-Sharpe search size N' whose null max equals
+    the worst-of-k best-of-N null max, i.e. E[max_{N'} Z] = E[max_N min_k Z]. Requiring a
+    strategy to survive the worst of k (independent) regimes provides multiple-testing
+    protection EQUIVALENT to shrinking the search from N to N' single-Sharpe trials.
+    Solve via the analytic E[max] (monotone, O(1)) for the target from MC."""
+    target = mc_expected_max(N, k, reps=reps, seed=9)
+    if target <= evt_expected_max_analytic(2):
+        return 2.0
+    lo, hi = 2, max(N, 4)
+    while evt_expected_max_analytic(hi) < target:        # expand upper bound if needed
+        hi *= 2
+        if hi > 10 ** 9:
+            return float(hi)
+    for _ in range(60):
+        mid = (lo + hi) // 2
+        if evt_expected_max_analytic(max(mid, 2)) < target:
+            lo = mid + 1
+        else:
+            hi = mid
+        if lo >= hi:
+            break
+    return float(lo)
+
+
 # --------------------------------------------------------------------------- #
 # (C) effective number of independent strategies (participation ratio)        #
 # --------------------------------------------------------------------------- #
@@ -154,9 +179,23 @@ def main() -> int:
     print("  => even <rho^2>=0.02 collapses 3000 trials to ~50 effective: correlation, not\n"
           "     count, sets the multiple-testing burden (genomics' effective-number-of-tests).")
 
+    print("\n(D) the ROBUSTNESS DIVIDEND — worst-of-k regimes as an implicit deflation:")
+    print("    N' = single-Sharpe search size with the same null max as worst-of-k at N")
+    print(f"  {'N':>6} {'k=2 -> N(2)':>12} {'k=3 -> N(3)':>12} {'k=5 -> N(5)':>12}")
+    rows_d = []
+    for N in (100, 1000, 3000):
+        d = {kk: deflation_equivalent_N(N, kk) for kk in (2, 3, 5)}
+        rows_d.append({"N": N, **{f"Nprime_k{kk}": v for kk, v in d.items()}})
+        print(f"  {N:>6} {d[2]:>12.0f} {d[3]:>12.0f} {d[5]:>12.0f}")
+    print("  => requiring worst-of-3 (independent) regimes at N=1000 has the false-discovery")
+    print("     ceiling of single-Sharpe search over only ~N' strategies: the robustness")
+    print("     requirement does most of the multiple-testing work — UNTIL regimes correlate")
+    print("     (real data), where the dividend collapses and the explicit deflation matters.")
+
     out = "papers/false-alpha/theory_validation.json"
     Path(out).write_text(json.dumps({"evt_max": rows_a, "worst_of_k": rows_b,
-                                     "participation": rows_c}, indent=2))
+                                     "participation": rows_c,
+                                     "robustness_dividend": rows_d}, indent=2))
     print(f"\n(validation -> {out})")
     return 0
 

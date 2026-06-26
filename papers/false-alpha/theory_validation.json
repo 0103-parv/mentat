@@ -90,5 +90,25 @@
       "meff_1000": 9.910802775024777,
       "meff_3000": 9.970089730807576
     }
+  ],
+  "robustness_dividend": [
+    {
+      "N": 100,
+      "Nprime_k2": 7.0,
+      "Nprime_k3": 3.0,
+      "Nprime_k5": 2.0
+    },
+    {
+      "N": 1000,
+      "Nprime_k2": 23.0,
+      "Nprime_k3": 7.0,
+      "Nprime_k5": 3.0
+    },
+    {
+      "N": 3000,
+      "Nprime_k2": 39.0,
+      "Nprime_k3": 10.0,
+      "Nprime_k5": 3.0
+    }
   ]
 }
