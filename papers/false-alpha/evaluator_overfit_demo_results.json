@@ -1,0 +1,68 @@
+{
+  "config": {
+    "K": 30,
+    "M_true": 3,
+    "pool": 6000,
+    "NS": [
+      10,
+      30,
+      100,
+      300,
+      1000,
+      3000
+    ],
+    "reps": 60,
+    "n_judges": 10,
+    "seed": 7
+  },
+  "rows": [
+    {
+      "N": 10,
+      "optimized_judge": 6.995,
+      "independent_judge": 0.382,
+      "true_quality": 1.014,
+      "inflation": 6.613,
+      "ensemble_fix_true_quality": 1.809
+    },
+    {
+      "N": 30,
+      "optimized_judge": 9.38,
+      "independent_judge": 1.093,
+      "true_quality": 1.328,
+      "inflation": 8.287,
+      "ensemble_fix_true_quality": 2.239
+    },
+    {
+      "N": 100,
+      "optimized_judge": 11.353,
+      "independent_judge": 0.129,
+      "true_quality": 1.546,
+      "inflation": 11.224,
+      "ensemble_fix_true_quality": 2.911
+    },
+    {
+      "N": 300,
+      "optimized_judge": 13.426,
+      "independent_judge": 1.655,
+      "true_quality": 2.133,
+      "inflation": 11.771,
+      "ensemble_fix_true_quality": 3.427
+    },
+    {
+      "N": 1000,
+      "optimized_judge": 14.83,
+      "independent_judge": 3.089,
+      "true_quality": 2.191,
+      "inflation": 11.741,
+      "ensemble_fix_true_quality": 3.737
+    },
+    {
+      "N": 3000,
+      "optimized_judge": 16.2,
+      "independent_judge": 4.26,
+      "true_quality": 2.403,
+      "inflation": 11.941,
+      "ensemble_fix_true_quality": 4.287
+    }
+  ]
+}

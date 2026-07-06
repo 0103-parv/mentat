@@ -1,0 +1,51 @@
+<svg viewBox="0 0 720 440" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica,Arial,sans-serif">
+<rect width="720" height="440" fill="#ffffff"/>
+<text x="360" y="26" font-size="16" font-weight="bold" fill="#111" text-anchor="middle">Evaluator overfitting in a generate-and-select loop</text>
+<line x1="72" y1="380.0" x2="510" y2="380.0" stroke="#eee" stroke-width="1"/>
+<text x="62" y="384.0" font-size="12" fill="#888888" text-anchor="end">0</text>
+<line x1="72" y1="305.5" x2="510" y2="305.5" stroke="#eee" stroke-width="1"/>
+<text x="62" y="309.5" font-size="12" fill="#888888" text-anchor="end">4</text>
+<line x1="72" y1="230.9" x2="510" y2="230.9" stroke="#eee" stroke-width="1"/>
+<text x="62" y="234.9" font-size="12" fill="#888888" text-anchor="end">8</text>
+<line x1="72" y1="156.4" x2="510" y2="156.4" stroke="#eee" stroke-width="1"/>
+<text x="62" y="160.4" font-size="12" fill="#888888" text-anchor="end">12</text>
+<line x1="72" y1="81.9" x2="510" y2="81.9" stroke="#eee" stroke-width="1"/>
+<text x="62" y="85.9" font-size="12" fill="#888888" text-anchor="end">16</text>
+<line x1="72" y1="380" x2="510" y2="380" stroke="#333333"/><line x1="72" y1="380" x2="72" y2="54" stroke="#333333"/>
+<text x="72.0" y="400" font-size="12" fill="#888888" text-anchor="middle">10</text>
+<text x="156.4" y="400" font-size="12" fill="#888888" text-anchor="middle">30</text>
+<text x="248.8" y="400" font-size="12" fill="#888888" text-anchor="middle">100</text>
+<text x="333.2" y="400" font-size="12" fill="#888888" text-anchor="middle">300</text>
+<text x="425.6" y="400" font-size="12" fill="#888888" text-anchor="middle">1000</text>
+<text x="510.0" y="400" font-size="12" fill="#888888" text-anchor="middle">3000</text>
+<text x="291" y="424" font-size="13" fill="#333333" text-anchor="middle">number of proposals N (log scale)</text>
+<text x="20" y="217" font-size="13" fill="#333333" text-anchor="middle" transform="rotate(-90 20 217)">score</text>
+<polygon points="72.0,249.7 156.4,205.2 248.8,168.5 333.2,129.8 425.6,103.7 510.0,78.1 510.0,335.2 425.6,339.2 333.2,340.3 248.8,351.2 156.4,355.3 72.0,361.1" fill="#d62728" opacity="0.09"/>
+<polyline points="72.0,249.7 156.4,205.2 248.8,168.5 333.2,129.8 425.6,103.7 510.0,78.1" fill="none" stroke="#d62728" stroke-width="2.5"/>
+<polyline points="72.0,372.9 156.4,359.6 248.8,377.6 333.2,349.2 425.6,322.4 510.0,300.6" fill="none" stroke="#2a78d6" stroke-width="2.5"/>
+<polyline points="72.0,361.1 156.4,355.3 248.8,351.2 333.2,340.3 425.6,339.2 510.0,335.2" fill="none" stroke="#1baf7a" stroke-width="2.5" stroke-dasharray="6,4"/>
+<circle cx="72.0" cy="249.7" r="3" fill="#d62728"/>
+<circle cx="156.4" cy="205.2" r="3" fill="#d62728"/>
+<circle cx="248.8" cy="168.5" r="3" fill="#d62728"/>
+<circle cx="333.2" cy="129.8" r="3" fill="#d62728"/>
+<circle cx="425.6" cy="103.7" r="3" fill="#d62728"/>
+<circle cx="510.0" cy="78.1" r="3" fill="#d62728"/>
+<circle cx="72.0" cy="372.9" r="3" fill="#2a78d6"/>
+<circle cx="156.4" cy="359.6" r="3" fill="#2a78d6"/>
+<circle cx="248.8" cy="377.6" r="3" fill="#2a78d6"/>
+<circle cx="333.2" cy="349.2" r="3" fill="#2a78d6"/>
+<circle cx="425.6" cy="322.4" r="3" fill="#2a78d6"/>
+<circle cx="510.0" cy="300.6" r="3" fill="#2a78d6"/>
+<circle cx="72.0" cy="361.1" r="3" fill="#1baf7a"/>
+<circle cx="156.4" cy="355.3" r="3" fill="#1baf7a"/>
+<circle cx="248.8" cy="351.2" r="3" fill="#1baf7a"/>
+<circle cx="333.2" cy="340.3" r="3" fill="#1baf7a"/>
+<circle cx="425.6" cy="339.2" r="3" fill="#1baf7a"/>
+<circle cx="510.0" cy="335.2" r="3" fill="#1baf7a"/>
+<text x="526" y="94" font-size="12.5" fill="#d62728" font-weight="bold">optimized judge</text>
+<text x="526" y="110" font-size="11" fill="#888888">what the loop reports</text>
+<text x="526" y="140" font-size="12.5" fill="#2a78d6" font-weight="bold">independent judge</text>
+<text x="526" y="170" font-size="12.5" fill="#1baf7a" font-weight="bold">true quality</text>
+<text x="526" y="204" font-size="11" fill="#d62728">shaded gap =</text>
+<text x="526" y="219" font-size="11" fill="#d62728">inflation</text>
+</svg>
