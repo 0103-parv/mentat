@@ -4,7 +4,7 @@
 ---
 
 ## The final files (upload these)
-- **`PAPER.pdf`** ← the submission PDF (12–20pp, figures embedded, keywords + JEL added today). Upload THIS to SSRN.
+- **`PAPER.pdf`** ← the submission PDF (14pp; title-page keywords + JEL, full References, and Acknowledgments included). Upload THIS to SSRN. *(Text-only; figures `fig_headline.png` / `fig_verification.png` exist separately if you want them inlined — ask.)*
 - Backup: `FALSE_ALPHA_FULL_PACKET.pdf` (everything-in-one, heavier) and `PAPER_SHORT.docx` (short version). You do **not** need these for SSRN; `PAPER.pdf` is the clean one.
 
 ---
