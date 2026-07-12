@@ -109,12 +109,15 @@ for the winner's curse itself, only for the fixed-evaluator, no-noise framing, t
 cross-domain unification, and the ensemble correction stated as an information-buying
 policy.
 
-## References (to complete)
+## Acknowledgments
 
-- Barber, R. F., Candès, E. J. Controlling the false discovery rate via knockoffs (2015).
-- Bailey, D. H., Lopez de Prado, M. The deflated Sharpe ratio (2014).
-- Sullivan, R., Timmermann, A., White, H. Data-snooping, technical trading rule
-  performance, and the bootstrap (1999).
-- Flageat, M., Cully, A. Work on uncertainty and the winner's curse in quality-diversity
-  optimization (to cite precisely from the paper Prof. Cully pointed to).
-- Yang, J. et al. SWE-bench and coding-agent evaluation (held-out / chronological design).
+I thank Antoine Cully for pointing me to the Extract-QD line of work on the winner's curse in quality-diversity search, and Robert Lange, Joel Lehman, and Jean-Baptiste Mouret for helpful correspondence on selection inflation and evaluator overfitting. Any errors are my own.
+
+## References
+
+- Bailey, D. H., & López de Prado, M. (2014). The Deflated Sharpe Ratio: Correcting for Selection Bias, Backtest Overfitting, and Non-Normality. *Journal of Portfolio Management*, 40(5), 94–107.
+- Barber, R. F., & Candès, E. J. (2015). Controlling the False Discovery Rate via Knockoffs. *Annals of Statistics*, 43(5), 2055–2085.
+- Flageat, M., Huber, J., Hélénon, F., Doncieux, S., & Cully, A. (2025). Extract-QD Framework: A Generic Approach for Quality-Diversity in Noisy, Stochastic or Uncertain Domains. *Proc. Genetic and Evolutionary Computation Conference (GECCO 2025)*. DOI 10.1145/3712256.3726404.
+- Jimenez, C. E., Yang, J., Wettig, A., Yao, S., Pei, K., Press, O., & Narasimhan, K. (2024). SWE-bench: Can Language Models Resolve Real-World GitHub Issues? *ICLR 2024*. arXiv:2310.06770.
+- Lehman, J., & Stanley, K. O. (2011). Abandoning Objectives: Evolution Through the Search for Novelty Alone. *Evolutionary Computation*, 19(2), 189–223.
+- Sullivan, R., Timmermann, A., & White, H. (1999). Data-Snooping, Technical Trading Rule Performance, and the Bootstrap. *Journal of Finance*, 54(5), 1647–1691.

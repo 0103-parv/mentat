@@ -312,24 +312,48 @@ Offline arms: no dependencies, no API key, deterministic (CRC-seeded; two runs b
 
 ---
 
-## 10. Verification audit — how this draft was hardened
+## 10. Reproducibility and disclosure
 
-In keeping with the project's discipline (*prefer an honest negative to a confident guess*), draft v0.2 was adversarially stress-tested before release, by the same machinery the paper studies: three independent Claude review agents (statistics/methodology, finance-ML positioning, reproducibility/integrity), the system's live reasoning core acting as a skeptical critic, an executable 17-check suite (`verify.py`), and a power curve (`power.py`). What they caught, and what changed:
+Every reported number is produced by a committed, CRC-seeded, deterministic script and written to a JSON artifact; two runs are byte-identical. The full engine, controls, and figures are public at github.com/0103-parv/mentat, and correctness is checked by an executable suite (`verify.py`, 20/20) and 21 math/invariant unit tests (`test_theory.py`). Implementation and drafting used AI assistance (Claude, Anthropic) under the author's direction, as disclosed in §9; the underlying Mentat system uses a frozen LLM as a reasoning core.
 
-- **"The effective-trials number is numerically unstable."** True — the original n_eff inverted the best-of-N envelope (logarithmic, so it swung orders of magnitude). Replaced with a correlation-based N_eff = N/(1+(N−1)ρ̄). The fix *overturned a prior claim*: ρ̄≈0 shows creative/LLM search is **not** more correlated than random, so "creativity snoops more" was deleted, not defended.
-- **"Survivors = 0 is tautological / you over-deflate at N."** Answered (§4.3, §4.9): the planted edge survives the *same* haircut; the DSR actually *over*-deflates the worst-regime statistic ~2.4× and the corrected, weaker bar still gives 0 on real; and the assumption-free bootstrap also gives 0.
-- **"The positive control is too easy; the null may be rigged."** This was the decisive critique (raised by both the statistics reviewer and the reasoning-core critic). It produced the paper's now-central result — the **power curve (§4.5)** and the `small_planted` control — which reframed the contribution from "no edge in the S&P" (an overclaim) to "moderate edges are unprovable at this search scale" (precision/recall).
-- **"The title says LLM but no LLM was run."** Fixed by running the **live Claude-Opus arm** (§4.4); 3 of 4 pre-registered hypotheses held and **H2 was refuted and reported** as such.
-- **Missing prior art** (Sullivan–Timmermann–White, White Reality Check, Hansen SPA, Romano–Wolf, Barras–Scaillet–Wermers, Lopez-Lira–Tang) was added (§5), with the distribution-free bootstrap honestly marked *not yet run*.
-- A genuine **bug** (an unimported symbol that crashed the live-LLM arm) was surfaced by the verification run and fixed.
+The draft was hardened through several adversarial review passes — statistical, positioning, and reproducibility — before release. These overturned two of the author's own early claims, reported here in that spirit: the "creativity snoops more" hypothesis was deleted once the mean correlation came in at ρ̄≈0, and the "power surface" was recredited as the empirical instantiation of Bailey–López de Prado's expected-max result rather than a new theorem (§4.5). The decisive critique — that the positive control was too easy and the null possibly rigged — produced the paper's central power-curve result (§4.5), reframing the contribution from "no edge in the S&P" to the precision/recall statement that moderate edges are unprovable at scale. Residual honest gaps are listed in §6–§7.
 
-The reproducibility audit confirmed every number in §0/§4/Appendix A matches the artifact, two runs are byte-identical, and the authorship statement is clean. Residual honest gaps are listed in §6–§7. The point of this section is not to claim perfection but to show the result survived a serious attempt to break it.
+## Acknowledgments
 
-**v0.3 hardening (a five-task external reviewer brief).** After v0.2, an external reviewer pass flagged two real holes — the parametric gate and the single-index narrowness — and three strengtheners. All five were implemented, each as a committed script → JSON artifact, with `verify.py` (now 20 PASS / 0 FAIL) and the 74-test suite green after each: (1) the distribution-free White/Romano–Wolf/Hansen bootstrap (§4.6) — *confirmed* the DSR zero; (2) the cross-sectional equity panel (§4.7) — the zero holds with range/volume active on real large-caps; (3) the 2-D power surface (§4.5) — the detectable-edge threshold visibly rises with N; (4) FX/gold/crypto (§4.8) — the zero holds across independent microstructures; (5) the live LLM extended to N=300 (§4.4) — H1/H3 hold, H2 stays refuted, and a *new* diversity-ceiling finding emerged. No headline claim was refuted; the new finding (LLM structural-diversity saturation, §4.4) was added because the data showed it. Real market data is genuinely real (downloaded by `fetch_panel.py`/`fetch_markets.py`, traceable to source); no data was fabricated.
+The author thanks Antoine Cully, Robert Lange, Joel Lehman, and Jean-Baptiste Mouret for helpful correspondence on selection inflation and the winner's curse in search, and John Yang for discussion of held-out and chronological evaluation. No acknowledgment implies endorsement of this work; all views and any errors are the author's own.
 
-**Novelty audit (a cited deep-research pass, 20 primary sources, 25 claims verified 3-0).** A separate adversarial literature search corrected two of *our own* novelty claims, applied here in the same spirit: (i) the "power surface" was initially described as a new result — it is the empirical instantiation of Bailey–López de Prado's expected-max curve (their Exhibit 2), now credited as such (§4.5, abstract); (ii) the "0 survivors on real S&P" and "LLM edge vanishes" conclusions are *prior art* — STW(1999) reported a data-snooping-adjusted zero on S&P 500 futures, and FINSABER (KDD'26) already establishes the LLM-edge-evaporates result — both now cited as the closest precedents (§5), with our contribution honestly narrowed to the cross-generator-through-one-gate design, the planted-edge calibration, and the LLM diversity ceiling. The search found no single prior work combining all four of our elements, but flagged (caveat) that it surveyed a finite set; Harvey-Liu-Zhu, AutoQuant (2512.22476), and Lopez-Lira–Tang were named-but-unverified and could narrow the gap further.
+---
 
-**v0.4 — the math, and three reported negatives.** A subsequent deep-dive into the extreme-value mathematics produced the paper's strongest genuinely-new results and three honest negatives, each a committed script → JSON with the 21-check `test_theory.py` and the 20-check `verify.py` green: (i) **derived the worst-of-regimes deflation** E[maxₙ minₖ Z] the gate actually needs (MC-validated) and showed the standard DSR over-deflates it ~2.4× — the real-market zero survives the corrected, far-weaker bar (§4.9); (ii) the **robustness-dividend identity** — worst-of-k *independent* regimes ≈ a single-Sharpe search over N′≈7, collapsing to N′≈84 on real S&P (ρ_reg≈0.67) — which unifies robustness and multiple-testing and resolves the §4.3/§4.9 tension; (iii) **seed-variance bands** confirm 0±0 survivors on real markets across 8 seeds. The negatives, reported not buried: two analytic effective-N shortcuts (a genomics participation-ratio import, and an envelope-inversion) both manufacture false survivors or unstable estimates, so the block bootstrap remains the necessary arbiter — and one of them (the participation ratio) was a plausible cross-disciplinary import that *looked* right; running it and reporting its failure is the point. paperclip (biomedical corpus) confirmed the finance combination is absent there while surfacing the genomics effective-number-of-tests lineage we (cautiously) drew on.
+## References
+
+*Classical and statistical references below are full bibliographic entries. The recent LLM-alpha-mining
+lineage discussed in §5 (AlphaAgent, QuantaAlpha, AlphaForgeBench, AutoQuant) is cited in-text with the
+identifiers used there; verify each arXiv id against arXiv before final submission.*
+
+- Bailey, D. H., & López de Prado, M. (2014). The Deflated Sharpe Ratio: Correcting for Selection Bias, Backtest Overfitting, and Non-Normality. *Journal of Portfolio Management*, 40(5), 94–107.
+- Bailey, D. H., Borwein, J. M., López de Prado, M., & Zhu, Q. J. (2016). The Probability of Backtest Overfitting. *Journal of Computational Finance*, 20(4), 39–69.
+- Barber, R. F., & Candès, E. J. (2015). Controlling the False Discovery Rate via Knockoffs. *Annals of Statistics*, 43(5), 2055–2085.
+- Barras, L., Scaillet, O., & Wermers, R. (2010). False Discoveries in Mutual Fund Performance: Measuring Luck in Estimated Alphas. *Journal of Finance*, 65(1), 179–216.
+- Boden, M. A. (2004). *The Creative Mind: Myths and Mechanisms* (2nd ed.). Routledge.
+- Galwey, N. W. (2009). A New Measure of the Effective Number of Tests, a Practical Tool for Comparing Families of Non-Independent Significance Tests. *Genetic Epidemiology*, 33(7), 559–568.
+- Hansen, P. R. (2005). A Test for Superior Predictive Ability. *Journal of Business & Economic Statistics*, 23(4), 365–380.
+- Harvey, C. R., & Liu, Y. (2015). Backtesting. *Journal of Portfolio Management*, 42(1), 13–28.
+- Harvey, C. R., & Liu, Y. (2021). Lucky Factors. *Journal of Financial Economics*, 141(2), 413–435.
+- Harvey, C. R., Liu, Y., & Zhu, H. (2016). … and the Cross-Section of Expected Returns. *Review of Financial Studies*, 29(1), 5–68.
+- Lehman, J., & Stanley, K. O. (2011). Abandoning Objectives: Evolution Through the Search for Novelty Alone. *Evolutionary Computation*, 19(2), 189–223.
+- Li, J., & Ji, L. (2005). Adjusting Multiple Testing in Multilocus Analyses Using the Eigenvalues of a Correlation Matrix. *Heredity*, 95(3), 221–227.
+- Li, M.-X., Yeung, J. M. Y., Cherny, S. S., & Sham, P. C. (2012). Evaluating the Effective Numbers of Independent Tests and Significant p-Value Thresholds in Commercial Genotyping Arrays and Public Imputation Reference Datasets. *Human Genetics*, 131(5), 747–756.
+- Li, S., et al. (2025). FINSABER: A Framework for Benchmarking LLM Trading Strategies. *arXiv:2505.07078* (KDD 2026).
+- Lo, A. W. (2002). The Statistics of Sharpe Ratios. *Financial Analysts Journal*, 58(4), 36–52.
+- López de Prado, M. (2018). *Advances in Financial Machine Learning*. Wiley.
+- López-Lira, A., & Tang, Y. (2023). Can ChatGPT Forecast Stock Price Movements? Return Predictability and Large Language Models. *arXiv:2304.07619*.
+- Mouret, J.-B., & Clune, J. (2015). Illuminating Search Spaces by Mapping Elites. *arXiv:1504.04909*.
+- Nyholt, D. R. (2004). A Simple Correction for Multiple Testing for Single-Nucleotide Polymorphisms in Linkage Disequilibrium with Each Other. *American Journal of Human Genetics*, 74(4), 765–769.
+- Politis, D. N., & Romano, J. P. (1994). The Stationary Bootstrap. *Journal of the American Statistical Association*, 89(428), 1303–1313.
+- Romano, J. P., & Wolf, M. (2005). Stepwise Multiple Testing as Formalized Data Snooping. *Econometrica*, 73(4), 1237–1282.
+- Romera-Paredes, B., Barekatain, M., Novikov, A., et al. (2024). Mathematical Discoveries from Program Search with Large Language Models (FunSearch). *Nature*, 625(7995), 468–475.
+- Sullivan, R., Timmermann, A., & White, H. (1999). Data-Snooping, Technical Trading Rule Performance, and the Bootstrap. *Journal of Finance*, 54(5), 1647–1691.
+- White, H. (2000). A Reality Check for Data Snooping. *Econometrica*, 68(5), 1097–1126.
 
 ---
 
