@@ -54,9 +54,22 @@ Top financial-ML academic; his group works on LLMs/ML in asset pricing.
   line) — I have a cautionary N-sweep result on LLM-generated alphas that I'd value your read
   on."*
 
+### 6. Andrew W. Lo — MIT Sloan (Director, Laboratory for Financial Engineering)
+The **MIT** name for this exact topic. Wrote the canonical data-snooping paper (Lo & MacKinlay
+1990, *"Data-Snooping Biases in Tests of Financial Asset Pricing Models,"* Rev. of Financial
+Studies) + the Adaptive Markets Hypothesis + work on backtest overfitting. Our paper is a
+modern, LLM-scale instance of his 1990 concern. (Very senior/busy → lower reply odds like
+Candès, but the most on-topic MIT fit and a prestige anchor.)
+- Pages: https://alo.mit.edu/ · MIT Sloan faculty page
+- Hook: *"Your 1990 data-snooping result shaped how I framed this: as an LLM proposes 10→3,000
+  trading strategies, naive backtest winners rise with N, but zero survive a deflated
+  worst-of-regimes gate across seven real markets — data-snooping made measurable at LLM scale.
+  I derived a worst-of-regimes correction to the deflated Sharpe (E[max_N min_k Z]) along the
+  way. I'd value your read on whether the framing is sound."*
+
 ## Tier 3 — long-shot but elegant cross-link
 
-### 6. Emmanuel Candès — Stanford Statistics (knockoffs / FDR control / selective inference)
+### 7. Emmanuel Candès — Stanford Statistics (knockoffs / FDR control / selective inference)
 His knockoff filter is *the* modern false-discovery-control method. Our paper hits the same
 false-discovery problem in strategy search and finds analytic effective-N corrections fail
 where a bootstrap works — a natural knockoffs question. (Very famous; lower reply odds, but a

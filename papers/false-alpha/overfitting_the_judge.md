@@ -49,9 +49,9 @@ whole experiment (fresh judges and candidates each time), 200 replicates each:
 
 | N | optimized judge | independent judge | true quality | inflation |
 |---:|---:|---:|---:|---:|
-| 10 | 8.5 | 0.8 | 0.9 | 7.8 |
+| 10 | 8.5 | 0.7 | 0.9 | 7.8 |
 | 100 | 13.8 | 1.1 | 1.4 | 12.7 |
-| 1000 | 17.8 | 1.6 | 1.8 | 16.3 |
+| 1000 | 17.8 | 1.6 | 1.8 | 16.2 |
 | 3000 | 19.5 | 1.8 | 2.0 | 17.7 |
 
 The optimized-judge score of the winner climbs about 2.3 times as the search grows (8.5 to

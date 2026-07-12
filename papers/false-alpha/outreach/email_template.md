@@ -58,6 +58,58 @@ Parv Mehndiratta
 
 ---
 
+## Worked example — Prof. Markus Pelger (Stanford, Tier 1)
+
+**Subject:** Feedback on an N-sweep of LLM-generated alphas?
+
+Dear Professor Pelger,
+
+I'm a high-school senior doing independent quant-finance / ML research. Your work on
+machine-learning methods in empirical asset pricing shaped a project I just posted as a preprint.
+
+I ran a controlled N-sweep: as an LLM (and simpler generators) propose 10→3,000 trading
+strategies, do real edges accumulate or only false discoveries? Across seven real markets, zero
+survive a strict deflated, worst-of-regimes gate — naive backtest "winners" keep rising with N,
+but nothing survives multiple-testing correction. Deriving the gate, I found the standard
+deflated Sharpe over-deflates a worst-of-regimes statistic (correct null E[max_N min_k Z]) by
+~2.4× at k=3.
+
+I'd be grateful for a quick read on whether the methodology is sound and where it's been done
+before. Preprint (reproducible code + tests): [SSRN link] (arXiv: [link]).
+
+Thank you for your time.
+
+Parv Mehndiratta
+Dougherty Valley HS, 12th grade · San Ramon, CA · [your email]
+
+---
+
+## Worked example — Prof. Andrew Lo (MIT, Tier 2)
+
+**Subject:** LLM-scale data-snooping — a modern take on Lo & MacKinlay (1990)?
+
+Dear Professor Lo,
+
+I'm a high-school senior doing independent quant-finance / ML research. Your 1990 data-snooping
+paper with MacKinlay shaped how I framed a project I just posted as a preprint.
+
+I ran a controlled N-sweep: as an LLM proposes 10→3,000 trading strategies, naive backtest
+"winners" rise with N, but zero survive a deflated worst-of-regimes gate across seven real
+markets — data-snooping made measurable at LLM scale. Building the gate, I derived a
+worst-of-regimes correction to the deflated Sharpe: it scores the minimum over k regimes, so the
+correct null is E[max_N min_k Z], which the standard DSR over-deflates ~2.4× (N=1000, k=3). The
+real-market zero survives even that corrected bar.
+
+I'd value your read on whether the framing holds, or a pointer to prior art I've missed.
+Preprint (reproducible code + tests): [SSRN link].
+
+Thank you very much for your time.
+
+Parv Mehndiratta
+Dougherty Valley HS, 12th grade · San Ramon, CA · [your email]
+
+---
+
 ## Do / Don't
 - DO send 3 personalized emails, not 1 mass email. DO post the preprint first.
 - DO use the acknowledgment/mentor language honestly *only if* they actually help.
