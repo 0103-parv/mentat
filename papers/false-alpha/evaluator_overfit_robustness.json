@@ -1,0 +1,104 @@
+{
+  "config": {
+    "K": 30,
+    "M_true": 3,
+    "NS": [
+      10,
+      30,
+      100,
+      300,
+      1000,
+      3000
+    ],
+    "reps": 200,
+    "n_judges": 10,
+    "n_seeds": 24,
+    "candidates": "fresh per rep"
+  },
+  "seed_averaged_table": [
+    {
+      "N": 10,
+      "optimized_judge": 8.528,
+      "independent_judge": 0.749,
+      "true_quality": 0.869,
+      "inflation": 7.779,
+      "ensemble_fix_true_quality": 1.923,
+      "optimized_judge_std": 1.007,
+      "independent_judge_std": 1.536,
+      "true_quality_std": 0.156,
+      "inflation_std": 1.876,
+      "ensemble_fix_true_quality_std": 0.124
+    },
+    {
+      "N": 30,
+      "optimized_judge": 11.268,
+      "independent_judge": 0.898,
+      "true_quality": 1.122,
+      "inflation": 10.37,
+      "ensemble_fix_true_quality": 2.556,
+      "optimized_judge_std": 1.228,
+      "independent_judge_std": 2.057,
+      "true_quality_std": 0.189,
+      "inflation_std": 2.493,
+      "ensemble_fix_true_quality_std": 0.18
+    },
+    {
+      "N": 100,
+      "optimized_judge": 13.783,
+      "independent_judge": 1.059,
+      "true_quality": 1.391,
+      "inflation": 12.724,
+      "ensemble_fix_true_quality": 3.155,
+      "optimized_judge_std": 1.56,
+      "independent_judge_std": 2.462,
+      "true_quality_std": 0.165,
+      "inflation_std": 3.046,
+      "ensemble_fix_true_quality_std": 0.203
+    },
+    {
+      "N": 300,
+      "optimized_judge": 15.863,
+      "independent_judge": 1.209,
+      "true_quality": 1.578,
+      "inflation": 14.654,
+      "ensemble_fix_true_quality": 3.59,
+      "optimized_judge_std": 1.827,
+      "independent_judge_std": 2.843,
+      "true_quality_std": 0.239,
+      "inflation_std": 3.526,
+      "ensemble_fix_true_quality_std": 0.197
+    },
+    {
+      "N": 1000,
+      "optimized_judge": 17.803,
+      "independent_judge": 1.556,
+      "true_quality": 1.771,
+      "inflation": 16.248,
+      "ensemble_fix_true_quality": 4.039,
+      "optimized_judge_std": 2.048,
+      "independent_judge_std": 3.287,
+      "true_quality_std": 0.194,
+      "inflation_std": 4.037,
+      "ensemble_fix_true_quality_std": 0.272
+    },
+    {
+      "N": 3000,
+      "optimized_judge": 19.493,
+      "independent_judge": 1.751,
+      "true_quality": 1.962,
+      "inflation": 17.741,
+      "ensemble_fix_true_quality": 4.411,
+      "optimized_judge_std": 2.21,
+      "independent_judge_std": 3.584,
+      "true_quality_std": 0.26,
+      "inflation_std": 4.433,
+      "ensemble_fix_true_quality_std": 0.279
+    }
+  ],
+  "direction_pass_rates": {
+    "optimized_judge_climbs_with_N": 1.0,
+    "inflation_grows_with_N": 1.0,
+    "ensemble_beats_naive_true_quality": 1.0,
+    "optimized_far_above_independent": 1.0
+  }
+}

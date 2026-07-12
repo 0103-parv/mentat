@@ -2,7 +2,7 @@
   "config": {
     "K": 30,
     "M_true": 3,
-    "pool": 6000,
+    "candidates": "fresh per rep",
     "NS": [
       10,
       30,
@@ -18,51 +18,51 @@
   "rows": [
     {
       "N": 10,
-      "optimized_judge": 6.995,
-      "independent_judge": 0.382,
-      "true_quality": 1.014,
-      "inflation": 6.613,
-      "ensemble_fix_true_quality": 1.809
+      "optimized_judge": 6.879,
+      "independent_judge": 1.442,
+      "true_quality": 1.01,
+      "inflation": 5.437,
+      "ensemble_fix_true_quality": 1.935
     },
     {
       "N": 30,
-      "optimized_judge": 9.38,
-      "independent_judge": 1.093,
-      "true_quality": 1.328,
-      "inflation": 8.287,
-      "ensemble_fix_true_quality": 2.239
+      "optimized_judge": 9.707,
+      "independent_judge": -0.154,
+      "true_quality": 1.418,
+      "inflation": 9.86,
+      "ensemble_fix_true_quality": 2.6
     },
     {
       "N": 100,
-      "optimized_judge": 11.353,
-      "independent_judge": 0.129,
-      "true_quality": 1.546,
-      "inflation": 11.224,
-      "ensemble_fix_true_quality": 2.911
+      "optimized_judge": 11.113,
+      "independent_judge": 0.449,
+      "true_quality": 1.781,
+      "inflation": 10.664,
+      "ensemble_fix_true_quality": 3.097
     },
     {
       "N": 300,
-      "optimized_judge": 13.426,
-      "independent_judge": 1.655,
-      "true_quality": 2.133,
-      "inflation": 11.771,
-      "ensemble_fix_true_quality": 3.427
+      "optimized_judge": 12.478,
+      "independent_judge": 1.475,
+      "true_quality": 1.84,
+      "inflation": 11.003,
+      "ensemble_fix_true_quality": 3.295
     },
     {
       "N": 1000,
-      "optimized_judge": 14.83,
-      "independent_judge": 3.089,
-      "true_quality": 2.191,
-      "inflation": 11.741,
-      "ensemble_fix_true_quality": 3.737
+      "optimized_judge": 14.489,
+      "independent_judge": 0.433,
+      "true_quality": 2.17,
+      "inflation": 14.056,
+      "ensemble_fix_true_quality": 3.73
     },
     {
       "N": 3000,
-      "optimized_judge": 16.2,
-      "independent_judge": 4.26,
-      "true_quality": 2.403,
-      "inflation": 11.941,
-      "ensemble_fix_true_quality": 4.287
+      "optimized_judge": 15.424,
+      "independent_judge": 0.185,
+      "true_quality": 1.906,
+      "inflation": 15.24,
+      "ensemble_fix_true_quality": 4.194
     }
   ]
 }

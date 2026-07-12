@@ -1,13 +1,18 @@
-"""Figure for the evaluator-overfitting demo: reads the demo JSON, writes a clean SVG line chart.
+"""Figure for the evaluator-overfitting demo: reads the results JSON, writes a clean SVG line chart.
 Dependency-free (matplotlib is PEP668-blocked here), matching the paper's plot_svg.py approach.
+Prefers the seed-averaged robustness table (24 seeds x 200 reps, smooth and trustworthy); falls
+back to the single-seed demo JSON if the robustness run has not been produced.
   python3.14 papers/false-alpha/fig_evaluator_overfit.py
 """
 import json, math
 from pathlib import Path
 
 here = Path(__file__).resolve().parent
-d = json.loads((here / "evaluator_overfit_demo_results.json").read_text())
-rows = d["rows"]
+robust = here / "evaluator_overfit_robustness.json"
+if robust.exists():
+    rows = json.loads(robust.read_text())["seed_averaged_table"]
+else:
+    rows = json.loads((here / "evaluator_overfit_demo_results.json").read_text())["rows"]
 Ns = [r["N"] for r in rows]
 opt = [r["optimized_judge"] for r in rows]
 ind = [r["independent_judge"] for r in rows]

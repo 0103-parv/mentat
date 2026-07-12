@@ -3,10 +3,12 @@
 The mechanism, in one breath: an automated judge scores each proposed candidate. It rewards a few
 features that carry TRUE quality and many SPURIOUS features that carry none (the judge's own
 quirks). A loop that proposes many candidates and keeps the best JUDGE score increasingly selects
-candidates that exploit the judge's spurious tastes. So the judge score of the winner climbs with
-the number of proposals N, while the winner's TRUE quality, and its score on an INDEPENDENT
-held-out judge, stay flat. That gap is false-discovery inflation, the winner's curse, and it
-appears with NO measurement noise, purely from selecting against a fixed evaluator.
+candidates that exploit the judge's spurious tastes. So the judge score of the winner climbs
+steeply with the number of proposals N, while the winner's TRUE quality rises only marginally and
+its score on an INDEPENDENT held-out judge stays near its starting level with no reliable trend.
+That widening gap is false-discovery inflation, the winner's curse, and it appears with NO
+measurement noise, purely from selecting against a fixed evaluator. (Seed-robust: see
+evaluator_overfit_robustness.py, where every directional claim holds in 100% of 24 reseeds.)
 
 The sharper thesis: a fixed evaluator becomes an exploitable environment under repeated selection,
 so an LLM-in-the-loop discovery system can look like it is improving while it is only overfitting
@@ -26,9 +28,8 @@ from pathlib import Path
 
 K = 30            # feature dimensions of a proposed candidate ("idea")
 M_TRUE = 3        # only the first M_TRUE features carry real quality; the other 27 are quirks
-POOL = 6000
 NS = [10, 30, 100, 300, 1000, 3000]
-REPS = 60         # subsets averaged per N for a stable expected best-of-N
+REPS = 60         # independent best-of-N draws averaged per N (each draws FRESH candidates)
 N_JUDGES = 10     # independent judges for the ensemble correction
 SEED = 7
 
@@ -48,9 +49,8 @@ def score(c, quirk):   return dot(c, TRUE_W) + dot(c, quirk)     # true + that j
 
 
 def main() -> int:
-    rng = random.Random(SEED + 1)
-    pool = [[rng.gauss(0, 1) for _ in range(K)] for _ in range(POOL)]
-    sub = random.Random(SEED + 2)
+    gen = random.Random(SEED + 1)   # candidate generator; each rep draws a FRESH set of N candidates
+                                    # (no shared pool -> unbiased expected best-of-N, no single-draw artifact)
 
     print("EVALUATOR OVERFITTING DEMO  (winner's curse in a generate-and-select loop)\n")
     print(f"  {K} features per idea, only the first {M_TRUE} carry real quality; the other "
@@ -63,7 +63,7 @@ def main() -> int:
     for N in NS:
         j = h = t = ct = 0.0
         for _ in range(REPS):
-            cands = [pool[sub.randrange(POOL)] for _ in range(N)]
+            cands = [[gen.gauss(0, 1) for _ in range(K)] for _ in range(N)]   # fresh candidates
             # NAIVE: keep the candidate with the best score on the FIXED judge it optimizes against
             w = max(cands, key=lambda c: score(c, FIXED))
             j += score(w, FIXED)               # what the loop reports (optimized judge)
@@ -82,16 +82,18 @@ def main() -> int:
     print("\n=> Reading the table:")
     print(f"   Optimized-judge score of the winner climbs {l['optimized_judge']/f['optimized_judge']:.1f}x "
           f"as the search grows ({f['optimized_judge']:.1f} -> {l['optimized_judge']:.1f}),")
-    print(f"   while its real quality stays flat ({f['true_quality']:.1f} -> {l['true_quality']:.1f}) "
-          f"and a fresh independent judge agrees ({f['independent_judge']:.1f} -> {l['independent_judge']:.1f}).")
+    print(f"   while its real quality rises only marginally ({f['true_quality']:.1f} -> {l['true_quality']:.1f}), "
+          f"an order of magnitude below the optimized score, and a fresh")
+    print(f"   independent judge stays near its start ({f['independent_judge']:.1f} -> {l['independent_judge']:.1f}), "
+          f"confirming the climb is illusory.")
     print(f"   The inflation (optimized minus independent) GROWS with N: {f['inflation']:.1f} -> {l['inflation']:.1f}.")
     print("   Pure evaluator overfitting: no noise, just selecting harder against a fixed judge.")
     print(f"   Selecting on an ensemble of independent judges recovers real quality: "
           f"{l['ensemble_fix_true_quality']:.1f} vs the naive {l['true_quality']:.1f} at N={l['N']}.")
 
     out = Path(__file__).resolve().parent / "evaluator_overfit_demo_results.json"
-    out.write_text(json.dumps({"config": {"K": K, "M_true": M_TRUE, "pool": POOL, "NS": NS,
-                                          "reps": REPS, "n_judges": N_JUDGES, "seed": SEED},
+    out.write_text(json.dumps({"config": {"K": K, "M_true": M_TRUE, "candidates": "fresh per rep",
+                                          "NS": NS, "reps": REPS, "n_judges": N_JUDGES, "seed": SEED},
                                "rows": rows}, indent=2))
     print(f"\n(results -> {out})")
     return 0

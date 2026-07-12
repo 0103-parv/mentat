@@ -1,0 +1,19 @@
+{
+  "N": 1000,
+  "reps": 40000,
+  "E_max_single": 3.2427,
+  "by_k": {
+    "2": {
+      "E_max_min_k": 1.9711,
+      "over_deflation_x": 1.645
+    },
+    "3": {
+      "E_max_min_k": 1.3787,
+      "over_deflation_x": 2.352
+    },
+    "5": {
+      "E_max_min_k": 0.7504,
+      "over_deflation_x": 4.321
+    }
+  }
+}
