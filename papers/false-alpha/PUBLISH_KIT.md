@@ -4,7 +4,8 @@
 ---
 
 ## The final files (upload these)
-- **`PAPER.pdf`** ← the submission PDF (14pp; title-page keywords + JEL, full References, and Acknowledgments included). Upload THIS to SSRN. *(Text-only; figures `fig_headline.png` / `fig_verification.png` exist separately if you want them inlined — ask.)*
+- **`PAPER_piazzesi.pdf`** ← the submission PDF (Piazzesi/NBER working-paper format: serif, centered title block, indented abstract, justified body, booktabs tables, embedded figures, centered page numbers, no TOC). Upload THIS to SSRN. Rebuild anytime with `python3.14 build_piazzesi_pdf.py`.
+- Older `PAPER.pdf` (plain Chrome render) and `PAPER.docx` (black-template) are superseded by the Piazzesi PDF for submission.
 - Backup: `FALSE_ALPHA_FULL_PACKET.pdf` (everything-in-one, heavier) and `PAPER_SHORT.docx` (short version). You do **not** need these for SSRN; `PAPER.pdf` is the clean one.
 
 ---
@@ -23,7 +24,7 @@ Frame everywhere as an **evaluation / robustness** result, not a finance discove
 Go to https://www.ssrn.com → sign in (or create a free account) → **Submit a Paper**. Fill:
 
 **Title**
-> More Strategies, Same Zero: Does LLM-Scale Alpha Search Discover Edge or Manufacture False Discoveries?
+> More Strategies, Same Zero: Multiple Testing Against LLM-Scale Alpha Search
 
 **Subtitle / short description**
 > A controlled N-sweep test of the false-strategy theorem with a live LLM proposer, and why scaling the search raises the discovery bar faster than it finds edge.

@@ -1,4 +1,4 @@
-# More Strategies, Same Zero: Does LLM-Scale Alpha Search Discover Edge or Manufacture False Discoveries?
+# More Strategies, Same Zero: Multiple Testing Against LLM-Scale Alpha Search
 
 **A controlled N-sweep test of the false-strategy theorem with a live LLM proposer — and why scaling the search raises the discovery bar faster than it finds edge**
 

@@ -4,7 +4,48 @@
 const fs = require('fs');
 const D = require('docx');
 const { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType,
-        BorderStyle, LineRuleType, Header, Footer, PageNumber, PageBreak, TableOfContents, HeadingLevel } = D;
+        BorderStyle, LineRuleType, Header, Footer, PageNumber, PageBreak, TableOfContents, HeadingLevel,
+        TabStopType, LeaderType, Tab } = D;
+
+// Static table of contents. Page numbers are measured from a rendered build (Pages/Word) and are
+// stable because the Contents occupies exactly one dedicated page. A live TOC field (docx-js
+// TableOfContents) renders blank in Google Docs and duplicates the whole document in Apple Pages,
+// so we emit a static one that renders identically everywhere. [level, title, page]
+const TOC_ENTRIES = [
+  [1, 'Abstract', 3],
+  [1, '1. Introduction and research question', 4],
+  [1, '2. The engine and the gate', 6],
+  [1, '3. Method: the N-sweep', 7],
+  [1, '4. Results', 8],
+  [2, '4.1 Q1 — the naive metric is fooled', 8],
+  [2, '4.2 Q2 — the deflated gate holds at zero', 8],
+  [2, '4.3 Q3 — the ablation and over-deflation check', 9],
+  [2, '4.4 The live-LLM arm (Claude Opus 4.8)', 10],
+  [2, "4.5 The gate's power curve", 12],
+  [2, '4.6 Distribution-free confirmation', 13],
+  [2, '4.7 Generalization 1 — cross-sectional equity panel', 13],
+  [2, '4.8 Generalization 2 — independent real markets', 14],
+  [2, '4.9 The correct multiple-testing bar', 15],
+  [1, '5. Related work', 16],
+  [1, '6. Limitations', 18],
+  [1, '7. Future work', 19],
+  [1, '8. Reproducibility', 20],
+  [1, '9. Authorship and contributions', 20],
+  [1, '10. Reproducibility and disclosure', 21],
+  [1, 'Acknowledgments', 21],
+  [1, 'References', 21],
+  [1, 'Appendix A — key numbers at a glance', 23],
+];
+const tocRow = ([lvl, title, page]) => new Paragraph({
+  tabStops: [{ type: TabStopType.RIGHT, position: 9360, leader: LeaderType.DOT }],
+  indent: lvl === 2 ? { left: 360 } : undefined,
+  spacing: { after: 20, line: 300, lineRule: LineRuleType.EXACT },
+  children: [
+    new TextRun({ text: title, font: SERIF, size: 21, color: BLACK, bold: lvl === 1 }),
+    new TextRun({ children: [new Tab()], font: SERIF, size: 21, color: BLACK }),
+    new TextRun({ text: String(page), font: SERIF, size: 21, color: BLACK, bold: lvl === 1 }),
+  ],
+});
 
 const SERIF = 'Cambria', SANS = 'Calibri', MONO = 'Consolas', BLACK = '000000';
 const md = fs.readFileSync(process.argv[2] || 'PAPER.md', 'utf8');
@@ -79,12 +120,12 @@ while (i < lines.length) {
     children.push(rule);
     children.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 40 },
       children: [new TextRun({ text: 'Quantitative Finance   •   Multiple Testing   •   LLM Strategy Search', italics: true, size: 21, font: SERIF, color: BLACK })] }));
-    children.push(new Paragraph({ children: [new PageBreak()] }));
-    children.push(new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun({ text: 'Contents', font: SANS, bold: true, size: 28, color: BLACK })] }));
-    children.push(new TableOfContents('Contents', { hyperlinks: false, headingStyleRange: '1-2' }));
-    children.push(new Paragraph({ children: [new PageBreak()] }));
-  } else if (!seenSection && t.startsWith('*')) {    // keywords/JEL line
-    children.push(new Paragraph({ alignment: AlignmentType.JUSTIFIED, spacing: { after: 160, ...LN },
+    // Contents on its own page (pageBreakBefore avoids the blank page an empty PageBreak paragraph
+    // creates when the preceding page is nearly full); the keywords line below breaks to the body.
+    children.push(new Paragraph({ pageBreakBefore: true, heading: HeadingLevel.HEADING_1, children: [new TextRun({ text: 'Contents', font: SANS, bold: true, size: 28, color: BLACK })] }));
+    TOC_ENTRIES.forEach(e => children.push(tocRow(e)));
+  } else if (!seenSection && t.startsWith('*')) {    // keywords/JEL line -> starts the body page
+    children.push(new Paragraph({ pageBreakBefore: true, alignment: AlignmentType.JUSTIFIED, spacing: { after: 160, ...LN },
       children: runs(t.replace(/^\*|\*$/g, ''), { italics: true, size: 21 }) }));
   } else if (t.startsWith('### ')) {
     seenSection = true;
