@@ -1,0 +1,23 @@
+{
+ "3f61de72a6a2be440cac65d48725b5ac1ef52e88e8fd23e2a82eb08b8425d2a0": "```json\n[\n  \"x1 * x2 + x3 - x4\",\n  \"abs(x1 - x2) / (x3 + 1)\",\n  \"max(x1, x2) * min(x4, x5)\",\n  \"(x1 + x2) / (abs(x3) + 0.1) - x5\",\n  \"x1 * x3 - x2 * x4 + x5\",\n  \"max(abs(x1 - x3), abs(x2 - x4)) * x5\"\n]\n```",
+ "971c64afc03b65a9410eaa3aca5a48cf3c7dd60098a9e6454aeaa848e94633d5": "```json\n[7, 6, 5, 6, 8, 6]\n```",
+ "9f0e9809e3ee37f2cb29f89d6385035affac6ebd4f306588f1ebf70d886880dc": "```json\n[\n  \"x1 + x2 * x3 - x4 / x5\",\n  \"abs(x1 - x2) * x3 + x4 - x5\",\n  \"max(x1, x2) * x3 - min(x4, x5)\",\n  \"x1 * x2 + x3 * x4 - x5\",\n  \"x1 / (x2 + x3) + x4 * x5\",\n  \"x1 * x4 + x2 - x3 * x5\"\n]\n```",
+ "397d5b52b750ab27b356ff7214d623b348ecb221fc46b960660a82395526b840": "```json\n[7, 6, 5, 8, 6, 7]\n```",
+ "50ed3c4b200c18568299f3fbe37d0190f6ae08df586435b88ec6038faeb7662a": "```json\n[\n  \"x1 + x2 * x3 - x4 / x5\",\n  \"max(x1, x2) * x3 + x4 - x5\",\n  \"x1 * x2 - x3 + x4 * x5\",\n  \"abs(x1 - x2) * x3 + x4 / x5\",\n  \"x1 / x2 + x3 * x4 - x5\",\n  \"min(x1 * x2, x3 * x4) + x5\"\n]\n```",
+ "ed4b0d011a797089c81ef6018dd0f6d3a4e3d7fe343e07739cbc4eeca4532385": "```json\n[7, 6, 7, 6, 7, 5]\n```",
+ "cf132fe80bc0d8aa896b0b85216b770d6633522cdf398723001fcb8b05988f8d": "```json\n[5]\n```\n\n**Reasoning:** A linear combination of products is moderately plausible but lacks justification. Without domain knowledge, it's unclear why this specific structure (two interaction terms minus each other, plus a main effect) would generalize. The expression is simple enough to avoid severe overfitting risk, but the arbitrary choice of which features to multiply and subtract is a red flag. It could work by luck on the training set but may fail on new data. A score of 5 reflects genuine uncertainty\u2014it's neither implausibly complex nor obviously robust.",
+ "7687df37eeefa043d600ccf7a9e5127cf1f18e71d47edfa3cf83f205b1621c62": "```json\n[7]\n```",
+ "3964308e036d467158efa82ffbda652379a617e3558d1556e9d38baf454ddaa4": "```json\n[4]\n```",
+ "e39cac1656598e5ea2da89aa2a90c64423c909047bd67f9837fdf7fcc0b4a1c3": "```json\n[7, 6, 5, 8, 6, 8]\n```",
+ "be94b523f1d80a9db0ae78589d437e17f52380f835fc1c5965d78acaa6426610": "```json\n[7, 5, 8, 6, 7, 4]\n```",
+ "5e9ea47834685df1eff0e95473a89c01c2be453ab1030c5135dda154f3f617b4": "```json\n[7, 5, 4, 5, 6, 3]\n```",
+ "746c5d81fa770becdbfa19a075eedda80d58816b0a6d927117bd30f1c605a1fc": "```json\n[7, 8, 6, 5, 4, 5]\n```",
+ "e5979ea9e7bfbead61e493acbcbc487d707738f557f2e0e834eed408b9420c44": "```json\n[4, 3, 3, 4, 5, 3]\n```",
+ "e1cdf5a9e5c18f713550ed884b4deab82ab41a316ffe5227e0feeac605079c1d": "```json\n[\n  \"x1 * x2 + x3 - x4\",\n  \"x1 + x2 * x3 - x5\",\n  \"abs(x1 - x2) * x3 + x4\",\n  \"max(x1, x2) * x3 / (x4 + 1)\",\n  \"x1 * x4 - x2 + x3 * x5\",\n  \"min(x1 + x2, x3 * x4) - x5\"\n]\n```",
+ "beed9173ffaba268b1cbaad7186acf3f40f041a3c477ff1eb2341a4b5455a46d": "```json\n[7, 7, 6, 5, 4, 3]\n```",
+ "1e28d6c35f8b0ea35d8cb8c6de61472181d1e082c541bd48208e79d1e2d91b1e": "```json\n[7, 7, 6, 7, 4, 5]\n```",
+ "3214e9ca4ae98a861cdb81e81a82c53dfc1173309e910f90f78e10eb4eef47bf": "```json\n[4, 4, 5, 5, 4, 4]\n```",
+ "4d50992b78677e890ce94b0cbe931da0b8b2858334ab75c7e8e17585126d2494": "```json\n[6]\n```\n\n**Reasoning:** A simple linear-interaction model with one multiplicative term is reasonably robust and interpretable. However, without evidence of actual predictive validity, domain knowledge, or cross-validation results, I cannot score it higher. The single x1*x2 interaction is a modest complexity increase that may or may not be justified. The lack of any regularization or validation data prevents a higher score.",
+ "96184dcaa595613e808a4730c1d0d2d320c54094988d0747642f16105f620964": "```json\n[7]\n```",
+ "c98d85da1cb47bd3c72397ca27ce45b7442978bbabd40c87b40881bc066fcdf9": "```json\n[4]\n```"
+}

@@ -1,0 +1,96 @@
+{
+  "config": {
+    "model": "claude-haiku-4-5",
+    "rounds": 3,
+    "batch": 6,
+    "seeds": [
+      11,
+      12
+    ],
+    "ens": 3,
+    "max_calls": 80
+  },
+  "runs": [
+    {
+      "expr": "x1 * x3 - x2 * x4 + x5",
+      "own_rating": 8.0,
+      "heldout_mean": 5.333333333333333,
+      "gap": 2.666666666666667,
+      "true_r2": -0.449,
+      "seed": 11,
+      "cond": "A",
+      "name": "fixed judge"
+    },
+    {
+      "expr": "x1 * x3 - x2 * x4 + x5",
+      "own_rating": 8.0,
+      "heldout_mean": 5.333333333333333,
+      "gap": 2.666666666666667,
+      "true_r2": -0.449,
+      "seed": 11,
+      "cond": "B",
+      "name": "co-tuned judge"
+    },
+    {
+      "expr": "x1 * x2 + x3 - x4",
+      "own_rating": 6.0,
+      "heldout_mean": 5.666666666666667,
+      "gap": 0.33333333333333304,
+      "true_r2": -0.614,
+      "seed": 11,
+      "cond": "D",
+      "name": "indep ensemble"
+    },
+    {
+      "expr": "x1 * x3 - x2 * x4 + x5",
+      "own_rating": 8.0,
+      "heldout_mean": 5.333333333333333,
+      "gap": 2.666666666666667,
+      "true_r2": -0.619,
+      "seed": 12,
+      "cond": "A",
+      "name": "fixed judge"
+    },
+    {
+      "expr": "x1 * x3 - x2 * x4 + x5",
+      "own_rating": 8.0,
+      "heldout_mean": 5.333333333333333,
+      "gap": 2.666666666666667,
+      "true_r2": -0.619,
+      "seed": 12,
+      "cond": "B",
+      "name": "co-tuned judge"
+    },
+    {
+      "expr": "x1 * x2 + x3 - x4",
+      "own_rating": 6.0,
+      "heldout_mean": 5.666666666666667,
+      "gap": 0.33333333333333304,
+      "true_r2": -0.479,
+      "seed": 12,
+      "cond": "D",
+      "name": "indep ensemble"
+    }
+  ],
+  "aggregate": {
+    "A": {
+      "own_rating": 8.0,
+      "heldout_mean": 5.333,
+      "gap": 2.667,
+      "true_r2": -0.534
+    },
+    "B": {
+      "own_rating": 8.0,
+      "heldout_mean": 5.333,
+      "gap": 2.667,
+      "true_r2": -0.534
+    },
+    "D": {
+      "own_rating": 6.0,
+      "heldout_mean": 5.667,
+      "gap": 0.333,
+      "true_r2": -0.546
+    }
+  },
+  "api_calls_this_run": 21
+}
