@@ -1,0 +1,433 @@
+{
+  "config": {
+    "NS": [
+      100,
+      1000
+    ],
+    "seeds": 8,
+    "reps": 6,
+    "M_true": 3
+  },
+  "cells": [
+    {
+      "cell": "baseline",
+      "config": {
+        "K": 30,
+        "ens": 10,
+        "eta": 0.5,
+        "top_frac": 0.2,
+        "update": "accumulate"
+      },
+      "meanN1000": {
+        "A": {
+          "infl": 45.47,
+          "true": 5.49
+        },
+        "B": {
+          "infl": 182.98,
+          "true": 2.95
+        },
+        "C": {
+          "infl": 143.84,
+          "true": 5.36
+        },
+        "D": {
+          "infl": 10.25,
+          "true": 12.16
+        }
+      },
+      "passes": {
+        "H1_B_gt_A": 1.0,
+        "H2_C_gt_2D": 1.0,
+        "H3_D_smallest": 1.0,
+        "H4_D_true_geq_B": 1.0
+      },
+      "all_pass": true
+    },
+    {
+      "cell": "eta=0.1",
+      "config": {
+        "K": 30,
+        "ens": 10,
+        "eta": 0.1,
+        "top_frac": 0.2,
+        "update": "accumulate"
+      },
+      "meanN1000": {
+        "A": {
+          "infl": 45.47,
+          "true": 5.49
+        },
+        "B": {
+          "infl": 70.86,
+          "true": 4.41
+        },
+        "C": {
+          "infl": 32.66,
+          "true": 9.7
+        },
+        "D": {
+          "infl": 10.25,
+          "true": 12.16
+        }
+      },
+      "passes": {
+        "H1_B_gt_A": 1.0,
+        "H2_C_gt_2D": 1.0,
+        "H3_D_smallest": 1.0,
+        "H4_D_true_geq_B": 1.0
+      },
+      "all_pass": true
+    },
+    {
+      "cell": "eta=0.25",
+      "config": {
+        "K": 30,
+        "ens": 10,
+        "eta": 0.25,
+        "top_frac": 0.2,
+        "update": "accumulate"
+      },
+      "meanN1000": {
+        "A": {
+          "infl": 45.47,
+          "true": 5.49
+        },
+        "B": {
+          "infl": 111.24,
+          "true": 3.84
+        },
+        "C": {
+          "infl": 73.41,
+          "true": 7.03
+        },
+        "D": {
+          "infl": 10.25,
+          "true": 12.16
+        }
+      },
+      "passes": {
+        "H1_B_gt_A": 1.0,
+        "H2_C_gt_2D": 1.0,
+        "H3_D_smallest": 1.0,
+        "H4_D_true_geq_B": 1.0
+      },
+      "all_pass": true
+    },
+    {
+      "cell": "eta=1.0",
+      "config": {
+        "K": 30,
+        "ens": 10,
+        "eta": 1.0,
+        "top_frac": 0.2,
+        "update": "accumulate"
+      },
+      "meanN1000": {
+        "A": {
+          "infl": 45.47,
+          "true": 5.49
+        },
+        "B": {
+          "infl": 336.18,
+          "true": 2.18
+        },
+        "C": {
+          "infl": 292.1,
+          "true": 4.11
+        },
+        "D": {
+          "infl": 10.25,
+          "true": 12.16
+        }
+      },
+      "passes": {
+        "H1_B_gt_A": 1.0,
+        "H2_C_gt_2D": 1.0,
+        "H3_D_smallest": 1.0,
+        "H4_D_true_geq_B": 1.0
+      },
+      "all_pass": true
+    },
+    {
+      "cell": "interpolate",
+      "config": {
+        "K": 30,
+        "ens": 10,
+        "eta": 0.5,
+        "top_frac": 0.2,
+        "update": "interpolate"
+      },
+      "meanN1000": {
+        "A": {
+          "infl": 45.47,
+          "true": 5.49
+        },
+        "B": {
+          "infl": 78.81,
+          "true": 5.92
+        },
+        "C": {
+          "infl": 73.19,
+          "true": 7.09
+        },
+        "D": {
+          "infl": 10.25,
+          "true": 12.16
+        }
+      },
+      "passes": {
+        "H1_B_gt_A": 1.0,
+        "H2_C_gt_2D": 1.0,
+        "H3_D_smallest": 1.0,
+        "H4_D_true_geq_B": 1.0
+      },
+      "all_pass": true
+    },
+    {
+      "cell": "interp+eta=1.0",
+      "config": {
+        "K": 30,
+        "ens": 10,
+        "eta": 1.0,
+        "top_frac": 0.2,
+        "update": "interpolate"
+      },
+      "meanN1000": {
+        "A": {
+          "infl": 45.47,
+          "true": 5.49
+        },
+        "B": {
+          "infl": 100.58,
+          "true": 5.97
+        },
+        "C": {
+          "infl": 97.39,
+          "true": 6.36
+        },
+        "D": {
+          "infl": 10.25,
+          "true": 12.16
+        }
+      },
+      "passes": {
+        "H1_B_gt_A": 1.0,
+        "H2_C_gt_2D": 1.0,
+        "H3_D_smallest": 1.0,
+        "H4_D_true_geq_B": 1.0
+      },
+      "all_pass": true
+    },
+    {
+      "cell": "K=10",
+      "config": {
+        "K": 10,
+        "ens": 10,
+        "eta": 0.5,
+        "top_frac": 0.2,
+        "update": "accumulate"
+      },
+      "meanN1000": {
+        "A": {
+          "infl": 17.82,
+          "true": 9.76
+        },
+        "B": {
+          "infl": 109.47,
+          "true": 4.75
+        },
+        "C": {
+          "infl": 72.27,
+          "true": 8.28
+        },
+        "D": {
+          "infl": 3.7,
+          "true": 14.78
+        }
+      },
+      "passes": {
+        "H1_B_gt_A": 1.0,
+        "H2_C_gt_2D": 1.0,
+        "H3_D_smallest": 1.0,
+        "H4_D_true_geq_B": 1.0
+      },
+      "all_pass": true
+    },
+    {
+      "cell": "K=100",
+      "config": {
+        "K": 100,
+        "ens": 10,
+        "eta": 0.5,
+        "top_frac": 0.2,
+        "update": "accumulate"
+      },
+      "meanN1000": {
+        "A": {
+          "infl": 91.06,
+          "true": 2.72
+        },
+        "B": {
+          "infl": 342.12,
+          "true": 2.46
+        },
+        "C": {
+          "infl": 290.52,
+          "true": 3.87
+        },
+        "D": {
+          "infl": 25.78,
+          "true": 7.99
+        }
+      },
+      "passes": {
+        "H1_B_gt_A": 1.0,
+        "H2_C_gt_2D": 1.0,
+        "H3_D_smallest": 1.0,
+        "H4_D_true_geq_B": 1.0
+      },
+      "all_pass": true
+    },
+    {
+      "cell": "ENS=3",
+      "config": {
+        "K": 30,
+        "ens": 3,
+        "eta": 0.5,
+        "top_frac": 0.2,
+        "update": "accumulate"
+      },
+      "meanN1000": {
+        "A": {
+          "infl": 45.47,
+          "true": 5.49
+        },
+        "B": {
+          "infl": 182.98,
+          "true": 2.95
+        },
+        "C": {
+          "infl": 162.19,
+          "true": 4.43
+        },
+        "D": {
+          "infl": 22.8,
+          "true": 8.72
+        }
+      },
+      "passes": {
+        "H1_B_gt_A": 1.0,
+        "H2_C_gt_2D": 1.0,
+        "H3_D_smallest": 1.0,
+        "H4_D_true_geq_B": 1.0
+      },
+      "all_pass": true
+    },
+    {
+      "cell": "ENS=30",
+      "config": {
+        "K": 30,
+        "ens": 30,
+        "eta": 0.5,
+        "top_frac": 0.2,
+        "update": "accumulate"
+      },
+      "meanN1000": {
+        "A": {
+          "infl": 45.47,
+          "true": 5.49
+        },
+        "B": {
+          "infl": 182.98,
+          "true": 2.95
+        },
+        "C": {
+          "infl": 124.65,
+          "true": 7.24
+        },
+        "D": {
+          "infl": 4.09,
+          "true": 14.59
+        }
+      },
+      "passes": {
+        "H1_B_gt_A": 1.0,
+        "H2_C_gt_2D": 1.0,
+        "H3_D_smallest": 1.0,
+        "H4_D_true_geq_B": 1.0
+      },
+      "all_pass": true
+    },
+    {
+      "cell": "top=0.1",
+      "config": {
+        "K": 30,
+        "ens": 10,
+        "eta": 0.5,
+        "top_frac": 0.1,
+        "update": "accumulate"
+      },
+      "meanN1000": {
+        "A": {
+          "infl": 45.47,
+          "true": 5.49
+        },
+        "B": {
+          "infl": 194.83,
+          "true": 2.9
+        },
+        "C": {
+          "infl": 154.45,
+          "true": 5.44
+        },
+        "D": {
+          "infl": 10.25,
+          "true": 12.16
+        }
+      },
+      "passes": {
+        "H1_B_gt_A": 1.0,
+        "H2_C_gt_2D": 1.0,
+        "H3_D_smallest": 1.0,
+        "H4_D_true_geq_B": 1.0
+      },
+      "all_pass": true
+    },
+    {
+      "cell": "top=0.5",
+      "config": {
+        "K": 30,
+        "ens": 10,
+        "eta": 0.5,
+        "top_frac": 0.5,
+        "update": "accumulate"
+      },
+      "meanN1000": {
+        "A": {
+          "infl": 45.47,
+          "true": 5.49
+        },
+        "B": {
+          "infl": 168.38,
+          "true": 3.32
+        },
+        "C": {
+          "infl": 131.07,
+          "true": 5.77
+        },
+        "D": {
+          "infl": 10.25,
+          "true": 12.16
+        }
+      },
+      "passes": {
+        "H1_B_gt_A": 1.0,
+        "H2_C_gt_2D": 1.0,
+        "H3_D_smallest": 1.0,
+        "H4_D_true_geq_B": 1.0
+      },
+      "all_pass": true
+    }
+  ]
+}
