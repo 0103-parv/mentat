@@ -1,0 +1,286 @@
+{
+  "config": {
+    "model": "claude-haiku-4-5",
+    "seeds": [
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28
+    ],
+    "rounds": 6,
+    "batch": 8,
+    "ens": 3
+  },
+  "runs": [
+    {
+      "cond": "F",
+      "seed": 21,
+      "expr": "x1 * x2 / (x3 + 1)",
+      "reported": 6.0,
+      "heldout": 3.3333333333333335,
+      "inflation": 2.6666666666666665,
+      "true_r2": -8.546,
+      "final_rubric": null
+    },
+    {
+      "cond": "C",
+      "seed": 21,
+      "expr": "x1 * x3 + x2 * x4 - x5",
+      "reported": 10.0,
+      "heldout": 3.6666666666666665,
+      "inflation": 6.333333333333334,
+      "true_r2": -0.704,
+      "final_rubric": "Score each candidate 0-10 for predicting y from x1..x5. Strongly prefer exactly two non-overlapping feature pair products with optional linear adjustments (e.g., x1*x3 + x2*x4 - x5). Award perfect scores only for clean multiplicative pairs using all four features exactly once, plus linear terms. Heavily penalize division, abs(), max/min, and any feature reuse across products."
+    },
+    {
+      "cond": "I",
+      "seed": 21,
+      "expr": "x1 + x2 - x3",
+      "reported": 5.666666666666667,
+      "heldout": 2.6666666666666665,
+      "inflation": 3.0000000000000004,
+      "true_r2": -0.049,
+      "final_rubric": null
+    },
+    {
+      "cond": "F",
+      "seed": 22,
+      "expr": "x1 + x2 * x3 - x4 / x5",
+      "reported": 6.0,
+      "heldout": 2.6666666666666665,
+      "inflation": 3.3333333333333335,
+      "true_r2": -36.322,
+      "final_rubric": null
+    },
+    {
+      "cond": "C",
+      "seed": 22,
+      "expr": "x1 * x2 + x3 * x4 - x5",
+      "reported": 10.0,
+      "heldout": 2.6666666666666665,
+      "inflation": 7.333333333333334,
+      "true_r2": -0.619,
+      "final_rubric": "Score each candidate 0-10. Maximize for expressions with exactly two multiplicative pairs (a*b + c*d - e format) using all five features distinctly and linearly. Penalize abs(), max/min, division, nested operations, and triple products. Reward simple additive/subtractive combinations of independent products. Strongly favor the canonical a*b + c*d - e structure. Favor parsimony and interpretability."
+    },
+    {
+      "cond": "I",
+      "seed": 22,
+      "expr": "x1 + x2 - x3",
+      "reported": 5.666666666666667,
+      "heldout": 2.6666666666666665,
+      "inflation": 3.0000000000000004,
+      "true_r2": -0.116,
+      "final_rubric": null
+    },
+    {
+      "cond": "F",
+      "seed": 23,
+      "expr": "x1 * x3 + x2 * x4 - x5",
+      "reported": 7.0,
+      "heldout": 3.6666666666666665,
+      "inflation": 3.3333333333333335,
+      "true_r2": -0.544,
+      "final_rubric": null
+    },
+    {
+      "cond": "C",
+      "seed": 23,
+      "expr": "x1 * x3 + x2 * x4",
+      "reported": 10.0,
+      "heldout": 4.0,
+      "inflation": 6.0,
+      "true_r2": -0.297,
+      "final_rubric": "Score each candidate 0-10 for predicting y from x1..x5. Strongly prefer exactly two balanced pairwise multiplicative interactions added together (x_i * x_j + x_k * x_l) using exactly 4 distinct features. Heavily penalize: division, conditionals (max/min/abs), subtraction, any third term, asymmetric feature usage, and deviations from the two-product-sum structure."
+    },
+    {
+      "cond": "I",
+      "seed": 23,
+      "expr": "x1 + x2 - x3",
+      "reported": 5.666666666666667,
+      "heldout": 2.6666666666666665,
+      "inflation": 3.0000000000000004,
+      "true_r2": -0.068,
+      "final_rubric": null
+    },
+    {
+      "cond": "F",
+      "seed": 24,
+      "expr": "x1 * x3 + x2 * x4 - x5",
+      "reported": 7.0,
+      "heldout": 3.6666666666666665,
+      "inflation": 3.3333333333333335,
+      "true_r2": -0.839,
+      "final_rubric": null
+    },
+    {
+      "cond": "C",
+      "seed": 24,
+      "expr": "x1 + x2 - x3",
+      "reported": 10.0,
+      "heldout": 2.6666666666666665,
+      "inflation": 7.333333333333334,
+      "true_r2": -0.119,
+      "final_rubric": "Score each candidate 0-10 for predicting y from x1..x5. Strongly prefer pure additive/subtractive linear combinations of 2-3 variables\u2014these are optimal and receive 10. Penalize any non-linear operations (multiplication, division, absolute value, max/min, exponents) heavily, scoring 1-2 regardless of linear terms present. Reward simplicity and interpretability."
+    },
+    {
+      "cond": "I",
+      "seed": 24,
+      "expr": "x1 + x2 - x3",
+      "reported": 5.666666666666667,
+      "heldout": 2.6666666666666665,
+      "inflation": 3.0000000000000004,
+      "true_r2": -0.119,
+      "final_rubric": null
+    },
+    {
+      "cond": "F",
+      "seed": 25,
+      "expr": "x1 * x3 + x2 * x4 - x5",
+      "reported": 7.0,
+      "heldout": 3.6666666666666665,
+      "inflation": 3.3333333333333335,
+      "true_r2": -0.482,
+      "final_rubric": null
+    },
+    {
+      "cond": "C",
+      "seed": 25,
+      "expr": "x1 * x2 + x3 * x4 - x5",
+      "reported": 10.0,
+      "heldout": 2.6666666666666665,
+      "inflation": 7.333333333333334,
+      "true_r2": -0.494,
+      "final_rubric": "Score each candidate 0-10 for predicting y from x1..x5. Strongly prefer exactly two independent multiplicative pairs combined additively/subtractively with a single linear term (e.g., x1*x2 + x3*x4 \u00b1 x5). Heavily penalize division, conditional logic (min/max/abs), triple products, and asymmetric structures. Favor perfect bilinear symmetry: two balanced pairs plus one linear term only."
+    },
+    {
+      "cond": "I",
+      "seed": 25,
+      "expr": "x1 + x2 - x3",
+      "reported": 5.666666666666667,
+      "heldout": 2.6666666666666665,
+      "inflation": 3.0000000000000004,
+      "true_r2": -0.079,
+      "final_rubric": null
+    },
+    {
+      "cond": "F",
+      "seed": 26,
+      "expr": "x1 * x2 + x3 - x4 * x5",
+      "reported": 7.0,
+      "heldout": 2.6666666666666665,
+      "inflation": 4.333333333333334,
+      "true_r2": -0.482,
+      "final_rubric": null
+    },
+    {
+      "cond": "C",
+      "seed": 26,
+      "expr": "x1 * x2 + x3 * x4 - x5",
+      "reported": 10.0,
+      "heldout": 2.6666666666666665,
+      "inflation": 7.333333333333334,
+      "true_r2": -0.619,
+      "final_rubric": "Score each candidate 0-10 for predicting y from x1..x5. Strongly prefer exactly two independent pairwise products with no repeated variables across products, combined via addition/subtraction with an optional linear term (e.g., x1*x2 + x3*x4 - x5). Heavily penalize division, max/min/abs, triple products, parenthesized sums in products, and any deviation from this structure."
+    },
+    {
+      "cond": "I",
+      "seed": 26,
+      "expr": "x1 + x2 - x3",
+      "reported": 5.666666666666667,
+      "heldout": 2.6666666666666665,
+      "inflation": 3.0000000000000004,
+      "true_r2": -0.135,
+      "final_rubric": null
+    },
+    {
+      "cond": "F",
+      "seed": 27,
+      "expr": "x1 * x2 + x3 - x4",
+      "reported": 6.0,
+      "heldout": 3.0,
+      "inflation": 3.0,
+      "true_r2": -0.59,
+      "final_rubric": null
+    },
+    {
+      "cond": "C",
+      "seed": 27,
+      "expr": "x1 * x2 / (min(abs(x3), abs(x4)) + 1) - x5",
+      "reported": 9.0,
+      "heldout": 3.0,
+      "inflation": 6.0,
+      "true_r2": -0.263,
+      "final_rubric": "Score each candidate 0-10 on prediction likelihood. Strongly favor multiplicative numerators with protective min(abs()) denominators plus 1. Reward clean two-feature products in numerators divided by min(abs()) safeguards. Penalize additive numerators, max() operations, nested abs(), and expressions lacking min(abs()) denominators. Prefer simple subtractive final terms over complex combinations."
+    },
+    {
+      "cond": "I",
+      "seed": 27,
+      "expr": "x1 + x2 - x3",
+      "reported": 5.666666666666667,
+      "heldout": 2.6666666666666665,
+      "inflation": 3.0000000000000004,
+      "true_r2": -0.303,
+      "final_rubric": null
+    },
+    {
+      "cond": "F",
+      "seed": 28,
+      "expr": "x1 * x2 - x3 * x4 + x5",
+      "reported": 7.0,
+      "heldout": 2.6666666666666665,
+      "inflation": 4.333333333333334,
+      "true_r2": -0.783,
+      "final_rubric": null
+    },
+    {
+      "cond": "C",
+      "seed": 28,
+      "expr": "x1 * x2 + x3 * x4 - x5",
+      "reported": 10.0,
+      "heldout": 2.6666666666666665,
+      "inflation": 7.333333333333334,
+      "true_r2": -0.841,
+      "final_rubric": "Score each candidate 0-10 for predicting y from x1..x5. Maximize for exactly two independent pairwise products combined additively/subtractively with optional single-variable linear adjustment (e.g., x1*x2 + x3*x4 \u00b1 x5). Strongly penalize abs(), max/min, division, triple products, nested operations, and min/max comparisons. Favor additive/subtractive combination of exactly two bilinear terms with transparent arithmetic."
+    },
+    {
+      "cond": "I",
+      "seed": 28,
+      "expr": "x1 + x2 - x3",
+      "reported": 5.666666666666667,
+      "heldout": 2.6666666666666665,
+      "inflation": 3.0000000000000004,
+      "true_r2": -0.434,
+      "final_rubric": null
+    }
+  ],
+  "aggregate": {
+    "F": {
+      "reported": 6.625,
+      "heldout": 3.167,
+      "inflation": 3.458,
+      "true_r2": -6.074
+    },
+    "C": {
+      "reported": 9.875,
+      "heldout": 3.0,
+      "inflation": 6.875,
+      "true_r2": -0.494
+    },
+    "I": {
+      "reported": 5.667,
+      "heldout": 2.667,
+      "inflation": 3.0,
+      "true_r2": -0.163
+    }
+  },
+  "preregistered": {
+    "P1_cotuned_gt_fixed": "8/8",
+    "P2_indep_smallest": "6/8",
+    "P3_indep_true_geq_cotuned": "7/8"
+  },
+  "api_calls_this_run": 464
+}
