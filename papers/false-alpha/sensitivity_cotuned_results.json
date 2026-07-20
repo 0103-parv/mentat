@@ -16,7 +16,9 @@
         "ens": 10,
         "eta": 0.5,
         "top_frac": 0.2,
-        "update": "accumulate"
+        "update": "accumulate",
+        "refresh_every": null,
+        "shrink": null
       },
       "meanN1000": {
         "A": {
@@ -51,7 +53,9 @@
         "ens": 10,
         "eta": 0.1,
         "top_frac": 0.2,
-        "update": "accumulate"
+        "update": "accumulate",
+        "refresh_every": null,
+        "shrink": null
       },
       "meanN1000": {
         "A": {
@@ -86,7 +90,9 @@
         "ens": 10,
         "eta": 0.25,
         "top_frac": 0.2,
-        "update": "accumulate"
+        "update": "accumulate",
+        "refresh_every": null,
+        "shrink": null
       },
       "meanN1000": {
         "A": {
@@ -121,7 +127,9 @@
         "ens": 10,
         "eta": 1.0,
         "top_frac": 0.2,
-        "update": "accumulate"
+        "update": "accumulate",
+        "refresh_every": null,
+        "shrink": null
       },
       "meanN1000": {
         "A": {
@@ -156,7 +164,9 @@
         "ens": 10,
         "eta": 0.5,
         "top_frac": 0.2,
-        "update": "interpolate"
+        "update": "interpolate",
+        "refresh_every": null,
+        "shrink": null
       },
       "meanN1000": {
         "A": {
@@ -191,7 +201,9 @@
         "ens": 10,
         "eta": 1.0,
         "top_frac": 0.2,
-        "update": "interpolate"
+        "update": "interpolate",
+        "refresh_every": null,
+        "shrink": null
       },
       "meanN1000": {
         "A": {
@@ -226,7 +238,9 @@
         "ens": 10,
         "eta": 0.5,
         "top_frac": 0.2,
-        "update": "accumulate"
+        "update": "accumulate",
+        "refresh_every": null,
+        "shrink": null
       },
       "meanN1000": {
         "A": {
@@ -261,7 +275,9 @@
         "ens": 10,
         "eta": 0.5,
         "top_frac": 0.2,
-        "update": "accumulate"
+        "update": "accumulate",
+        "refresh_every": null,
+        "shrink": null
       },
       "meanN1000": {
         "A": {
@@ -296,7 +312,9 @@
         "ens": 3,
         "eta": 0.5,
         "top_frac": 0.2,
-        "update": "accumulate"
+        "update": "accumulate",
+        "refresh_every": null,
+        "shrink": null
       },
       "meanN1000": {
         "A": {
@@ -331,7 +349,9 @@
         "ens": 30,
         "eta": 0.5,
         "top_frac": 0.2,
-        "update": "accumulate"
+        "update": "accumulate",
+        "refresh_every": null,
+        "shrink": null
       },
       "meanN1000": {
         "A": {
@@ -366,7 +386,9 @@
         "ens": 10,
         "eta": 0.5,
         "top_frac": 0.1,
-        "update": "accumulate"
+        "update": "accumulate",
+        "refresh_every": null,
+        "shrink": null
       },
       "meanN1000": {
         "A": {
@@ -401,7 +423,9 @@
         "ens": 10,
         "eta": 0.5,
         "top_frac": 0.5,
-        "update": "accumulate"
+        "update": "accumulate",
+        "refresh_every": null,
+        "shrink": null
       },
       "meanN1000": {
         "A": {
@@ -415,6 +439,117 @@
         "C": {
           "infl": 131.07,
           "true": 5.77
+        },
+        "D": {
+          "infl": 10.25,
+          "true": 12.16
+        }
+      },
+      "passes": {
+        "H1_B_gt_A": 1.0,
+        "H2_C_gt_2D": 1.0,
+        "H3_D_smallest": 1.0,
+        "H4_D_true_geq_B": 1.0
+      },
+      "all_pass": true
+    },
+    {
+      "cell": "mit:refresh k=2",
+      "config": {
+        "K": 30,
+        "ens": 10,
+        "eta": 0.5,
+        "top_frac": 0.2,
+        "update": "accumulate",
+        "refresh_every": 2,
+        "shrink": null
+      },
+      "meanN1000": {
+        "A": {
+          "infl": 45.47,
+          "true": 5.49
+        },
+        "B": {
+          "infl": 46.92,
+          "true": 4.47
+        },
+        "C": {
+          "infl": 34.23,
+          "true": 9.08
+        },
+        "D": {
+          "infl": 10.25,
+          "true": 12.16
+        }
+      },
+      "passes": {
+        "H1_B_gt_A": 0.625,
+        "H2_C_gt_2D": 1.0,
+        "H3_D_smallest": 1.0,
+        "H4_D_true_geq_B": 1.0
+      },
+      "all_pass": false
+    },
+    {
+      "cell": "mit:refresh k=1",
+      "config": {
+        "K": 30,
+        "ens": 10,
+        "eta": 0.5,
+        "top_frac": 0.2,
+        "update": "accumulate",
+        "refresh_every": 1,
+        "shrink": null
+      },
+      "meanN1000": {
+        "A": {
+          "infl": 45.47,
+          "true": 5.49
+        },
+        "B": {
+          "infl": 19.63,
+          "true": 3.89
+        },
+        "C": {
+          "infl": 4.03,
+          "true": 10.93
+        },
+        "D": {
+          "infl": 10.25,
+          "true": 12.16
+        }
+      },
+      "passes": {
+        "H1_B_gt_A": 0.0,
+        "H2_C_gt_2D": 0.0,
+        "H3_D_smallest": 0.0,
+        "H4_D_true_geq_B": 1.0
+      },
+      "all_pass": false
+    },
+    {
+      "cell": "mit:shrink 0.5",
+      "config": {
+        "K": 30,
+        "ens": 10,
+        "eta": 0.5,
+        "top_frac": 0.2,
+        "update": "accumulate",
+        "refresh_every": null,
+        "shrink": 0.5
+      },
+      "meanN1000": {
+        "A": {
+          "infl": 45.47,
+          "true": 5.49
+        },
+        "B": {
+          "infl": 81.1,
+          "true": 4.43
+        },
+        "C": {
+          "infl": 45.74,
+          "true": 8.29
         },
         "D": {
           "infl": 10.25,

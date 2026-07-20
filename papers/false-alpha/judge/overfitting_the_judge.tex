@@ -50,13 +50,30 @@ Prior work covers the neighboring cases. Selection against a \emph{static} proxy
 \textbf{Selection inflation elsewhere.} The best-of-$N$ statistic inflates under the null in finance~\cite{bailey2014dsr,stw1999} and in noisy quality-diversity archives~\cite{flageat2025}; self-consistency-style pipelines reuse the generator's own signal for selection~\cite{wang2022}, which our result flags as a live risk whenever the critique signal is not independent of generation. Goodhart's law is the umbrella~\cite{goodhart1975}.
 
 \section{Testbed and Design}
-\textbf{Model.} A candidate is a vector $c\in\mathbb{R}^{K}$, $K{=}30$; only the first $M{=}3$ coordinates carry true quality, $q(c)=\sum_{i\le M}c_i$; the remaining $27$ are inert. A judge is a quirk vector $u$ (zero on the true coordinates) scoring $J_u(c)=q(c)+\langle c,u\rangle$: every judge sees true quality plus its own exploitable taste. There is no measurement noise anywhere; all inflation is selection and adaptation.
+\textbf{Model.} A candidate is a vector $c\in\mathbb{R}^{K}$, $K{=}30$; only the first $M{=}3$ coordinates carry true quality, $q(c)=\sum_{i\le M}c_i$; the remaining $27$ are inert. A judge is a quirk vector $u$ scoring $J_u(c)=q(c)+\langle c,u\rangle$: every judge sees true quality plus its own exploitable taste. Quirks are initialized i.i.d.\ $\mathcal{N}(0,1)$ on the $27$ inert coordinates and zero on the true coordinates; the ensembles in conditions C and D draw their $10$ members independently the same way, and D's members are simply never updated afterward (their diversity is the independent initialization). There is no measurement noise anywhere; all inflation is selection and adaptation.
 
-\textbf{Adaptive search.} The generator proposes in rounds (up to 6; batch $=N/\text{rounds}$): proposals are $\mu+\mathcal{N}(0,1)^{K}$, and after each round $\mu$ steps halfway toward the round winner. This makes the \emph{search trace}---the sequence of batches and winners---a real object the judge can absorb.
+\textbf{Adaptive search.} The generator proposes in rounds ($\text{rounds}=\max(2,\min(6,\lfloor N/2\rfloor))$, $\text{batch}=\lfloor N/\text{rounds}\rfloor$): proposals are $\mu+\mathcal{N}(0,1)^{K}$, and after each round $\mu$ steps halfway toward the round winner. This makes the \emph{search trace}---the sequence of batches and winners---a real object the judge can absorb.
 
 \textbf{Co-tuning.} After each round a co-tuned judge \emph{adds} $\eta$ times the mean inert features of the round's top 20\% to its quirk ($u \mathrel{+}= \eta\,\bar c_{\text{inert}}$, $\eta{=}0.5$)---a compounding accumulation, not a convex step, so the judge's taste both aligns with and \emph{grows along} the directions the generator produces: the deterministic analogue of repeatedly appending the pipeline's own winners to a scoring rubric as exemplars. (An interpolating update $u \mathrel{+}= \eta(\bar c - u)$ yields the same directional results with smaller magnitudes---$1.7\times$ and $7.1\times$ for the two headline ratios (Sec.~\ref{sec:sensitivity})---so the accumulation is the aggressive case, not the enabling one.)
 
 \textbf{Conditions.} Identical search structure; only judge provenance differs. \textbf{A}~fixed single judge (static exploitable baseline, the case of~\cite{gao2023}); \textbf{B}~co-tuned single judge; \textbf{C}~ensemble of $10$ co-tuned judges, all refit on the same shared trace, selection on their mean; \textbf{D}~ensemble of $10$ judges never exposed to the trace, selection on their mean.
+
+\begin{figure}[t]
+{\small
+\begin{verbatim}
+for round in 1..rounds:              # per condition
+  C <- batch proposals ~ mu + N(0,1)^K
+  s(c) <- mean_j [ q(c) + <c, u_j> ]  # judges J
+  w <- argmax_C s;  keep best (w, s(w)) so far
+  mu <- mu + 0.5 (w - mu)             # search adapts
+  if co-tuned:                        # B and C only
+    m <- mean inert features of top 20% of C by s
+    for u_j in J:  u_j <- u_j + 0.5 m # accumulates
+# report: best s seen; true quality: <w*, w_true>
+\end{verbatim}}
+\caption{The four conditions differ only in $J$: A one frozen $u$; B one co-tuned $u$; C ten co-tuned $u_j$ sharing the trace; D ten frozen $u_j$.}
+\label{fig:algo}
+\end{figure}
 
 \textbf{Metric.} Each condition's \emph{calibration gap} (inflation) is its own reported score of its final winner minus that winner's true quality---the additive gap a practitioner actually consumes. (We avoid ratio definitions: a held-out judge's score of another condition's winner is near zero by construction, making ratios ill-defined.) An untouched held-out judge is also logged. Deterministic and seeded; every number is written to \texttt{ablation\_cotuned\_results.json}; sweep $N\in\{10,\dots,3{,}000\}$, 24 independent reseeds $\times$ 12 runs.
 
@@ -88,6 +105,24 @@ D\; independent ensemble (10) & 25.4 & \textbf{13.4} & \textbf{12.0} \\
 \label{fig:ablation}
 \end{figure}
 
+\begin{table}[t]
+\caption{Calibration gap (reported $-$ true) by condition across the sweep, seed-averaged over 24 reseeds (full columns incl.\ true quality and held-out scores in \texttt{ablation\_cotuned\_results.json}).}
+\label{tab:sweep}
+\small
+\begin{tabular}{@{}rcccc@{}}
+\toprule
+$N$ & A fixed & B co-tuned & C co-t.\ ens. & D indep.\ ens. \\
+\midrule
+10 & 10.5 & 65.6 & 62.9 & 2.3 \\
+30 & 20.5 & 134.7 & 129.3 & 4.6 \\
+100 & 29.8 & 140.9 & 119.4 & 7.0 \\
+300 & 38.0 & 157.8 & 124.0 & 8.4 \\
+1{,}000 & 45.8 & 184.6 & 140.0 & 10.8 \\
+3{,}000 & 52.8 & 211.5 & 156.9 & 12.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \textbf{Co-tuning is a Goodhart runaway (H1).} The co-tuned judge's gap is $211.5$ vs the static judge's $52.8$ at $N{=}3{,}000$ ($4.0\times$; the ratio is at least $4\times$ at every $N$ and as high as ${\sim}6.5\times$ at small $N$; directional pass rates recorded at $N{=}3{,}000$: 24/24 seeds) (Table~\ref{tab:ablation}, Fig.~\ref{fig:ablation}). The mechanism is mutual: the judge's quirk grows along the directions the generator concentrates in, the generator chases the enlarged quirk, and reported score compounds while true quality is left behind---indeed B's \emph{true} quality ($3.5$) is the worst of all conditions, below even the static-judge baseline ($5.6$). A co-tuned judge is not a noisier judge; it is an accomplice. Part of B's reported-score growth is the judge's own scale growing (the accumulated quirk norm compounds)---that is the runaway mechanism itself, not a confound, but it means B's inflation is measured in units that inflate with it. The scale-free confirmation is true quality: no rescaling of a judge can make its \emph{selections} genuinely worse, yet B selects the worst candidates of all four conditions.
 
 \textbf{Ensembling without independence fails (H2).} The co-tuned ensemble retains a gap of $156.9$---$13.1\times$ the independent ensemble's $12.0$ at $N{=}3{,}000$, and the ratio is even larger at small $N$ (${\sim}27\times$). Averaging judges whose errors were correlated by the shared trace cancels almost nothing; this is the inference-time analogue of ensemble herding~\cite{eisenstein2023}, and it holds in 100\% of seeds.
@@ -97,6 +132,8 @@ D\; independent ensemble (10) & 25.4 & \textbf{13.4} & \textbf{12.0} \\
 \textbf{Sensitivity: directions are parameter-independent, multipliers are not.}
 \label{sec:sensitivity}
 A 12-cell one-factor sweep around the baseline (co-tuning rate $\eta\in\{0.1,0.25,0.5,1.0\}$; the \emph{interpolating} update $u \mathrel{+}= \eta(\bar c-u)$ in place of accumulation; $K\in\{10,30,100\}$; ensemble size $\in\{3,10,30\}$; refit fraction $\in\{0.1,0.2,0.5\}$; 8 seeds $\times$ 6 runs per cell) finds all four pre-registered directions hold in 100\% of seeds in \emph{every} cell. The magnitudes move exactly as one should expect: the co-tuned/static inflation ratio ranges from $1.6\times$ (gentlest, $\eta{=}0.1$) to $7.4\times$ ($\eta{=}1.0$), and the co-tuned-ensemble/independent-ensemble ratio from $3.2\times$ to $30.5\times$. The headline $4\times$/$13\times$ are therefore one point in a robust family, not the phenomenon itself; the phenomenon---co-tuning inflates beyond a static judge, shared-trace ensembling barely helps, independence closes the gap and selects better candidates---survives every parameterization tested, including the gentle one (\texttt{sensitivity\_cotuned.py}).
+
+\textbf{Do cheap mitigations suffice?} Two standard fixes, added as sweep cells, help but do not substitute for independence: \emph{drift regularization} (shrinking the rubric halfway back to its initialization each round) leaves a gap of $81.1$---$1.8\times$ the static judge, ${\sim}8\times$ the independent ensemble---and \emph{periodic judge refresh} every 2 rounds neutralizes the runaway only back to the static-judge floor ($46.9$ vs $45.5$), which itself inflates ${\sim}4.5\times$ the independent ensemble. Refresh \emph{every} round does work ($4.0$)---but a judge replaced before it can absorb any trace is precisely a trace-independent judge: the mitigation succeeds exactly insofar as it reinstates independence, which is the paper's point.
 
 \section{Discussion}
 For anyone building generate-and-select agents---strategy search, self-refining coders, automated red-teaming, prompt optimization---the operational rule is: \emph{a judge that was tuned, prompted, or patched using the pipeline's own outputs is part of the attack surface, not ground truth}. ``The judge said it was good'' is closer to in-sample fit than to evaluation. The measured fix is cheap: hold out judges that have never seen the generator's trace, and aggregate across them; ensembling alone, without that independence, recovers little. The same risk statement covers benchmark--system co-evolution (leaderboards patched in response to the systems they rank) and self-refinement loops whose critique signal is the generator's own~\cite{wang2022,pan2024}.

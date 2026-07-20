@@ -32,14 +32,21 @@ BASE_SEED = 7
 def dot(a, b): return sum(x * y for x, y in zip(a, b))
 
 
-def run_search(N, judges, cotune, rng, K, eta, alpha, top_frac, interpolate):
+def run_search(N, judges, cotune, rng, K, eta, alpha, top_frac, interpolate,
+               refresh_every=None, shrink=None):
     true_w = [1.0] * M_TRUE + [0.0] * (K - M_TRUE)
     judges = [list(q) for q in judges]
+    q0 = [list(q) for q in judges]                  # initial state (for shrink regularization)
     rounds = max(2, min(6, N // 2))
     batch = max(1, N // rounds)
     mu = [0.0] * K
     best_c, best_s = None, None
-    for _ in range(rounds):
+    for rnd in range(rounds):
+        if cotune and refresh_every and rnd > 0 and rnd % refresh_every == 0:
+            # mitigation: periodically replace the iterated judge with a fresh one
+            judges = [[0.0] * M_TRUE + [rng.gauss(0, 1) for _ in range(K - M_TRUE)]
+                      for _ in judges]
+            q0 = [list(q) for q in judges]
         cands = [[mu[i] + rng.gauss(0, 1) for i in range(K)] for _ in range(batch)]
         sel = lambda c: sum(dot(c, true_w) + dot(c, q) for q in judges) / len(judges)
         ranked = sorted(cands, key=sel, reverse=True)
@@ -54,10 +61,16 @@ def run_search(N, judges, cotune, rng, K, eta, alpha, top_frac, interpolate):
             for q in judges:
                 for i in range(M_TRUE, K):
                     q[i] += eta * (m_inert[i] - q[i]) if interpolate else eta * m_inert[i]
+            if shrink is not None:
+                # mitigation: regularize rubric drift back toward initialization each round
+                for q, qz in zip(judges, q0):
+                    for i in range(M_TRUE, K):
+                        q[i] = qz[i] + shrink * (q[i] - qz[i])
     return best_s, dot(best_c, true_w)
 
 
-def run_cell(name, K=30, ens=10, eta=0.5, top_frac=0.2, interpolate=False, alpha=0.5):
+def run_cell(name, K=30, ens=10, eta=0.5, top_frac=0.2, interpolate=False, alpha=0.5,
+             refresh_every=None, shrink=None):
     def quirk(r): return [0.0] * M_TRUE + [r.gauss(0, 1) for _ in range(K - M_TRUE)]
     per_seed = []
     for s in range(SEEDS):
@@ -72,7 +85,8 @@ def run_cell(name, K=30, ens=10, eta=0.5, top_frac=0.2, interpolate=False, alpha
                 for cond, judges, cotune in (("A", [single], False), ("B", [single], True),
                                              ("C", ens_j, True), ("D", ens_j, False)):
                     rng = random.Random(seed * 7919 + N * 13 + rep * 17 + ord(cond))
-                    rs, rt = run_search(N, judges, cotune, rng, K, eta, alpha, top_frac, interpolate)
+                    rs, rt = run_search(N, judges, cotune, rng, K, eta, alpha, top_frac, interpolate,
+                                        refresh_every=refresh_every, shrink=shrink)
                     acc[cond][0] += rs
                     acc[cond][1] += rt
             out[N] = {c: {"infl": (acc[c][0] - acc[c][1]) / REPS,
@@ -90,7 +104,8 @@ def run_cell(name, K=30, ens=10, eta=0.5, top_frac=0.2, interpolate=False, alpha
     mean = {c: {k: round(statistics.mean(ps[maxN][c][k] for ps in per_seed), 2)
                 for k in ("infl", "true")} for c in "ABCD"}
     return {"cell": name, "config": {"K": K, "ens": ens, "eta": eta, "top_frac": top_frac,
-                                     "update": "interpolate" if interpolate else "accumulate"},
+                                     "update": "interpolate" if interpolate else "accumulate",
+                                     "refresh_every": refresh_every, "shrink": shrink},
             "meanN1000": mean, "passes": passes,
             "all_pass": all(v == 1.0 for v in passes.values())}
 
@@ -109,6 +124,9 @@ def main() -> int:
         run_cell("ENS=30", ens=30),
         run_cell("top=0.1", top_frac=0.1),
         run_cell("top=0.5", top_frac=0.5),
+        run_cell("mit:refresh k=2", refresh_every=2),
+        run_cell("mit:refresh k=1", refresh_every=1),
+        run_cell("mit:shrink 0.5", shrink=0.5),
     ]
     print(f"{'cell':>16} | {'A':>7} {'B':>8} {'C':>8} {'D':>6} | B/A  C/D | H1 H2 H3 H4")
     for c in cells:
