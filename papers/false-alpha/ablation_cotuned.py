@@ -105,7 +105,8 @@ def run_seed(seed, ns, reps):
         acc = {c: [0.0, 0.0, 0.0] for c in "ABCD"}  # reported, true, heldout
         for rep in range(reps):
             base = random.Random(seed * 100003 + N * 101 + rep)
-            # same initial judges + same generator stream per condition -> paired comparison
+            # same initial judges per condition -> paired comparison (candidate rng
+            # forks per condition below; pairing is via judge initialization only)
             single = fresh_quirk(base)
             ens = [fresh_quirk(base) for _ in range(ENS)]
             g = base.random()                       # advance; per-condition rng forks below
