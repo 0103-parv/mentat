@@ -1,0 +1,73 @@
+{
+  "skeptical_statistician": {
+    "scores": {
+      "soundness": 4,
+      "novelty": 5,
+      "clarity": 7,
+      "honesty_of_claims": 5
+    },
+    "leaning": "weak reject",
+    "strengths": [
+      "Clean, well-isolated ablation design where judge provenance is the sole manipulated variable, holding search structure fixed across conditions",
+      "Fully deterministic, seeded, reproducible codebase with results dumped to JSON \u2014 unusually transparent for this kind of synthetic study",
+      "Explicitly and honestly reports that the preliminary live-LLM experiment fails to reproduce the paper's central novel claim (co-tuning amplification vs. static judge), rather than hiding this",
+      "Connects cleanly to existing literature (BoN reward hacking, ensemble herding) and correctly scopes what is and isn't new"
+    ],
+    "weaknesses": [
+      "The entire quantitative story (4x, 13x, 3.8x) rests on one narrow, linear, low-dimensional synthetic model with a single arbitrary hyperparameter setting (\u03b7=0.5, K=30, M=3, ensemble size 10); no sensitivity/robustness sweep over these choices is shown, so the specific multipliers are essentially artifacts of one designed toy system, not general findings",
+      "The co-tuning update rule is explicitly called 'the aggressive case' (compounding accumulation rather than convex interpolation) and is precisely the mechanism that guarantees runaway growth by construction \u2014 this risks being a self-fulfilling setup rather than a discovered phenomenon",
+      "'100% of 24 reseeds' sounds like strong statistical evidence but is really just deterministic replication of a fixed mechanism under different RNG seeds in a rigged toy environment; it says little about real-world reliability of the claimed effect sizes",
+      "The only real (LLM) validation attempted is tiny (2 seeds x 3 rounds) and explicitly does NOT show the paper's headline differentiator (co-tuned vs fixed judge did not separate) \u2014 this is a fairly significant gap that is somewhat softened in framing as merely 'the immediate next step' rather than treated as a serious open question about external validity",
+      "No ablation over alternative operationalizations of 'co-tuning' beyond a one-line footnote claim that an interpolating update gives 'the same directional results with smaller magnitudes' without showing numbers",
+      "Abstract and intro foreground specific multiplicative effect sizes (4x, 13x, 3.8x) prominently despite these being generated entirely by an arbitrary synthetic parameterization, which risks readers over-indexing on numbers that have no established connection to real system magnitudes"
+    ],
+    "one_line_verdict": "A cleanly executed but narrow synthetic ablation whose headline multiplicative claims are largely artifacts of one arbitrarily aggressive toy mechanism, and whose only real-world validation attempt explicitly fails to confirm the central novel claim."
+  },
+  "ml_eval_area_chair": {
+    "scores": {
+      "soundness": 5,
+      "novelty": 5,
+      "clarity": 7,
+      "honesty_of_claims": 6
+    },
+    "leaning": "weak reject",
+    "strengths": [
+      "Clean, well-isolated conceptual question: judge provenance (co-tuned vs static vs ensembled vs independent) as the sole manipulated variable, which is a genuinely under-examined axis relative to Gao et al. and Coste/Eisenstein's static-judge and independent-ensemble settings",
+      "Pre-registered directional hypotheses with 24/24 reseed consistency is good experimental hygiene for a workshop paper",
+      "Clear, actionable takeaway (hold out judges never exposed to the generator's trace) that connects naturally to the ensemble-herding literature",
+      "Honest limitations section acknowledging the synthetic linear model and the very small, inconclusive live-LLM pilot"
+    ],
+    "weaknesses": [
+      "The entire quantitative story rests on a synthetic linear toy model (K=30, quirk vectors, additive judge scores) with a hand-chosen co-tuning update rule (accumulation with eta=0.5); the specific multipliers (4x, 13x, 3.8x) are artifacts of these arbitrary design choices and have no demonstrated bearing on real LLM judges",
+      "The live-LLM instantiation is extremely small (2 seeds x 3 rounds) and explicitly fails to reproduce the paper's central claim (co-tuning amplification beyond static judge) -- the one experiment that could validate external relevance is inconclusive, undermining the paper's actionable value",
+      "Positioning against Eisenstein et al. is essentially 'import their decorrelation insight to a new toy setting' rather than a new mechanism; the herding-under-correlation phenomenon is not conceptually new, just relabeled as 'co-tuning'",
+      "No real rubric-iteration or prompt-refinement experiment is run despite this being the motivating real-world scenario (scoring prompts iterated until they 'look right'); the toy model's quirk-accumulation is a loose analogy asserted rather than validated against actual LLM-judge prompt engineering",
+      "Calibration gap is measured in raw additive units that are acknowledged to inflate with the judge's own growing scale, which the paper concedes but does not fully resolve, weakening the headline 4x/13x numbers",
+      "No comparison to or discussion of whether standard mitigations (e.g., periodic judge refresh, regularizing rubric drift) would already address the phenomenon, leaving the practical novelty of the 'independence' fix somewhat obvious once stated"
+    ],
+    "one_line_verdict": "A clean but narrow synthetic ablation that isolates an interesting question (judge co-tuning vs. static/ensembled judges) yet delivers only toy-model numbers and an inconclusive live pilot, limiting its actionable contribution beyond restating known ensemble-decorrelation insights in a new frame."
+  },
+  "clarity_reviewer": {
+    "scores": {
+      "soundness": 5,
+      "novelty": 5,
+      "clarity": 6,
+      "honesty_of_claims": 7
+    },
+    "leaning": "weak reject",
+    "strengths": [
+      "Clean, well-scoped ablation design (four provenance conditions with search structure held fixed) that isolates a single variable of interest",
+      "Pre-registered directional hypotheses with explicit pass-rate reporting (24/24 reseeds) is a good practice rarely seen in this literature",
+      "Honest limitations section that explicitly flags the synthetic nature of the testbed and the thinness of the live-LLM check",
+      "Abstract's numerical claims (4x, 13x, 3.8x) are traceable to the reported table and text, so the abstract is not overselling relative to the body"
+    ],
+    "weaknesses": [
+      "Key implementation details needed for reproduction are missing from the text: how quirk vectors u are initialized/sampled for each condition (especially for the 'independent' ensemble D, whose diversity mechanism is never specified), how 'top 20%' is selected, and how batches are formed when N is not divisible by 6 rounds",
+      "The sweep results (N from 10 to 3000) are only shown in a figure without axis values or a supporting table; ratio claims like '~6.5x at small N' and '~27x at small N' cannot be checked against any numeric table",
+      "The live-LLM instantiation is described in only a few sentences (5-feature predictors, 2 seeds x 3 rounds, no prompts, no model identity, no scoring protocol) yet is used to claim the phenomenon 'reproduces... with a real judge', which overstates what such a tiny, underspecified pilot can support",
+      "The co-tuning update rule (additive accumulation) and its parameter \u03b7=0.5 are stated but the paper does not justify or explore sensitivity beyond one alternative variant mentioned in a parenthetical without quantitative detail",
+      "No pseudocode or algorithm box is provided despite claiming a fully deterministic, seeded, reproducible pipeline; a reader without the actual scripts cannot reconstruct condition C/D judge construction with confidence"
+    ],
+    "one_line_verdict": "An interesting and honestly-limited synthetic ablation on judge co-tuning, but insufficient implementation detail (quirk sampling, batch/round mechanics, live-LLM setup) undermines reproducibility from the text alone."
+  }
+}
